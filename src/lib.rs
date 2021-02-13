@@ -1,4 +1,5 @@
 mod utils;
+mod lexer;
 
 use wasm_bindgen::prelude::*;
 
@@ -7,18 +8,6 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-//#[wasm_bindgen]
-//pub struct Ast {
-//    //pub children: Vec<Ast>,
-//    pub type_enum: TypeEnum,
-//}
-//
-//#[wasm_bindgen]
-//pub enum TypeEnum {
-//    Statement = "statement",
-//    Clause = "clause",
-//}
 
 #[wasm_bindgen]
 pub struct SelectClause {
@@ -39,7 +28,7 @@ impl SelectClause {
 }
 
 #[wasm_bindgen]
-pub fn greet(int: u32) -> SelectClause {
+pub fn parse(code: String) -> SelectClause {
     SelectClause {
         distinct: true,
         name: String::from("aaa"),
