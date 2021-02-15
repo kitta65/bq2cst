@@ -1,6 +1,8 @@
 enum TokenType {
     SEMICOLON,
     SHARP,
+    EOF,
+    ILLEGAL,
 }
 
 struct Token {
@@ -38,28 +40,56 @@ impl Lexer {
         self.position = self.read_position;
         self.read_position += 1;
     }
-    fn next_token(&self) {
-        let token = match self.ch {
-            TokenType.SEMICOLON => TOKEN { token_type: TokenType.SEMICOLON, literal: self.ch},
-            TokenType.SHARP => TOKEN { token_type: TokenType.SHARP, literal: self.ch },
+    fn next_token(&mut self) -> Token {
+        let ch = match self.ch {
+            Some(ch) => ch,
+            None => {
+                return Token {
+                    token_type: TokenType::EOF,
+                    literal: "".to_string(),
+                }
+            }
+        };
+        let token = match ch {
+            ';' => Token {
+                token_type: TokenType::SEMICOLON,
+                literal: ch.to_string(),
+            },
+            '#' => Token {
+                token_type: TokenType::SHARP,
+                literal: ch.to_string(),
+            },
+            _ => Token {
+                token_type: TokenType::ILLEGAL,
+                literal: ch.to_string(),
+            },
         };
         self.read_char();
         token
     }
 }
 
-#[test]
-fn test_lexer() {
-    let input = ";#".to_string();
-    let l = Lexer::new(input);
-    let tokens = l.next_token();
-    assert_eq!(tokens[0].literal, "SELECT".to_string());
-}
+#[cfg(test)]
+mod lexer_tests {
+    use super::*;
+    #[test]
+    fn test_next_token() {
+        let input = ";#".to_string();
+        let mut l = Lexer::new(input);
+        let expected_tokens: Vec<Token> = vec![
+            Token{ token_type: TokenType::SEMICOLON, literal: ";".to_string() },
+            Token{ token_type: TokenType::SEMICOLON, literal: "#".to_string() },
+        ];
+        for t in expected_tokens {
+            assert_eq!(l.next_token().literal, t.literal);
+        }
+    }
 
-#[test]
-fn test_surrogate() {
-    let code = "𩸽";
-    for c in code.chars() {
-        assert_eq!(c, '𩸽'); // treated as one character
+    #[test]
+    fn test_surrogate() {
+        let code = "𩸽";
+        for c in code.chars() {
+            assert_eq!(c, '𩸽'); // treated as one character
+        }
     }
 }
