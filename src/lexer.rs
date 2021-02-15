@@ -4,6 +4,7 @@ enum TokenType {
     SHARP,
     EOF,
     ILLEGAL,
+    SELECT,
 }
 
 #[derive(PartialEq, Debug)]
@@ -42,6 +43,15 @@ impl Lexer {
         self.position = self.read_position;
         self.read_position += 1;
     }
+    fn read_identifier(&mut self) -> String {
+        let first_position = self.position;
+        while is_letter(&self.ch) {
+            self.read_char();
+        }
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
+    }
     fn next_token(&mut self) -> Token {
         let ch = match self.ch {
             Some(ch) => ch,
@@ -61,13 +71,29 @@ impl Lexer {
                 token_type: TokenType::SHARP,
                 literal: ch.to_string(),
             },
-            _ => Token {
-                token_type: TokenType::ILLEGAL,
-                literal: ch.to_string(),
-            },
+            _ => {
+                if is_letter(&self.ch) {
+                    return Token {
+                        token_type: TokenType::SELECT,
+                        literal: self.read_identifier()
+                    }
+                } else {
+                    Token {
+                        token_type: TokenType::ILLEGAL,
+                        literal: ch.to_string(),
+                    }
+                }
+            }
         };
         self.read_char();
         token
+    }
+}
+
+fn is_letter(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_alphabetic(),
+        None => false,
     }
 }
 
@@ -76,11 +102,21 @@ mod lexer_tests {
     use super::*;
     #[test]
     fn test_next_token() {
-        let input = ";#".to_string();
+        let input = ";#SELECT".to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
-            Token{ token_type: TokenType::SEMICOLON, literal: ";".to_string() },
-            Token{ token_type: TokenType::SHARP, literal: "#".to_string() },
+            Token {
+                token_type: TokenType::SEMICOLON,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::SHARP,
+                literal: "#".to_string(),
+            },
+            Token {
+                token_type: TokenType::SELECT,
+                literal: "SELECT".to_string(),
+            },
         ];
         for t in expected_tokens {
             assert_eq!(l.next_token(), t);
@@ -93,5 +129,26 @@ mod lexer_tests {
         for c in code.chars() {
             assert_eq!(c, '𩸽'); // treated as one character
         }
+    }
+
+    #[test]
+    fn test_chars2string() {
+        let chars = vec!['#', ';', 'S', 'E', 'L', 'E', 'C', 'T'];
+        let str: String = chars[0..2].into_iter().collect();
+        assert_eq!(str, "#;".to_string());
+    }
+
+    #[test]
+    fn test_is_letter() {
+        assert!('a'.is_alphabetic());
+        assert!('z'.is_alphabetic());
+        assert!('𩸽'.is_alphabetic());
+        assert!(!';'.is_alphabetic());
+        assert!(';'.is_ascii());
+        assert!('z'.is_ascii());
+        assert!('0'.is_numeric());
+        assert!('0'.is_ascii());
+        assert!(!'0'.is_alphabetic());
+        assert!(!'9'.is_alphabetic());
     }
 }
