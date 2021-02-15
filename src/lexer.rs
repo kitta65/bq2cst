@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 enum TokenType {
     SEMICOLON,
     SHARP,
@@ -5,6 +6,7 @@ enum TokenType {
     ILLEGAL,
 }
 
+#[derive(PartialEq, Debug)]
 struct Token {
     token_type: TokenType,
     literal: String,
@@ -78,10 +80,10 @@ mod lexer_tests {
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             Token{ token_type: TokenType::SEMICOLON, literal: ";".to_string() },
-            Token{ token_type: TokenType::SEMICOLON, literal: "#".to_string() },
+            Token{ token_type: TokenType::SHARP, literal: "#".to_string() },
         ];
         for t in expected_tokens {
-            assert_eq!(l.next_token().literal, t.literal);
+            assert_eq!(l.next_token(), t);
         }
     }
 
