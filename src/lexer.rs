@@ -8,12 +8,14 @@ enum TokenType {
     IDENT,
     CREATE,
     FROM,
+    BRANKLINE,
 }
 
 #[derive(PartialEq, Debug)]
 struct Token {
     token_type: TokenType,
     literal: String,
+    line: usize,
 }
 
 struct Lexer {
@@ -21,6 +23,7 @@ struct Lexer {
     position: usize,
     read_position: usize,
     ch: Option<char>,
+    line: usize,
 }
 
 impl Lexer {
@@ -35,6 +38,7 @@ impl Lexer {
             position: 0,
             read_position: 1,
             ch: Some(first_char),
+            line: 0,
         }
     }
     fn read_char(&mut self) {
@@ -63,6 +67,7 @@ impl Lexer {
                 return Token {
                     token_type: TokenType::EOF,
                     literal: "".to_string(),
+                    line: self.line,
                 }
             }
         };
@@ -70,19 +75,27 @@ impl Lexer {
             ';' => Token {
                 token_type: TokenType::SEMICOLON,
                 literal: ch.to_string(),
+                line: self.line,
             },
             '#' => Token {
                 token_type: TokenType::SHARP,
                 literal: ch.to_string(),
+                line: self.line,
+            },
+            '\n' => Token {
+                token_type: TokenType::BRANKLINE,
+                literal: ch.to_string(),
+                line: self.line,
             },
             _ => {
                 if is_letter(&self.ch) {
                     let token_literal = self.read_identifier();
-                    return lookup_keyword(token_literal);
+                    return self.lookup_keyword(token_literal); // note: the ownerwhip moves
                 } else {
                     Token {
                         token_type: TokenType::ILLEGAL,
                         literal: ch.to_string(),
+                        line: self.line,
                     }
                 }
             }
@@ -91,8 +104,54 @@ impl Lexer {
         token
     }
     fn skip_whitespace(&mut self) {
-        while is_whitespace(&self.ch) {
+        while self.is_whitespace() {
             self.read_char();
+        }
+    }
+    fn is_whitespace(&mut self) -> bool {
+        let ch = match self.ch {
+            Some(ch) => ch,
+            None => return false,
+        };
+        match ch {
+            '\n' => {
+                self.line += 1;
+                true
+            }
+            _ => ch.is_whitespace(),
+        }
+    }
+    fn peek_char(&mut self) -> Option<char> {
+        if self.input.len() <= self.read_position {
+            None
+        } else {
+            Some(self.input[self.read_position])
+        }
+    }
+    fn lookup_keyword(&self, keyword: String) -> Token {
+        let keyword_upper = keyword.to_ascii_uppercase();
+        let s = keyword_upper.as_str();
+        match s {
+            "SELECT" => Token {
+                token_type: TokenType::SELECT,
+                literal: keyword_upper,
+                line: self.line,
+            },
+            "FROM" => Token {
+                token_type: TokenType::FROM,
+                literal: keyword_upper,
+                line: self.line,
+            },
+            "CREATE" => Token {
+                token_type: TokenType::CREATE,
+                literal: keyword_upper,
+                line: self.line,
+            },
+            _ => Token {
+                token_type: TokenType::IDENT,
+                literal: keyword,
+                line: self.line,
+            },
         }
     }
 }
@@ -104,63 +163,46 @@ fn is_letter(ch: &Option<char>) -> bool {
     }
 }
 
-fn is_whitespace(ch: &Option<char>) -> bool {
-    match ch {
-        Some(ch) => ch.is_whitespace(),
-        None => false,
-    }
-}
-
-fn lookup_keyword(keyword: String) -> Token {
-    let keyword_upper = keyword.to_ascii_uppercase();
-    let s = keyword_upper.as_str();
-    match s {
-        "SELECT" => Token {
-            token_type: TokenType::SELECT,
-            literal: keyword_upper,
-        },
-        "FROM" => Token {
-            token_type: TokenType::FROM,
-            literal: keyword_upper,
-        },
-        "CREATE" => Token {
-            token_type: TokenType::CREATE,
-            literal: keyword_upper,
-        },
-        _ => Token {
-            token_type: TokenType::IDENT,
-            literal: keyword,
-        },
-    }
-}
 
 #[cfg(test)]
 mod lexer_tests {
     use super::*;
     #[test]
     fn test_next_token() {
-        let input = ";#SELECT From".to_string();
+        let input = "#standardSQL
+            SELECT From;"
+            .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             Token {
-                token_type: TokenType::SEMICOLON,
-                literal: ";".to_string(),
-            },
-            Token {
                 token_type: TokenType::SHARP,
                 literal: "#".to_string(),
+                line: 0,
+            },
+            Token {
+                token_type: TokenType::IDENT,
+                literal: "standardSQL".to_string(),
+                line: 0,
             },
             Token {
                 token_type: TokenType::SELECT,
                 literal: "SELECT".to_string(),
+                line: 1,
             },
             Token {
                 token_type: TokenType::FROM,
                 literal: "FROM".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::SEMICOLON,
+                literal: ";".to_string(),
+                line: 1,
             },
             Token {
                 token_type: TokenType::EOF,
                 literal: "".to_string(),
+                line: 1,
             },
         ];
         for t in expected_tokens {
@@ -195,5 +237,14 @@ mod lexer_tests {
         assert!('0'.is_ascii());
         assert!(!'0'.is_alphabetic());
         assert!(!'9'.is_alphabetic());
+    }
+
+    #[test]
+    fn test_cr() {
+        assert_eq!(
+            "
+",
+            "\n"
+        )
     }
 }
