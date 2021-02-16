@@ -78,10 +78,7 @@ impl Lexer {
             _ => {
                 if is_letter(&self.ch) {
                     let token_literal = self.read_identifier();
-                    return Token {
-                        token_type: lookup_keyword(&token_literal),
-                        literal: token_literal
-                    }
+                    return lookup_keyword(token_literal);
                 } else {
                     Token {
                         token_type: TokenType::ILLEGAL,
@@ -114,13 +111,26 @@ fn is_whitespace(ch: &Option<char>) -> bool {
     }
 }
 
-fn lookup_keyword(keyword: &String) -> TokenType {
-    let s = keyword.as_str();
+fn lookup_keyword(keyword: String) -> Token {
+    let keyword_upper = keyword.to_ascii_uppercase();
+    let s = keyword_upper.as_str();
     match s {
-        "SELECT" => TokenType::SELECT,
-        "FROM" => TokenType::FROM,
-        "CREATE" => TokenType::CREATE,
-        _ => TokenType::IDENT,
+        "SELECT" => Token {
+            token_type: TokenType::SELECT,
+            literal: keyword_upper,
+        },
+        "FROM" => Token {
+            token_type: TokenType::FROM,
+            literal: keyword_upper,
+        },
+        "CREATE" => Token {
+            token_type: TokenType::CREATE,
+            literal: keyword_upper,
+        },
+        _ => Token {
+            token_type: TokenType::IDENT,
+            literal: keyword,
+        },
     }
 }
 
@@ -129,7 +139,7 @@ mod lexer_tests {
     use super::*;
     #[test]
     fn test_next_token() {
-        let input = ";#SELECT ".to_string();
+        let input = ";#SELECT From".to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             Token {
@@ -143,6 +153,10 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::SELECT,
                 literal: "SELECT".to_string(),
+            },
+            Token {
+                token_type: TokenType::FROM,
+                literal: "FROM".to_string(),
             },
             Token {
                 token_type: TokenType::EOF,
