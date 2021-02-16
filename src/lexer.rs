@@ -5,6 +5,9 @@ enum TokenType {
     EOF,
     ILLEGAL,
     SELECT,
+    IDENT,
+    CREATE,
+    FROM,
 }
 
 #[derive(PartialEq, Debug)]
@@ -53,6 +56,7 @@ impl Lexer {
             .collect()
     }
     fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
         let ch = match self.ch {
             Some(ch) => ch,
             None => {
@@ -73,9 +77,10 @@ impl Lexer {
             },
             _ => {
                 if is_letter(&self.ch) {
+                    let token_literal = self.read_identifier();
                     return Token {
-                        token_type: TokenType::SELECT,
-                        literal: self.read_identifier()
+                        token_type: lookup_keyword(&token_literal),
+                        literal: token_literal
                     }
                 } else {
                     Token {
@@ -88,6 +93,11 @@ impl Lexer {
         self.read_char();
         token
     }
+    fn skip_whitespace(&mut self) {
+        while is_whitespace(&self.ch) {
+            self.read_char();
+        }
+    }
 }
 
 fn is_letter(ch: &Option<char>) -> bool {
@@ -97,12 +107,29 @@ fn is_letter(ch: &Option<char>) -> bool {
     }
 }
 
+fn is_whitespace(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_whitespace(),
+        None => false,
+    }
+}
+
+fn lookup_keyword(keyword: &String) -> TokenType {
+    let s = keyword.as_str();
+    match s {
+        "SELECT" => TokenType::SELECT,
+        "FROM" => TokenType::FROM,
+        "CREATE" => TokenType::CREATE,
+        _ => TokenType::IDENT,
+    }
+}
+
 #[cfg(test)]
 mod lexer_tests {
     use super::*;
     #[test]
     fn test_next_token() {
-        let input = ";#SELECT".to_string();
+        let input = ";#SELECT ".to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             Token {
@@ -116,6 +143,10 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::SELECT,
                 literal: "SELECT".to_string(),
+            },
+            Token {
+                token_type: TokenType::EOF,
+                literal: "".to_string(),
             },
         ];
         for t in expected_tokens {
