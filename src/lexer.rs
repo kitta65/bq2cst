@@ -9,6 +9,7 @@ enum TokenType {
     CREATE,
     FROM,
     BRANKLINE,
+    INTEGER,
 }
 
 #[derive(PartialEq, Debug)]
@@ -91,6 +92,12 @@ impl Lexer {
                 if is_letter(&self.ch) {
                     let token_literal = self.read_identifier();
                     return self.lookup_keyword(token_literal); // note: the ownerwhip moves
+                } else if ch.is_digit(10) {
+                    Token {
+                        token_type: TokenType::INTEGER,
+                        literal: ch.to_string(),
+                        line: self.line,
+                    }
                 } else {
                     Token {
                         token_type: TokenType::ILLEGAL,
@@ -165,12 +172,12 @@ fn is_letter(ch: &Option<char>) -> bool {
 
 
 #[cfg(test)]
-mod lexer_tests {
+mod tests {
     use super::*;
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT From;"
+            SELECT 1 From;"
             .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
@@ -187,6 +194,11 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::SELECT,
                 literal: "SELECT".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::INTEGER,
+                literal: "1".to_string(),
                 line: 1,
             },
             Token {
