@@ -19,6 +19,8 @@ enum TokenType {
     STRING,
     COMMA,   // ,
     COMMENT, // --, #
+    DATE,
+    TIMESTAMP,
     // binary operator
     PLUS,       // +
     MINUS,      // -
@@ -290,6 +292,16 @@ impl Lexer {
                 literal: keyword,
                 line: self.line,
             },
+            "DATE" => Token {
+                token_type: TokenType::DATE,
+                literal: keyword,
+                line: self.line,
+            },
+            "TIMESTAMP" => Token {
+                token_type: TokenType::TIMESTAMP,
+                literal: keyword,
+                line: self.line,
+            },
             _ => Token {
                 token_type: TokenType::IDENT,
                 literal: keyword,
@@ -338,7 +350,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3 From;
+            SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01' From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);
             -- comment"
             .to_string();
@@ -449,6 +461,36 @@ mod tests {
             Token {
                 token_type: TokenType::IntFloat,
                 literal: "3".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::DATE,
+                literal: "date".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::STRING,
+                literal: "2000-01-01".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::TIMESTAMP,
+                literal: "timestamp".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::STRING,
+                literal: "2000-01-01".to_string(),
                 line: 1,
             },
             Token {
