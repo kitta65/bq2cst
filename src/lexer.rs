@@ -9,7 +9,7 @@ enum TokenType {
     CREATE,
     FROM,
     BRANKLINE,
-    INTEGER,
+    IntFloat,
     TEMPORAY,
     TABLE,
     AS,
@@ -93,6 +93,11 @@ impl Lexer {
                 literal: ch.to_string(),
                 line: self.line,
             },
+            '.' => Token {
+                token_type: TokenType::IntFloat,
+                literal: self.read_number(),
+                line: self.line,
+            },
             '#' => Token {
                 token_type: TokenType::SHARP,
                 literal: ch.to_string(),
@@ -122,7 +127,7 @@ impl Lexer {
                 if ch.is_digit(10) {
                     let token_literal = self.read_number();
                     return Token {
-                        token_type: TokenType::INTEGER,
+                        token_type: TokenType::IntFloat,
                         literal: token_literal,
                         line: self.line,
                     }
@@ -247,7 +252,7 @@ fn is_letter(ch: &char) -> bool {
 }
 
 fn is_digit(ch: &char) -> bool {
-    ch.is_digit(10)
+    ch.is_digit(10) || ch == &'.'
 }
 
 
@@ -257,7 +262,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10,'aaa', \"bbb\" From;
+            SELECT 10, 1.1, 'aaa', \"bbb\" From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
@@ -278,10 +283,30 @@ mod tests {
                 line: 1,
             },
             Token {
-                token_type: TokenType::INTEGER,
+                token_type: TokenType::IntFloat,
                 literal: "10".to_string(),
                 line: 1,
             },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "1.1".to_string(),
+                line: 1,
+            },
+            //Token {
+            //    token_type: TokenType::COMMA,
+            //    literal: ",".to_string(),
+            //    line: 1,
+            //},
+            //Token {
+            //    token_type: TokenType::IntFloat,
+            //    literal: ".9".to_string(),
+            //    line: 1,
+            //},
             Token {
                 token_type: TokenType::COMMA,
                 literal: ",".to_string(),
@@ -348,7 +373,7 @@ mod tests {
                 line: 2,
             },
             Token {
-                token_type: TokenType::INTEGER,
+                token_type: TokenType::IntFloat,
                 literal: "0".to_string(),
                 line: 2,
             },
