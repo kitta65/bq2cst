@@ -18,6 +18,8 @@ enum TokenType {
     RPAREN,
     FUNCTION,
     RETURNS,
+    STRING,
+    COMMA,
 }
 
 #[derive(PartialEq, Debug)]
@@ -81,6 +83,11 @@ impl Lexer {
             }
         };
         let token = match ch {
+            ',' => Token {
+                token_type: TokenType::COMMA,
+                literal: ch.to_string(),
+                line: self.line,
+            },
             ';' => Token {
                 token_type: TokenType::SEMICOLON,
                 literal: ch.to_string(),
@@ -99,6 +106,11 @@ impl Lexer {
             ')' => Token {
                 token_type: TokenType::RPAREN,
                 literal: ch.to_string(),
+                line: self.line,
+            },
+            '"' => Token {
+                token_type: TokenType::STRING,
+                literal: self.read_string(self.ch),
                 line: self.line,
             },
             _ => {
@@ -123,6 +135,15 @@ impl Lexer {
         };
         self.read_char();
         token
+    }
+    fn read_string(&mut self, quote: Option<char>) -> String {
+        self.read_char();
+        let first_position = self.position;
+        while self.ch != quote {
+            self.read_char();
+        }
+        self.input[first_position..self.position].into_iter().collect()
+
     }
     fn skip_whitespaces(&mut self) {
         while self.skip_whitespace() {
@@ -237,7 +258,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10 From;
+            SELECT 10, \"bbb\" From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
@@ -260,6 +281,16 @@ mod tests {
             Token {
                 token_type: TokenType::INTEGER,
                 literal: "10".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::STRING,
+                literal: "bbb".to_string(),
                 line: 1,
             },
             Token {
