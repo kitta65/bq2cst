@@ -113,6 +113,11 @@ impl Lexer {
                 literal: self.read_string(self.ch),
                 line: self.line,
             },
+            '\'' => Token {
+                token_type: TokenType::STRING,
+                literal: self.read_string(self.ch),
+                line: self.line,
+            },
             _ => {
                 if ch.is_digit(10) {
                     let token_literal = self.read_number();
@@ -258,7 +263,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, \"bbb\" From;
+            SELECT 10, 'aaa', \"bbb\" From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
@@ -281,6 +286,16 @@ mod tests {
             Token {
                 token_type: TokenType::INTEGER,
                 literal: "10".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::STRING,
+                literal: "aaa".to_string(),
                 line: 1,
             },
             Token {
