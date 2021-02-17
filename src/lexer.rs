@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 1.1, 'aaa', \"bbb\" From;
+            SELECT 10, 1.1, 'aaa', \"bbb\", .9 From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
@@ -297,16 +297,6 @@ mod tests {
                 literal: "1.1".to_string(),
                 line: 1,
             },
-            //Token {
-            //    token_type: TokenType::COMMA,
-            //    literal: ",".to_string(),
-            //    line: 1,
-            //},
-            //Token {
-            //    token_type: TokenType::IntFloat,
-            //    literal: ".9".to_string(),
-            //    line: 1,
-            //},
             Token {
                 token_type: TokenType::COMMA,
                 literal: ",".to_string(),
@@ -325,6 +315,16 @@ mod tests {
             Token {
                 token_type: TokenType::STRING,
                 literal: "bbb".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: ".9".to_string(),
                 line: 1,
             },
             Token {
