@@ -10,6 +10,14 @@ enum TokenType {
     FROM,
     BRANKLINE,
     INTEGER,
+    TEMPORAY,
+    TABLE,
+    AS,
+    TYPE,
+    LPAREN,
+    RPAREN,
+    FUNCTION,
+    RETURNS,
 }
 
 #[derive(PartialEq, Debug)]
@@ -83,22 +91,27 @@ impl Lexer {
                 literal: ch.to_string(),
                 line: self.line,
             },
-            '\n' => Token {
-                token_type: TokenType::BRANKLINE,
+            '(' => Token {
+                token_type: TokenType::LPAREN,
+                literal: ch.to_string(),
+                line: self.line,
+            },
+            ')' => Token {
+                token_type: TokenType::RPAREN,
                 literal: ch.to_string(),
                 line: self.line,
             },
             _ => {
-                if is_letter(&self.ch) {
-                    let token_literal = self.read_identifier();
-                    return self.lookup_keyword(token_literal); // note: the ownerwhip moves
-                } else if ch.is_digit(10) {
+                if ch.is_digit(10) {
                     let token_literal = self.read_number();
-                    Token {
+                    return Token {
                         token_type: TokenType::INTEGER,
                         literal: token_literal,
                         line: self.line,
                     }
+                } else if is_letter(&self.ch) {
+                    let token_literal = self.read_identifier();
+                    return self.lookup_keyword(token_literal); // note: the ownerwhip moves
                 } else {
                     Token {
                         token_type: TokenType::ILLEGAL,
@@ -137,22 +150,52 @@ impl Lexer {
         }
     }
     fn lookup_keyword(&self, keyword: String) -> Token {
-        let keyword_upper = keyword.to_ascii_uppercase();
-        let s = keyword_upper.as_str();
+        let s = keyword.to_ascii_uppercase();
+        let s = s.as_str();
         match s {
             "SELECT" => Token {
                 token_type: TokenType::SELECT,
-                literal: keyword_upper,
+                literal: keyword,
                 line: self.line,
             },
             "FROM" => Token {
                 token_type: TokenType::FROM,
-                literal: keyword_upper,
+                literal: keyword,
                 line: self.line,
             },
             "CREATE" => Token {
                 token_type: TokenType::CREATE,
-                literal: keyword_upper,
+                literal: keyword,
+                line: self.line,
+            },
+            "TEMP" => Token {
+                token_type: TokenType::TEMPORAY,
+                literal: keyword,
+                line: self.line,
+            },
+            "TEMPORAY" => Token {
+                token_type: TokenType::TEMPORAY,
+                literal: keyword,
+                line: self.line,
+            },
+            "FUNCTION" => Token {
+                token_type: TokenType::FUNCTION,
+                literal: keyword,
+                line: self.line,
+            },
+            "RETURNS" => Token {
+                token_type: TokenType::RETURNS,
+                literal: keyword,
+                line: self.line,
+            },
+            "AS" => Token {
+                token_type: TokenType::AS,
+                literal: keyword,
+                line: self.line,
+            },
+            "INT64" => Token {
+                token_type: TokenType::TYPE,
+                literal: keyword,
                 line: self.line,
             },
             _ => Token {
@@ -175,7 +218,7 @@ impl Lexer {
 
 fn is_letter(ch: &Option<char>) -> bool {
     match ch {
-        Some(ch) => ch.is_alphabetic(),
+        Some(ch) => ch.is_alphabetic() || ch.is_digit(10),
         None => false,
     }
 }
@@ -194,7 +237,8 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10 From;"
+            SELECT 10 From;
+            CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
@@ -220,7 +264,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::FROM,
-                literal: "FROM".to_string(),
+                literal: "From".to_string(),
                 line: 1,
             },
             Token {
@@ -229,9 +273,59 @@ mod tests {
                 line: 1,
             },
             Token {
+                token_type: TokenType::CREATE,
+                literal: "CREATE".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::TEMPORAY,
+                literal: "TEMP".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::FUNCTION,
+                literal: "FUNCTION".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::RETURNS,
+                literal: "RETURNS".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::TYPE,
+                literal: "INT64".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::AS,
+                literal: "AS".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::LPAREN,
+                literal: "(".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::INTEGER,
+                literal: "0".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::RPAREN,
+                literal: ")".to_string(),
+                line: 2,
+            },
+            Token {
+                token_type: TokenType::SEMICOLON,
+                literal: ";".to_string(),
+                line: 2,
+            },
+            Token {
                 token_type: TokenType::EOF,
                 literal: "".to_string(),
-                line: 1,
+                line: 2,
             },
         ];
         for t in expected_tokens {
