@@ -1,7 +1,6 @@
 #[derive(PartialEq, Debug)]
 enum TokenType {
     SEMICOLON, // ;
-    SHARP,     // #
     EOF,
     ILLEGAL,
     SELECT,
@@ -19,7 +18,7 @@ enum TokenType {
     RETURNS,
     STRING,
     COMMA,   // ,
-    COMMENT, // --
+    COMMENT, // --, #
     // binary operator
     PLUS,       // +
     MINUS,      // -
@@ -106,11 +105,14 @@ impl Lexer {
                     line: self.line,
                 }
             }
-            '#' => Token {
-                token_type: TokenType::SHARP,
-                literal: ch.to_string(),
-                line: self.line,
-            },
+            '#' => {
+                self.read_char();
+                return Token {
+                    token_type: TokenType::COMMENT,
+                    literal: self.read_comment(),
+                    line: self.line,
+                };
+            }
             '(' => Token {
                 token_type: TokenType::LPAREN,
                 literal: ch.to_string(),
@@ -140,11 +142,12 @@ impl Lexer {
             '-' => {
                 if self.peek_char() == Some('-') {
                     self.read_char();
-                    Token {
+                    self.read_char();
+                    return Token {
                         token_type: TokenType::COMMENT,
-                        literal: "--".to_string(),
+                        literal: self.read_comment(),
                         line: self.line,
-                    }
+                    };
                 } else {
                     Token {
                         token_type: TokenType::MINUS,
@@ -204,7 +207,7 @@ impl Lexer {
         token
     }
     fn read_string(&mut self, quote: Option<char>) -> String {
-        self.read_char();
+        self.read_char(); // skip quotation
         let first_position = self.position;
         while self.ch != quote {
             self.read_char();
@@ -303,6 +306,15 @@ impl Lexer {
             .into_iter()
             .collect()
     }
+    fn read_comment(&mut self) -> String {
+        let first_position = self.position;
+        while !is_end_of_line(&self.ch) {
+            self.read_char();
+        }
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
+    }
 }
 
 fn is_letter(ch: &char) -> bool {
@@ -313,6 +325,13 @@ fn is_digit(ch: &char) -> bool {
     ch.is_digit(10) || ch == &'.'
 }
 
+fn is_end_of_line(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch == &'\n',
+        None => true, // EOF is treated as end of line
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,18 +340,13 @@ mod tests {
         let input = "#standardSQL
             SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3 From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);
-            --"
-        .to_string();
+            -- comment"
+            .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             // line 0
             Token {
-                token_type: TokenType::SHARP,
-                literal: "#".to_string(),
-                line: 0,
-            },
-            Token {
-                token_type: TokenType::IDENT,
+                token_type: TokenType::COMMENT,
                 literal: "standardSQL".to_string(),
                 line: 0,
             },
@@ -501,7 +515,7 @@ mod tests {
             // line3
             Token {
                 token_type: TokenType::COMMENT,
-                literal: "--".to_string(),
+                literal: " comment".to_string(),
                 line: 3,
             },
             Token {
