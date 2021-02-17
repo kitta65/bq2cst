@@ -1,27 +1,31 @@
 #[derive(PartialEq, Debug)]
 enum TokenType {
-    SEMICOLON,
-    SHARP,
+    SEMICOLON, // ;
+    SHARP,     // #
     EOF,
     ILLEGAL,
     SELECT,
     IDENT,
     CREATE,
     FROM,
-    BRANKLINE,
-    IntFloat,
-    TEMPORAY,
+    IntFloat, // 1, 1.1, .9
+    TEMPORAY, // TEMP TEMPORAY
     TABLE,
     AS,
-    TYPE,
-    LPAREN,
-    RPAREN,
+    TYPE,   // INT64, FLOAT64
+    LPAREN, // (
+    RPAREN, // )
     FUNCTION,
     RETURNS,
     STRING,
-    COMMA,
-    COMMENT,
-    MINUS,
+    COMMA,   // ,
+    COMMENT, // --
+    // binary operator
+    PLUS,       // +
+    MINUS,      // -
+    ASTERISC,   // *
+    SLASH,      // /
+    DoublePipe, // ||
 }
 
 #[derive(PartialEq, Debug)]
@@ -127,11 +131,44 @@ impl Lexer {
                 literal: self.read_string(self.ch),
                 line: self.line,
             },
+            // binary operator
+            '+' => Token {
+                token_type: TokenType::PLUS,
+                literal: ch.to_string(),
+                line: self.line,
+            },
             '-' => Token {
                 token_type: TokenType::MINUS,
                 literal: ch.to_string(),
                 line: self.line,
             },
+            '*' => Token {
+                token_type: TokenType::ASTERISC,
+                literal: ch.to_string(),
+                line: self.line,
+            },
+            '/' => Token {
+                token_type: TokenType::SLASH,
+                literal: ch.to_string(),
+                line: self.line,
+            },
+            '|' => {
+                if self.peek_char() == Some('|') {
+                    self.read_char();
+                    Token {
+                        token_type: TokenType::DoublePipe,
+                        literal: "||".to_string(),
+                        line: self.line,
+                    }
+                } else {
+                    Token {
+                        token_type: TokenType::ILLEGAL,
+                        literal: ch.to_string(),
+                        line: self.line,
+                    }
+                }
+            }
+            // other
             _ => {
                 if ch.is_digit(10) {
                     let token_literal = self.read_number();
@@ -271,7 +308,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 1.1, 'aaa', \"bbb\", .9, 1-1 From;
+            SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3 From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
@@ -319,8 +356,8 @@ mod tests {
                 line: 1,
             },
             Token {
-                token_type: TokenType::COMMA,
-                literal: ",".to_string(),
+                token_type: TokenType::DoublePipe,
+                literal: "||".to_string(),
                 line: 1,
             },
             Token {
@@ -356,6 +393,36 @@ mod tests {
             Token {
                 token_type: TokenType::IntFloat,
                 literal: "1".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::PLUS,
+                literal: "+".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "2".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::SLASH,
+                literal: "/".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "2".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::ASTERISC,
+                literal: "*".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "3".to_string(),
                 line: 1,
             },
             Token {
