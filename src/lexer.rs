@@ -20,6 +20,8 @@ enum TokenType {
     RETURNS,
     STRING,
     COMMA,
+    COMMENT,
+    MINUS,
 }
 
 #[derive(PartialEq, Debug)]
@@ -93,11 +95,13 @@ impl Lexer {
                 literal: ch.to_string(),
                 line: self.line,
             },
-            '.' => Token {
-                token_type: TokenType::IntFloat,
-                literal: self.read_number(),
-                line: self.line,
-            },
+            '.' => {
+                return Token {
+                    token_type: TokenType::IntFloat,
+                    literal: self.read_number(),
+                    line: self.line,
+                }
+            }
             '#' => Token {
                 token_type: TokenType::SHARP,
                 literal: ch.to_string(),
@@ -123,6 +127,11 @@ impl Lexer {
                 literal: self.read_string(self.ch),
                 line: self.line,
             },
+            '-' => Token {
+                token_type: TokenType::MINUS,
+                literal: ch.to_string(),
+                line: self.line,
+            },
             _ => {
                 if ch.is_digit(10) {
                     let token_literal = self.read_number();
@@ -130,7 +139,7 @@ impl Lexer {
                         token_type: TokenType::IntFloat,
                         literal: token_literal,
                         line: self.line,
-                    }
+                    };
                 } else if is_letter(&self.ch.unwrap()) {
                     let token_literal = self.read_identifier();
                     return self.lookup_keyword(token_literal); // note: the ownerwhip moves
@@ -152,8 +161,9 @@ impl Lexer {
         while self.ch != quote {
             self.read_char();
         }
-        self.input[first_position..self.position].into_iter().collect()
-
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
     }
     fn skip_whitespaces(&mut self) {
         while self.skip_whitespace() {
@@ -255,18 +265,18 @@ fn is_digit(ch: &char) -> bool {
     ch.is_digit(10) || ch == &'.'
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 1.1, 'aaa', \"bbb\", .9 From;
+            SELECT 10, 1.1, 'aaa', \"bbb\", .9, 1-1 From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
+            // line 0
             Token {
                 token_type: TokenType::SHARP,
                 literal: "#".to_string(),
@@ -277,6 +287,7 @@ mod tests {
                 literal: "standardSQL".to_string(),
                 line: 0,
             },
+            // line 1
             Token {
                 token_type: TokenType::SELECT,
                 literal: "SELECT".to_string(),
@@ -328,6 +339,26 @@ mod tests {
                 line: 1,
             },
             Token {
+                token_type: TokenType::COMMA,
+                literal: ",".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "1".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::MINUS,
+                literal: "-".to_string(),
+                line: 1,
+            },
+            Token {
+                token_type: TokenType::IntFloat,
+                literal: "1".to_string(),
+                line: 1,
+            },
+            Token {
                 token_type: TokenType::FROM,
                 literal: "From".to_string(),
                 line: 1,
@@ -337,6 +368,7 @@ mod tests {
                 literal: ";".to_string(),
                 line: 1,
             },
+            // line 2
             Token {
                 token_type: TokenType::CREATE,
                 literal: "CREATE".to_string(),
