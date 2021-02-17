@@ -63,7 +63,7 @@ impl Lexer {
     }
     fn read_identifier(&mut self) -> String {
         let first_position = self.position;
-        while is_letter(&self.ch) {
+        while is_letter(&self.ch.unwrap()) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -126,7 +126,7 @@ impl Lexer {
                         literal: token_literal,
                         line: self.line,
                     }
-                } else if is_letter(&self.ch) {
+                } else if is_letter(&self.ch.unwrap()) {
                     let token_literal = self.read_identifier();
                     return self.lookup_keyword(token_literal); // note: the ownerwhip moves
                 } else {
@@ -233,7 +233,7 @@ impl Lexer {
     }
     fn read_number(&mut self) -> String {
         let first_position = self.position;
-        while is_digit(&self.ch) {
+        while is_digit(&self.ch.unwrap()) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -242,18 +242,12 @@ impl Lexer {
     }
 }
 
-fn is_letter(ch: &Option<char>) -> bool {
-    match ch {
-        Some(ch) => ch.is_alphabetic() || ch.is_digit(10),
-        None => false,
-    }
+fn is_letter(ch: &char) -> bool {
+    ch.is_alphabetic() || ch.is_digit(10)
 }
 
-fn is_digit(ch: &Option<char>) -> bool {
-    match ch {
-        Some(ch) => ch.is_digit(10),
-        None => false,
-    }
+fn is_digit(ch: &char) -> bool {
+    ch.is_digit(10)
 }
 
 
@@ -263,7 +257,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 'aaa', \"bbb\" From;
+            SELECT 10,'aaa', \"bbb\" From;
             CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
             .to_string();
         let mut l = Lexer::new(input);
