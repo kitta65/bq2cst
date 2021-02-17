@@ -137,11 +137,22 @@ impl Lexer {
                 literal: ch.to_string(),
                 line: self.line,
             },
-            '-' => Token {
-                token_type: TokenType::MINUS,
-                literal: ch.to_string(),
-                line: self.line,
-            },
+            '-' => {
+                if self.peek_char() == Some('-') {
+                    self.read_char();
+                    Token {
+                        token_type: TokenType::COMMENT,
+                        literal: "--".to_string(),
+                        line: self.line,
+                    }
+                } else {
+                    Token {
+                        token_type: TokenType::MINUS,
+                        literal: ch.to_string(),
+                        line: self.line,
+                    }
+                }
+            }
             '*' => Token {
                 token_type: TokenType::ASTERISC,
                 literal: ch.to_string(),
@@ -309,8 +320,9 @@ mod tests {
     fn test_next_token() {
         let input = "#standardSQL
             SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3 From;
-            CREATE TEMP FUNCTION RETURNS INT64 AS (0);"
-            .to_string();
+            CREATE TEMP FUNCTION RETURNS INT64 AS (0);
+            --"
+        .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             // line 0
@@ -486,10 +498,16 @@ mod tests {
                 literal: ";".to_string(),
                 line: 2,
             },
+            // line3
+            Token {
+                token_type: TokenType::COMMENT,
+                literal: "--".to_string(),
+                line: 3,
+            },
             Token {
                 token_type: TokenType::EOF,
                 literal: "".to_string(),
-                line: 2,
+                line: 3,
             },
         ];
         for t in expected_tokens {
