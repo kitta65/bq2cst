@@ -61,7 +61,7 @@ impl Lexer {
             .collect()
     }
     fn next_token(&mut self) -> Token {
-        self.skip_whitespace();
+        self.skip_whitespaces();
         let ch = match self.ch {
             Some(ch) => ch,
             None => {
@@ -93,9 +93,10 @@ impl Lexer {
                     let token_literal = self.read_identifier();
                     return self.lookup_keyword(token_literal); // note: the ownerwhip moves
                 } else if ch.is_digit(10) {
+                    let token_literal = self.read_number();
                     Token {
                         token_type: TokenType::INTEGER,
-                        literal: ch.to_string(),
+                        literal: token_literal,
                         line: self.line,
                     }
                 } else {
@@ -110,12 +111,12 @@ impl Lexer {
         self.read_char();
         token
     }
-    fn skip_whitespace(&mut self) {
-        while self.is_whitespace() {
+    fn skip_whitespaces(&mut self) {
+        while self.skip_whitespace() {
             self.read_char();
         }
     }
-    fn is_whitespace(&mut self) -> bool {
+    fn skip_whitespace(&mut self) -> bool {
         let ch = match self.ch {
             Some(ch) => ch,
             None => return false,
@@ -161,11 +162,27 @@ impl Lexer {
             },
         }
     }
+    fn read_number(&mut self) -> String {
+        let first_position = self.position;
+        while is_digit(&self.ch) {
+            self.read_char();
+        }
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
+    }
 }
 
 fn is_letter(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch.is_alphabetic(),
+        None => false,
+    }
+}
+
+fn is_digit(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_digit(10),
         None => false,
     }
 }
@@ -177,7 +194,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 1 From;"
+            SELECT 10 From;"
             .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
@@ -198,7 +215,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::INTEGER,
-                literal: "1".to_string(),
+                literal: "10".to_string(),
                 line: 1,
             },
             Token {
