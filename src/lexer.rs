@@ -1,39 +1,8 @@
 #[derive(PartialEq, Debug)]
-enum TokenType {
-    SEMICOLON, // ;
-    EOF,
-    ILLEGAL,
-    SELECT,
-    IDENT,
-    CREATE,
-    FROM,
-    IntFloat, // 1, 1.1, .9
-    TEMPORAY, // TEMP TEMPORAY
-    TABLE,
-    AS,
-    TYPE,   // INT64, FLOAT64
-    LPAREN, // (
-    RPAREN, // )
-    FUNCTION,
-    RETURNS,
-    STRING,
-    COMMA,   // ,
-    COMMENT, // --, #
-    DATE,
-    TIMESTAMP,
-    // binary operator
-    PLUS,       // +
-    MINUS,      // -
-    ASTERISC,   // *
-    SLASH,      // /
-    DoublePipe, // ||
-}
-
-#[derive(PartialEq, Debug)]
 struct Token {
-    token_type: TokenType,
-    literal: String,
     line: usize,
+    column: usize,
+    literal: String,
 }
 
 struct Lexer {
@@ -42,6 +11,7 @@ struct Lexer {
     read_position: usize,
     ch: Option<char>,
     line: usize,
+    column: usize,
 }
 
 impl Lexer {
@@ -57,6 +27,7 @@ impl Lexer {
             read_position: 1,
             ch: Some(first_char),
             line: 0,
+            column: 0,
         }
     }
     fn read_char(&mut self) {
@@ -65,12 +36,18 @@ impl Lexer {
         } else {
             self.ch = Some(self.input[self.read_position]);
         }
+        if self.input[self.position] == '\n' {
+            self.column = 0;
+            self.line += 1;
+        } else {
+            self.column += 1;
+        }
         self.position = self.read_position;
         self.read_position += 1;
     }
     fn read_identifier(&mut self) -> String {
         let first_position = self.position;
-        while is_letter(&self.ch.unwrap()) {
+        while is_letter_or_digit(&self.ch) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -78,129 +55,149 @@ impl Lexer {
             .collect()
     }
     fn next_token(&mut self) -> Token {
-        self.skip_whitespaces();
+        self.skip_whitespace();
         let ch = match self.ch {
             Some(ch) => ch,
             None => {
                 return Token {
-                    token_type: TokenType::EOF,
-                    literal: "".to_string(),
+                    literal: "".to_string(), // EOF
                     line: self.line,
-                }
+                    column: self.column,
+                };
             }
         };
         let token = match ch {
             ',' => Token {
-                token_type: TokenType::COMMA,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             ';' => Token {
-                token_type: TokenType::SEMICOLON,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             '.' => {
-                return Token {
-                    token_type: TokenType::IntFloat,
-                    literal: self.read_number(),
-                    line: self.line,
+                let next_ch = self.peek_char().unwrap();
+                if next_ch == '`' || next_ch.is_alphabetic() {
+                    Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                } else {
+                    return Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_number(),
+                    };
                 }
             }
             '#' => {
-                self.read_char();
                 return Token {
-                    token_type: TokenType::COMMENT,
-                    literal: self.read_comment(),
                     line: self.line,
+                    column: self.column,
+                    literal: self.read_comment(),
                 };
             }
             '(' => Token {
-                token_type: TokenType::LPAREN,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             ')' => Token {
-                token_type: TokenType::RPAREN,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
-            '"' => Token {
-                token_type: TokenType::STRING,
-                literal: self.read_string(self.ch),
-                line: self.line,
-            },
-            '\'' => Token {
-                token_type: TokenType::STRING,
-                literal: self.read_string(self.ch),
-                line: self.line,
-            },
+            // quotation
+            '`' => {
+                return Token {
+                    line: self.line,
+                    column: self.column,
+                    literal: self.read_quoted(self.ch),
+                }
+            }
+            '"' => {
+                return Token {
+                    line: self.line,
+                    column: self.column,
+                    literal: self.read_quoted(self.ch),
+                }
+            }
+            '\'' => {
+                return Token {
+                    line: self.line,
+                    column: self.column,
+                    literal: self.read_quoted(self.ch),
+                }
+            }
             // binary operator
             '+' => Token {
-                token_type: TokenType::PLUS,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             '-' => {
                 if self.peek_char() == Some('-') {
-                    self.read_char();
-                    self.read_char();
                     return Token {
-                        token_type: TokenType::COMMENT,
-                        literal: self.read_comment(),
                         line: self.line,
+                        column: self.column,
+                        literal: self.read_comment(),
                     };
                 } else {
                     Token {
-                        token_type: TokenType::MINUS,
                         literal: ch.to_string(),
                         line: self.line,
+                        column: self.column,
                     }
                 }
             }
             '*' => Token {
-                token_type: TokenType::ASTERISC,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             '/' => Token {
-                token_type: TokenType::SLASH,
                 literal: ch.to_string(),
                 line: self.line,
+                column: self.column,
             },
             '|' => {
                 if self.peek_char() == Some('|') {
                     self.read_char();
                     Token {
-                        token_type: TokenType::DoublePipe,
-                        literal: "||".to_string(),
                         line: self.line,
+                        column: self.column - 1,
+                        literal: "||".to_string(),
                     }
                 } else {
                     Token {
-                        token_type: TokenType::ILLEGAL,
                         literal: ch.to_string(),
                         line: self.line,
+                        column: self.column,
                     }
                 }
             }
             // other
             _ => {
                 if ch.is_digit(10) {
-                    let token_literal = self.read_number();
                     return Token {
-                        token_type: TokenType::IntFloat,
-                        literal: token_literal,
                         line: self.line,
+                        column: self.column,
+                        literal: self.read_number(),
                     };
-                } else if is_letter(&self.ch.unwrap()) {
-                    let token_literal = self.read_identifier();
-                    return self.lookup_keyword(token_literal); // note: the ownerwhip moves
+                } else if is_letter_or_digit(&self.ch) {
+                    return Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_identifier(),
+                    }; // note: the ownerwhip moves
                 } else {
                     Token {
-                        token_type: TokenType::ILLEGAL,
                         literal: ch.to_string(),
                         line: self.line,
+                        column: self.column,
                     }
                 }
             }
@@ -208,32 +205,20 @@ impl Lexer {
         self.read_char();
         token
     }
-    fn read_string(&mut self, quote: Option<char>) -> String {
-        self.read_char(); // skip quotation
+    fn read_quoted(&mut self, quote: Option<char>) -> String {
         let first_position = self.position;
+        self.read_char();
         while self.ch != quote {
             self.read_char();
         }
+        self.read_char();
         self.input[first_position..self.position]
             .into_iter()
             .collect()
     }
-    fn skip_whitespaces(&mut self) {
-        while self.skip_whitespace() {
+    fn skip_whitespace(&mut self) {
+        while is_whitespace(&self.ch) {
             self.read_char();
-        }
-    }
-    fn skip_whitespace(&mut self) -> bool {
-        let ch = match self.ch {
-            Some(ch) => ch,
-            None => return false,
-        };
-        match ch {
-            '\n' => {
-                self.line += 1;
-                true
-            }
-            _ => ch.is_whitespace(),
         }
     }
     fn peek_char(&mut self) -> Option<char> {
@@ -243,75 +228,9 @@ impl Lexer {
             Some(self.input[self.read_position])
         }
     }
-    fn lookup_keyword(&self, keyword: String) -> Token {
-        let s = keyword.to_ascii_uppercase();
-        let s = s.as_str();
-        match s {
-            "SELECT" => Token {
-                token_type: TokenType::SELECT,
-                literal: keyword,
-                line: self.line,
-            },
-            "FROM" => Token {
-                token_type: TokenType::FROM,
-                literal: keyword,
-                line: self.line,
-            },
-            "CREATE" => Token {
-                token_type: TokenType::CREATE,
-                literal: keyword,
-                line: self.line,
-            },
-            "TEMP" => Token {
-                token_type: TokenType::TEMPORAY,
-                literal: keyword,
-                line: self.line,
-            },
-            "TEMPORAY" => Token {
-                token_type: TokenType::TEMPORAY,
-                literal: keyword,
-                line: self.line,
-            },
-            "FUNCTION" => Token {
-                token_type: TokenType::FUNCTION,
-                literal: keyword,
-                line: self.line,
-            },
-            "RETURNS" => Token {
-                token_type: TokenType::RETURNS,
-                literal: keyword,
-                line: self.line,
-            },
-            "AS" => Token {
-                token_type: TokenType::AS,
-                literal: keyword,
-                line: self.line,
-            },
-            "INT64" => Token {
-                token_type: TokenType::TYPE,
-                literal: keyword,
-                line: self.line,
-            },
-            "DATE" => Token {
-                token_type: TokenType::DATE,
-                literal: keyword,
-                line: self.line,
-            },
-            "TIMESTAMP" => Token {
-                token_type: TokenType::TIMESTAMP,
-                literal: keyword,
-                line: self.line,
-            },
-            _ => Token {
-                token_type: TokenType::IDENT,
-                literal: keyword,
-                line: self.line,
-            },
-        }
-    }
     fn read_number(&mut self) -> String {
         let first_position = self.position;
-        while is_digit(&self.ch.unwrap()) {
+        while is_digit_or_period(&self.ch) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -329,17 +248,30 @@ impl Lexer {
     }
 }
 
-fn is_letter(ch: &char) -> bool {
-    ch.is_alphabetic() || ch.is_digit(10)
+fn is_letter_or_digit(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_alphabetic() || ch.is_digit(10) || ch == &'_',
+        None => false,
+    }
 }
 
-fn is_digit(ch: &char) -> bool {
-    ch.is_digit(10) || ch == &'.'
+fn is_digit_or_period(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_digit(10) || ch == &'.',
+        None => false,
+    }
 }
 
 fn is_end_of_line(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch == &'\n',
+        None => true, // EOF is treated as end of line
+    }
+}
+
+fn is_whitespace(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_whitespace(),
         None => true, // EOF is treated as end of line
     }
 }
@@ -350,262 +282,228 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-            SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01' From;
-            CREATE TEMP FUNCTION RETURNS INT64 AS (0);
-            -- comment"
-            .to_string();
+SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour)
+From `data`; -- comment
+--"
+        .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<Token> = vec![
             // line 0
             Token {
-                token_type: TokenType::COMMENT,
-                literal: "standardSQL".to_string(),
                 line: 0,
+                column: 0,
+                literal: "#standardSQL".to_string(),
             },
             // line 1
             Token {
-                token_type: TokenType::SELECT,
+                line: 1,
+                column: 0,
                 literal: "SELECT".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 7,
                 literal: "10".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 9,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 11,
                 literal: "1.1".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 14,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::STRING,
-                literal: "aaa".to_string(),
                 line: 1,
+                column: 16,
+                literal: "'aaa'".to_string(),
             },
             Token {
-                token_type: TokenType::DoublePipe,
+                line: 1,
+                column: 22,
                 literal: "||".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::STRING,
-                literal: "bbb".to_string(),
                 line: 1,
+                column: 25,
+                literal: "\"bbb\"".to_string(),
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 30,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 32,
                 literal: ".9".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 34,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 36,
                 literal: "1".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::MINUS,
+                line: 1,
+                column: 37,
                 literal: "-".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 38,
                 literal: "1".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::PLUS,
+                line: 1,
+                column: 39,
                 literal: "+".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 40,
                 literal: "2".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::SLASH,
+                line: 1,
+                column: 41,
                 literal: "/".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 42,
                 literal: "2".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::ASTERISC,
+                line: 1,
+                column: 43,
                 literal: "*".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::IntFloat,
+                line: 1,
+                column: 44,
                 literal: "3".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 45,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::DATE,
+                line: 1,
+                column: 47,
                 literal: "date".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::STRING,
-                literal: "2000-01-01".to_string(),
                 line: 1,
+                column: 52,
+                literal: "'2000-01-01'".to_string(),
             },
             Token {
-                token_type: TokenType::COMMA,
+                line: 1,
+                column: 64,
                 literal: ",".to_string(),
-                line: 1,
             },
             Token {
-                token_type: TokenType::TIMESTAMP,
+                line: 1,
+                column: 66,
                 literal: "timestamp".to_string(),
+            },
+            Token {
                 line: 1,
+                column: 76,
+                literal: "'2000-01-01'".to_string(),
             },
             Token {
-                token_type: TokenType::STRING,
-                literal: "2000-01-01".to_string(),
                 line: 1,
+                column: 88,
+                literal: ",".to_string(),
             },
             Token {
-                token_type: TokenType::FROM,
-                literal: "From".to_string(),
                 line: 1,
+                column: 89,
+                literal: "col1".to_string(),
             },
             Token {
-                token_type: TokenType::SEMICOLON,
-                literal: ";".to_string(),
                 line: 1,
-            },
-            // line 2
-            Token {
-                token_type: TokenType::CREATE,
-                literal: "CREATE".to_string(),
-                line: 2,
+                column: 93,
+                literal: ",".to_string(),
             },
             Token {
-                token_type: TokenType::TEMPORAY,
-                literal: "TEMP".to_string(),
-                line: 2,
+                line: 1,
+                column: 94,
+                literal: "date_add".to_string(),
             },
             Token {
-                token_type: TokenType::FUNCTION,
-                literal: "FUNCTION".to_string(),
-                line: 2,
-            },
-            Token {
-                token_type: TokenType::RETURNS,
-                literal: "RETURNS".to_string(),
-                line: 2,
-            },
-            Token {
-                token_type: TokenType::TYPE,
-                literal: "INT64".to_string(),
-                line: 2,
-            },
-            Token {
-                token_type: TokenType::AS,
-                literal: "AS".to_string(),
-                line: 2,
-            },
-            Token {
-                token_type: TokenType::LPAREN,
+                line: 1,
+                column: 102,
                 literal: "(".to_string(),
-                line: 2,
             },
             Token {
-                token_type: TokenType::IntFloat,
-                literal: "0".to_string(),
-                line: 2,
+                line: 1,
+                column: 103,
+                literal: "col1".to_string(),
             },
             Token {
-                token_type: TokenType::RPAREN,
+                line: 1,
+                column: 107,
+                literal: ",".to_string(),
+            },
+            Token {
+                line: 1,
+                column: 109,
+                literal: "interval".to_string(),
+            },
+            Token {
+                line: 1,
+                column: 118,
+                literal: "9".to_string(),
+            },
+            Token {
+                line: 1,
+                column: 120,
+                literal: "hour".to_string(),
+            },
+            Token {
+                line: 1,
+                column: 124,
                 literal: ")".to_string(),
+            },
+            // line2
+            Token {
                 line: 2,
+                column: 0,
+                literal: "From".to_string(),
             },
             Token {
-                token_type: TokenType::SEMICOLON,
+                line: 2,
+                column: 5,
+                literal: "`data`".to_string(),
+            },
+            Token {
+                line: 2,
+                column: 11,
                 literal: ";".to_string(),
+            },
+            Token {
                 line: 2,
-            },
-            // line3
-            Token {
-                token_type: TokenType::COMMENT,
-                literal: " comment".to_string(),
-                line: 3,
-            },
-            Token {
-                token_type: TokenType::EOF,
-                literal: "".to_string(),
-                line: 3,
+                column: 13,
+                literal: "-- comment".to_string(),
             },
         ];
         for t in expected_tokens {
             assert_eq!(l.next_token(), t);
         }
-    }
-
-    #[test]
-    fn test_surrogate() {
-        let code = "𩸽";
-        for c in code.chars() {
-            assert_eq!(c, '𩸽'); // treated as one character
-        }
-    }
-
-    #[test]
-    fn test_chars2string() {
-        let chars = vec!['#', ';', 'S', 'E', 'L', 'E', 'C', 'T'];
-        let str: String = chars[0..2].into_iter().collect();
-        assert_eq!(str, "#;".to_string());
-    }
-
-    #[test]
-    fn test_is_letter() {
-        assert!('a'.is_alphabetic());
-        assert!('z'.is_alphabetic());
-        assert!('𩸽'.is_alphabetic());
-        assert!(!';'.is_alphabetic());
-        assert!(';'.is_ascii());
-        assert!('z'.is_ascii());
-        assert!('0'.is_numeric());
-        assert!('0'.is_ascii());
-        assert!(!'0'.is_alphabetic());
-        assert!(!'9'.is_alphabetic());
-    }
-
-    #[test]
-    fn test_cr() {
-        assert_eq!(
-            "
-",
-            "\n"
-        )
     }
 }
