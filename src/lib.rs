@@ -1,5 +1,5 @@
-mod utils;
 mod lexer;
+mod token;
 
 use wasm_bindgen::prelude::*;
 

@@ -1,9 +1,4 @@
-#[derive(PartialEq, Debug)]
-struct Token {
-    line: usize,
-    column: usize,
-    literal: String,
-}
+use crate::token;
 
 struct Lexer {
     input: Vec<char>,
@@ -54,12 +49,12 @@ impl Lexer {
             .into_iter()
             .collect()
     }
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> token::Token {
         self.skip_whitespace();
         let ch = match self.ch {
             Some(ch) => ch,
             None => {
-                return Token {
+                return token::Token {
                     literal: "".to_string(), // EOF
                     line: self.line,
                     column: self.column,
@@ -67,12 +62,12 @@ impl Lexer {
             }
         };
         let token = match ch {
-            ',' => Token {
+            ',' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
             },
-            ';' => Token {
+            ';' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
@@ -80,13 +75,13 @@ impl Lexer {
             '.' => {
                 let next_ch = self.peek_char().unwrap();
                 if next_ch == '`' || next_ch.is_alphabetic() {
-                    Token {
+                    token::Token {
                         line: self.line,
                         column: self.column,
                         literal: ch.to_string(),
                     }
                 } else {
-                    return Token {
+                    return token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
@@ -94,71 +89,71 @@ impl Lexer {
                 }
             }
             '#' => {
-                return Token {
+                return token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_comment(),
                 };
             }
-            '(' => Token {
+            '(' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
             },
-            ')' => Token {
+            ')' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
             },
             // quotation
             '`' => {
-                return Token {
+                return token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
                 }
             }
             '"' => {
-                return Token {
+                return token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
                 }
             }
             '\'' => {
-                return Token {
+                return token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
                 }
             }
             // binary operator
-            '+' => Token {
+            '+' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
             },
             '-' => {
                 if self.peek_char() == Some('-') {
-                    return Token {
+                    return token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_comment(),
                     };
                 } else {
-                    Token {
+                    token::Token {
                         literal: ch.to_string(),
                         line: self.line,
                         column: self.column,
                     }
                 }
             }
-            '*' => Token {
+            '*' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
             },
-            '/' => Token {
+            '/' => token::Token {
                 literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
@@ -166,13 +161,13 @@ impl Lexer {
             '|' => {
                 if self.peek_char() == Some('|') {
                     self.read_char();
-                    Token {
+                    token::Token {
                         line: self.line,
                         column: self.column - 1,
                         literal: "||".to_string(),
                     }
                 } else {
-                    Token {
+                    token::Token {
                         literal: ch.to_string(),
                         line: self.line,
                         column: self.column,
@@ -182,19 +177,19 @@ impl Lexer {
             // other
             _ => {
                 if ch.is_digit(10) {
-                    return Token {
+                    return token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
                     };
                 } else if is_letter_or_digit(&self.ch) {
-                    return Token {
+                    return token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_identifier(),
                     }; // note: the ownerwhip moves
                 } else {
-                    Token {
+                    token::Token {
                         literal: ch.to_string(),
                         line: self.line,
                         column: self.column,
@@ -287,216 +282,216 @@ From `data`; -- comment
 --"
         .to_string();
         let mut l = Lexer::new(input);
-        let expected_tokens: Vec<Token> = vec![
+        let expected_tokens: Vec<token::Token> = vec![
             // line 0
-            Token {
+            token::Token {
                 line: 0,
                 column: 0,
                 literal: "#standardSQL".to_string(),
             },
             // line 1
-            Token {
+            token::Token {
                 line: 1,
                 column: 0,
                 literal: "SELECT".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 7,
                 literal: "10".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 9,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 11,
                 literal: "1.1".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 14,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 16,
                 literal: "'aaa'".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 22,
                 literal: "||".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 25,
                 literal: "\"bbb\"".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 30,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 32,
                 literal: ".9".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 34,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 36,
                 literal: "1".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 37,
                 literal: "-".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 38,
                 literal: "1".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 39,
                 literal: "+".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 40,
                 literal: "2".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 41,
                 literal: "/".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 42,
                 literal: "2".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 43,
                 literal: "*".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 44,
                 literal: "3".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 45,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 47,
                 literal: "date".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 52,
                 literal: "'2000-01-01'".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 64,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 66,
                 literal: "timestamp".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 76,
                 literal: "'2000-01-01'".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 88,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 89,
                 literal: "col1".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 93,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 94,
                 literal: "date_add".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 102,
                 literal: "(".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 103,
                 literal: "col1".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 107,
                 literal: ",".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 109,
                 literal: "interval".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 118,
                 literal: "9".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 120,
                 literal: "hour".to_string(),
             },
-            Token {
+            token::Token {
                 line: 1,
                 column: 124,
                 literal: ")".to_string(),
             },
             // line2
-            Token {
+            token::Token {
                 line: 2,
                 column: 0,
                 literal: "From".to_string(),
             },
-            Token {
+            token::Token {
                 line: 2,
                 column: 5,
                 literal: "`data`".to_string(),
             },
-            Token {
+            token::Token {
                 line: 2,
                 column: 11,
                 literal: ";".to_string(),
             },
-            Token {
+            token::Token {
                 line: 2,
                 column: 13,
                 literal: "-- comment".to_string(),
