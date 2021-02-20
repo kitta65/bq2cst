@@ -1,4 +1,4 @@
-mod ast;
+mod cst;
 mod lexer;
 mod parser;
 mod token;

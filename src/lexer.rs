@@ -49,16 +49,12 @@ impl Lexer {
             .into_iter()
             .collect()
     }
-    fn next_token(&mut self) -> token::Token {
+    fn next_token(&mut self) -> Option<token::Token> {
         self.skip_whitespace();
         let ch = match self.ch {
             Some(ch) => ch,
             None => {
-                return token::Token {
-                    literal: "".to_string(), // EOF
-                    line: self.line,
-                    column: self.column,
-                };
+                return None;
             }
         };
         let token = match ch {
@@ -81,19 +77,19 @@ impl Lexer {
                         literal: ch.to_string(),
                     }
                 } else {
-                    return token::Token {
+                    return Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
-                    };
+                    });
                 }
             }
             '#' => {
-                return token::Token {
+                return Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_comment(),
-                };
+                });
             }
             '(' => token::Token {
                 literal: ch.to_string(),
@@ -107,25 +103,25 @@ impl Lexer {
             },
             // quotation
             '`' => {
-                return token::Token {
+                return Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
-                }
+                })
             }
             '"' => {
-                return token::Token {
+                return Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
-                }
+                })
             }
             '\'' => {
-                return token::Token {
+                return Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
-                }
+                })
             }
             // binary operator
             '+' => token::Token {
@@ -135,11 +131,11 @@ impl Lexer {
             },
             '-' => {
                 if self.peek_char() == Some('-') {
-                    return token::Token {
+                    return Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_comment(),
-                    };
+                    });
                 } else {
                     token::Token {
                         literal: ch.to_string(),
@@ -177,17 +173,17 @@ impl Lexer {
             // other
             _ => {
                 if ch.is_digit(10) {
-                    return token::Token {
+                    return Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
-                    };
+                    });
                 } else if is_letter_or_digit(&self.ch) {
-                    return token::Token {
+                    return Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_identifier(),
-                    }; // note: the ownerwhip moves
+                    }); // note: the ownerwhip moves
                 } else {
                     token::Token {
                         literal: ch.to_string(),
@@ -198,7 +194,7 @@ impl Lexer {
             }
         };
         self.read_char();
-        token
+        Some(token)
     }
     fn read_quoted(&mut self, quote: Option<char>) -> String {
         let first_position = self.position;
@@ -498,7 +494,7 @@ From `data`; -- comment
             },
         ];
         for t in expected_tokens {
-            assert_eq!(l.next_token(), t);
+            assert_eq!(l.next_token().unwrap(), t);
         }
     }
 }
