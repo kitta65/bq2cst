@@ -26,9 +26,7 @@ impl Lexer {
         }
     }
     fn read_char(&mut self) {
-        if self.input.len() < self.read_position {
-            panic!() // exceed input length
-        } else if self.input.len() == self.read_position {
+        if self.input.len() <= self.read_position {
             self.ch = None;
         } else {
             self.ch = Some(self.input[self.read_position]);

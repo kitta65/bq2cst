@@ -19,16 +19,23 @@ impl Parser {
             leading_comments: Vec::new(),
         }
     }
+    fn next_token(&mut self) {
+        self.cur_token = match self.peek_token.clone() {
+            Some(token) => Some(token),
+            None => None,
+        };
+        self.peek_token = self.lexer.next_token();
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
-    fn test_new() {
-        let input = "select * from data;".to_string();
+    fn test_next_token() {
+        let input = "select *;".to_string();
         let l = lexer::Lexer::new(input);
-        let p = Parser::new(l);
+        let mut p = Parser::new(l);
         assert_eq!(p.cur_token, Some(token::Token {
             line: 0,
             column: 0,
@@ -39,5 +46,23 @@ mod tests {
             column: 7,
             literal: "*".to_string(),
         }));
+        p.next_token();
+        assert_eq!(p.cur_token, Some(token::Token {
+            line: 0,
+            column: 7,
+            literal: "*".to_string(),
+        }));
+        assert_eq!(p.peek_token, Some(token::Token {
+            line: 0,
+            column: 8,
+            literal: ";".to_string(),
+        }));
+        //p.next_token();
+        //assert_eq!(p.cur_token, Some(token::Token {
+        //    line: 0,
+        //    column: 8,
+        //    literal: ";".to_string(),
+        //}));
+        //assert_eq!(p.peek_token, None);
     }
 }
