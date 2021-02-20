@@ -1,5 +1,5 @@
 # bq2ast
-comming soon
+not ready to use. don't use!
 
 ## memo
 
@@ -20,5 +20,3 @@ npm install @dr666m1/bq2ast
 const parser = require("@dr666m1/bq2ast");
 ```
 
-## link
-- [export struct with String](https://github.com/rustwasm/wasm-bindgen/issues/1775)
