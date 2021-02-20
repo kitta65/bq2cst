@@ -7,6 +7,7 @@ pub enum Children {
 }
 
 pub struct Node {
-    token: token::Token,
-    children: HashMap<String, Children>,
+    pub token: token::Token,
+    pub children: HashMap<String, Children>,
 }
+
