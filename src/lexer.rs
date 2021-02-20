@@ -26,16 +26,18 @@ impl Lexer {
         }
     }
     fn read_char(&mut self) {
-        if self.input.len() <= self.read_position {
+        if self.input.len() < self.read_position {
+            panic!() // exceed input length
+        } else if self.input.len() == self.read_position {
             self.ch = None;
         } else {
             self.ch = Some(self.input[self.read_position]);
-        }
-        if self.input[self.position] == '\n' {
-            self.column = 0;
-            self.line += 1;
-        } else {
-            self.column += 1;
+            if self.input[self.position] == '\n' {
+                self.column = 0;
+                self.line += 1;
+            } else {
+                self.column += 1;
+            }
         }
         self.position = self.read_position;
         self.read_position += 1;
@@ -138,21 +140,21 @@ impl Lexer {
                     });
                 } else {
                     token::Token {
-                        literal: ch.to_string(),
                         line: self.line,
                         column: self.column,
+                        literal: ch.to_string(),
                     }
                 }
             }
             '*' => token::Token {
-                literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
+                literal: ch.to_string(),
             },
             '/' => token::Token {
-                literal: ch.to_string(),
                 line: self.line,
                 column: self.column,
+                literal: ch.to_string(),
             },
             '|' => {
                 if self.peek_char() == Some('|') {
@@ -164,9 +166,9 @@ impl Lexer {
                     }
                 } else {
                     token::Token {
-                        literal: ch.to_string(),
                         line: self.line,
                         column: self.column,
+                        literal: ch.to_string(),
                     }
                 }
             }
@@ -275,7 +277,7 @@ mod tests {
         let input = "#standardSQL
 SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour)
 From `data`; -- comment
---"
+-- "
         .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<token::Token> = vec![
@@ -492,9 +494,16 @@ From `data`; -- comment
                 column: 13,
                 literal: "-- comment".to_string(),
             },
+            // line3
+            token::Token {
+                line: 3,
+                column: 0,
+                literal: "-- ".to_string(),
+            },
         ];
         for t in expected_tokens {
             assert_eq!(l.next_token().unwrap(), t);
         }
+        assert_eq!(l.ch, None);
     }
 }
