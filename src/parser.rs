@@ -57,12 +57,12 @@ mod tests {
             column: 8,
             literal: ";".to_string(),
         }));
-        //p.next_token();
-        //assert_eq!(p.cur_token, Some(token::Token {
-        //    line: 0,
-        //    column: 8,
-        //    literal: ";".to_string(),
-        //}));
-        //assert_eq!(p.peek_token, None);
+        p.next_token();
+        assert_eq!(p.cur_token, Some(token::Token {
+            line: 0,
+            column: 8,
+            literal: ";".to_string(),
+        }));
+        assert_eq!(p.peek_token, None);
     }
 }

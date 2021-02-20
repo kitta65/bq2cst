@@ -263,7 +263,7 @@ fn is_end_of_line(ch: &Option<char>) -> bool {
 fn is_whitespace(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch.is_whitespace(),
-        None => true, // EOF is treated as end of line
+        None => false, // EOF is treated as end of line
     }
 }
 
