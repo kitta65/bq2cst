@@ -192,13 +192,21 @@ mod tests {
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
-        test_parse_select_statement(&stmt[0], false)
+        test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
     }
-    fn test_parse_select_statement(stmt: &cst::Node, distinct: bool) {
+    fn test_parse_select_statement(stmt: &cst::Node, distinct: bool, columns: Vec<String>) {
         if distinct {
-            assert!(stmt.children.contains_key(&"DISTINCT".to_string()))
+            assert!(stmt.children.contains_key(&"DISTINCT".to_string()));
         } else {
-            assert!(!stmt.children.contains_key(&"DISTINCT".to_string()))
+            assert!(!stmt.children.contains_key(&"DISTINCT".to_string()));
+        }
+        assert!(stmt.children.contains_key(&"columns".to_string()));
+        let nodes = match stmt.children.get(&"columns".to_string()).unwrap() {
+            cst::Children::Node(node) => panic!(),
+            cst::Children::NodeVec(nodes) => nodes,
+        };
+        for i in 0..nodes.len() {
+            assert_eq!(nodes[i].token.literal, columns[i]);
         }
     }
 }
