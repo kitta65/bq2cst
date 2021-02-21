@@ -1,4 +1,6 @@
-#[derive(PartialEq, Debug, Clone)]
+use serde::{Serialize, Deserialize};
+
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
     pub line: usize,
     pub column: usize,
@@ -37,7 +39,13 @@ impl Token {
         } else {
             false
         }
-
+    }
+    pub fn is_prefix(&self) -> bool {
+        match self.literal.as_str() {
+            "-" => false,
+            "!" => false,
+            _ => true,
+        }
     }
     fn quoted_by(&self, ch: char) -> bool {
         self.literal.chars().next().unwrap() == ch
