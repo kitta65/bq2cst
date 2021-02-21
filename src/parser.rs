@@ -36,7 +36,7 @@ impl Parser {
             code.push(stmt);
             self.next_token();
         }
-        Vec::new()
+        code
     }
     fn parse_statement(&mut self) -> cst::Node {
         // i dont wanna use clone but i dont know how to avoid
@@ -57,7 +57,7 @@ impl Parser {
             token: self.cur_token.clone().unwrap(),
             children: HashMap::new(),
         };
-        self.next_token();
+        self.next_token(); // select -> [distinct]
         match self
             .cur_token
             .clone()
@@ -74,7 +74,7 @@ impl Parser {
                         children: HashMap::new(),
                     }),
                 );
-                self.next_token();
+                self.next_token(); // distinct -> columns
             }
             _ => (),
         };
@@ -82,9 +82,9 @@ impl Parser {
             "columns".to_string(),
             cst::Children::NodeVec(self.parse_exprs("FROM".to_string())),
         );
-        //while self.cur_token.clone().unwrap().literal.to_uppercase().as_str() != "FROM" {
-        //    self.parse_expr();
-        //}
+        // for the time being
+        self.next_token(); // [,] -> from
+        self.next_token(); // from -> ;
         node
     }
     fn parse_exprs(&mut self, until: String) -> Vec<cst::Node> {
@@ -95,14 +95,6 @@ impl Parser {
         while self.cur_token.clone().unwrap().literal.to_uppercase() != until {
             exprs.push(self.parse_expr());
         }
-        cst::Node {
-            token: token::Token {
-                line: 0,
-                column: 0,
-                literal: "dummy".to_string(),
-            },
-            children: HashMap::new(),
-        };
         exprs
     }
     fn parse_expr(&mut self) -> cst::Node {
@@ -113,7 +105,7 @@ impl Parser {
                 token: cur_token.clone(),
                 children: HashMap::new(),
             };
-            self.next_token();
+            self.next_token(); // - or ! -> expr
             left_expr
                 .children
                 .insert("right".to_string(), cst::Children::Node(self.parse_expr()));
@@ -124,7 +116,7 @@ impl Parser {
             };
         }
         if self.peek_token.clone().unwrap().literal == ",".to_string() {
-            self.next_token();
+            self.next_token(); // expr -> ,
             left_expr.children.insert(
                 "comma".to_string(),
                 cst::Children::Node(cst::Node {
@@ -133,6 +125,7 @@ impl Parser {
                 }),
             );
         }
+        self.next_token(); // expr -> from, ',' -> expr
         left_expr
     }
 }
@@ -140,7 +133,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
+    //use serde_json;
     #[test]
     fn test_next_token() {
         let input = "select *;".to_string();
@@ -193,42 +186,19 @@ mod tests {
         assert_eq!(p.cur_token, None);
         assert_eq!(p.peek_token, None);
     }
-    //#[test]
-    //fn test_parse_exprs() {
-    //    let input = "SELECT 'aaa', 123 FROM".to_string();
-    //    let l = lexer::Lexer::new(input);
-    //    let mut p = Parser::new(l);
-    //    let mut expected_node = cst::Node {
-    //        token: token::Token {
-    //            line: 0,
-    //            column: 0,
-    //            literal: "SELECT".to_string(),
-    //        },
-    //        children: HashMap::new(),
-    //    };
-    //    expected_node =
-    //}
-    //#[test]
-    //fn test_serde_json() {
-    //    let mut cst = cst::Node {
-    //        token: token::Token {
-    //            line: 0,
-    //            column: 0,
-    //            literal: "select".to_string(),
-    //        },
-    //        children: HashMap::new(),
-    //    };
-    //    cst.children.insert(
-    //        "DISTINCT".to_string(),
-    //        cst::Children::Node(cst::Node {
-    //            token: token::Token {
-    //                line: 0,
-    //                column: 0,
-    //                literal: "distinct".to_string(),
-    //            },
-    //            children: HashMap::new(),
-    //        }),
-    //    );
-    //    assert_eq!(serde_json::to_string(&cst).unwrap(), "{}".to_string())
-    //}
+    #[test]
+    fn test_parse_exprs() {
+        let input = "SELECT 'aaa', 123 FROM;".to_string();
+        let l = lexer::Lexer::new(input);
+        let mut p = Parser::new(l);
+        let stmt = p.parse_code();
+        test_parse_select_statement(&stmt[0], false)
+    }
+    fn test_parse_select_statement(stmt: &cst::Node, distinct: bool) {
+        if distinct {
+            assert!(stmt.children.contains_key(&"DISTINCT".to_string()))
+        } else {
+            assert!(!stmt.children.contains_key(&"DISTINCT".to_string()))
+        }
+    }
 }

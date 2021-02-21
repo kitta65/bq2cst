@@ -42,9 +42,9 @@ impl Token {
     }
     pub fn is_prefix(&self) -> bool {
         match self.literal.as_str() {
-            "-" => false,
-            "!" => false,
-            _ => true,
+            "-" => true,
+            "!" => true,
+            _ => false,
         }
     }
     fn quoted_by(&self, ch: char) -> bool {
