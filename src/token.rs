@@ -8,6 +8,13 @@ pub struct Token {
 }
 
 impl Token {
+    pub fn new(line: usize, column: usize, literal: &str) -> Token {
+        Token {
+            line,
+            column,
+            literal: literal.to_string(),
+        }
+    }
     pub fn is_string(&self) -> bool {
         if self.quoted_by('"') {
             true
