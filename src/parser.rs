@@ -192,6 +192,16 @@ mod tests {
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
+        let tests = vec!["\
+self: SELECT
+columns:
+- self: 'aaa'
+  comma:
+    self: ,
+- self: 123"];
+        for i in 0..tests.len() {
+            assert_eq!(stmt[i].to_string(0, false), tests[i])
+        }
         test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
     }
     fn test_parse_select_statement(stmt: &cst::Node, distinct: bool, columns: Vec<String>) {

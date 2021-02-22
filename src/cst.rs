@@ -15,7 +15,7 @@ pub struct Node {
 }
 
 impl Node {
-    fn to_string(&self, indent: usize, is_array: bool) -> String {
+    pub fn to_string(&self, indent: usize, is_array: bool) -> String {
         let mut res = Vec::new();
         // push `self: xxx` or `- self: xxx`
         if is_array {
@@ -39,7 +39,7 @@ impl Node {
         keys.sort();
         for key in keys {
             // push `key:`
-            res.push(format!("{}:", key.clone()));
+            res.push(format!("{}{}:", " ".repeat(indent*2), key.clone()));
             let child_string = match self.children.get(key).unwrap() {
                 Children::Node(n) => n.to_string(indent + 1, false),
                 Children::NodeVec(ns) => {
@@ -77,8 +77,8 @@ mod tests {
     #[test]
     fn test_to_string() {
         let mut root = new_node("root");
-        root.push_node("key1", new_node("child1"));
         root.push_node_vec("key2", vec![new_node("child2"), new_node("child3")]);
+        root.push_node("key1", new_node("child1"));
         assert_eq!(
             root.to_string(0, false),
             "\
