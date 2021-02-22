@@ -58,6 +58,7 @@ impl Parser {
             children: HashMap::new(),
         };
         self.next_token(); // select -> [distinct]
+        // distinct
         match self
             .cur_token
             .clone()
@@ -78,13 +79,29 @@ impl Parser {
             }
             _ => (),
         };
+        // columns
         node.children.insert(
             "columns".to_string(),
             cst::Children::NodeVec(self.parse_exprs("FROM".to_string())),
         );
+        // from
+        if self.cur_token_is("FROM") {
+            let mut from = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // from -> table
+            from.push_node_vec(
+                "tables",
+                self.parse_exprs(";".to_string()), // TODO... define parse_tables
+            );
+            node.push_node("from", from);
+        } else {
+            panic!()
+        }
+        // ;
+        if self.cur_token_is(";") {
+            node.push_node("semicolon", cst::Node::new(self.cur_token.clone().unwrap()))
+        }
         // for the time being
-        self.next_token(); // [,] -> from
-        self.next_token(); // from -> ;
+        self.next_token(); // ; -> ?
         node
     }
     fn parse_exprs(&mut self, until: String) -> Vec<cst::Node> {
@@ -127,6 +144,18 @@ impl Parser {
         }
         self.next_token(); // expr -> from, ',' -> expr
         left_expr
+    }
+    fn peek_token_is(&self, s: &str) -> bool {
+        match self.peek_token.clone() {
+            Some(t) => t.literal.to_uppercase().as_str() == s,
+            None => false,
+        }
+    }
+    fn cur_token_is(&self, s: &str) -> bool {
+        match self.cur_token.clone() {
+            Some(t) => t.literal.to_uppercase().as_str() == s,
+            None => false,
+        }
     }
 }
 
@@ -188,7 +217,7 @@ mod tests {
     }
     #[test]
     fn test_parse_exprs() {
-        let input = "SELECT 'aaa', 123 FROM;".to_string();
+        let input = "SELECT 'aaa', 123 FROM data;".to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
@@ -198,11 +227,17 @@ columns:
 - self: 'aaa'
   comma:
     self: ,
-- self: 123"];
+- self: 123
+from:
+  self: FROM
+  tables:
+  - self: data
+semicolon:
+  self: ;"];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
         }
-        test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
+        //test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
     }
     fn test_parse_select_statement(stmt: &cst::Node, distinct: bool, columns: Vec<String>) {
         if distinct {

@@ -15,13 +15,19 @@ pub struct Node {
 }
 
 impl Node {
+    pub fn new(token: token::Token) -> Node {
+        Node {
+            token,
+            children: HashMap::new()
+        }
+    }
     pub fn to_string(&self, indent: usize, is_array: bool) -> String {
         let mut res = Vec::new();
         // push `self: xxx` or `- self: xxx`
         if is_array {
             res.push(format!(
-                "-{}self: {}",
-                " ".repeat(indent * 2 - 1),
+                "{}- self: {}",
+                " ".repeat((indent - 1) * 2 ),
                 self.token.literal.clone()
             ))
         } else {
@@ -54,10 +60,10 @@ impl Node {
         }
         res.join("\n")
     }
-    fn push_node(&mut self, key: &str, node: Node) {
+    pub fn push_node(&mut self, key: &str, node: Node) {
         self.children.insert(key.to_string(), Children::Node(node));
     }
-    fn push_node_vec(&mut self, key: &str, nodes: Vec<Node>) {
+    pub fn push_node_vec(&mut self, key: &str, nodes: Vec<Node>) {
         self.children
             .insert(key.to_string(), Children::NodeVec(nodes));
     }
