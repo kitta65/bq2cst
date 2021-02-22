@@ -90,18 +90,25 @@ impl Parser {
             self.next_token(); // from -> table
             from.push_node_vec(
                 "tables",
-                self.parse_exprs(";".to_string()), // TODO... define parse_tables
+                self.parse_exprs("GROUP".to_string()), // TODO... define parse_tables
             );
             node.push_node("from", from);
-        } else {
-            panic!()
+        }
+        // TODO... where (maybe parse_expr works here)
+        if self.cur_token_is("GROUP") {
+            let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // group -> by
+            groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
+            self.next_token(); // by -> expr
+            groupby.push_node_vec("columns", self.parse_exprs(";".to_string()));
+            node.push_node("groupby", groupby);
         }
         // ;
         if self.cur_token_is(";") {
             node.push_node("semicolon", cst::Node::new(self.cur_token.clone().unwrap()))
         }
         // for the time being
-        self.next_token(); // ; -> ?
+        self.next_token(); // ; -> stmt
         node
     }
     fn parse_exprs(&mut self, until: String) -> Vec<cst::Node> {
@@ -217,7 +224,7 @@ mod tests {
     }
     #[test]
     fn test_parse_exprs() {
-        let input = "SELECT 'aaa', 123 FROM data;".to_string();
+        let input = "SELECT 'aaa', 123 FROM data group by 1;".to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
@@ -232,6 +239,12 @@ from:
   self: FROM
   tables:
   - self: data
+groupby:
+  self: group
+  by:
+    self: by
+  columns:
+  - self: 1
 semicolon:
   self: ;"];
         for i in 0..tests.len() {
