@@ -103,8 +103,9 @@ impl Parser {
         if self.cur_token_is("WHERE") {
             let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            where_.push_node("expr", self.parse_expr(0));
-            node.push_node("where", where_)
+            where_.push_node("expr", self.parse_expr(0, &vec!["group", "having", ";", ","]));
+            self.next_token(); // parse_expr needs next_token()
+            node.push_node("where", where_);
         }
         // group by
         if self.cur_token_is("GROUP") {
@@ -140,7 +141,8 @@ impl Parser {
         if self.cur_token_is("LIMIT") {
             let mut limit = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr(0));
+            limit.push_node("expr", self.parse_expr(0, &vec![";", ","]));
+            self.next_token(); // parse_expr needs next_token()
             node.push_node("limit", limit)
         }
         // ;
@@ -220,8 +222,8 @@ impl Parser {
             if self.cur_token_is("on") {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
-                                   //on.push_node("expr", cst::Node::new(self.cur_token.clone().unwrap()));
-                on.push_node("expr", self.parse_expr(0));
+                on.push_node("expr", self.parse_expr(0, &vec!["left", "right", "cross", "inner", ",", "full", "join", "where", "group", "having", ";"]));
+                self.next_token(); // parse_expr needs next_token()
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
             table.push_node("join", join);
@@ -234,44 +236,36 @@ impl Parser {
         //let token: token::Token;
         //let node: cst::Node;
         while !self.cur_token_in(until) && self.cur_token != None {
-            exprs.push(self.parse_expr(0));
+            exprs.push(self.parse_expr(0, until));
+            self.next_token();
         }
         exprs
     }
-    fn parse_expr(&mut self, precedence: usize) -> cst::Node {
-        // precedenc
-        // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
-        // 101... [], .
-        // 102... +, - , ~ (unary operator)
-        // 103... *, / , ||
-        // 104... +, - (binary operator)
-        // 105... <<, >>
-        // 106... & (bit operator)
-        // 107... ^ (bit operator)
-        // 108... | (bit operator)
-        // 109... =, <, >, (not)like, between, (not)in
-        // 110... not
-        // 111... and
-        // 112... or
-        // 999... LOWEST
-
-        // prefix
-        let mut left_expr: cst::Node;
-        let cur_token = self.cur_token.clone().unwrap();
-        if cur_token.is_prefix() {
-            left_expr = cst::Node {
-                token: Some(cur_token.clone()),
-                children: HashMap::new(),
-            };
-            self.next_token(); // - or ! -> expr
-            left_expr
-                .children
-                .insert("right".to_string(), cst::Children::Node(self.parse_expr(999)));
-        } else {
-            left_expr = cst::Node {
-                token: Some(cur_token.clone()),
-                children: HashMap::new(),
-            };
+    fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
+        // prefix or literal
+        let mut left = cst::Node::new(self.cur_token.clone().unwrap());
+        match self.cur_token.clone().unwrap().literal.as_str() {
+            "-" => {
+                self.next_token(); // - -> expr
+                let right = self.parse_expr(102, until);
+                left.push_node("right", right);
+            },
+            _ => (),
+        };
+        while !self.peek_token_in(until) && self.peek_precedence() < precedence {
+            // actually, until is not needed
+            match self.peek_token.clone().unwrap().literal.as_str() {
+                "+" => {
+                    self.next_token(); // expr -> +
+                    let precedence = self.cur_precedence();
+                    let mut node = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // + -> expr
+                    node.push_node("left", left);
+                    node.push_node("right", self.parse_expr(precedence, until));
+                    left = node;
+                },
+                _ => panic!(),
+            }
         }
         // alias
         if self.peek_token_is("as") {
@@ -279,7 +273,7 @@ impl Parser {
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // as -> alias
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
-            left_expr.push_node("as", as_);
+            left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","])
             && self.peek_token != None
@@ -290,11 +284,11 @@ impl Parser {
                 children: HashMap::new(),
             };
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
-            left_expr.push_node("as", as_);
+            left.push_node("as", as_);
         }
         if self.peek_token_is(",") {
             self.next_token(); // expr -> ,
-            left_expr.children.insert(
+            left.children.insert(
                 "comma".to_string(),
                 cst::Children::Node(cst::Node {
                     token: Some(self.cur_token.clone().unwrap()),
@@ -302,8 +296,8 @@ impl Parser {
                 }),
             );
         }
-        self.next_token(); // expr -> from, ',' -> expr
-        left_expr
+        //self.next_token(); // expr -> from, ',' -> expr
+        left
     }
     fn peek_token_is(&self, s: &str) -> bool {
         match self.peek_token.clone() {
@@ -316,6 +310,43 @@ impl Parser {
             Some(t) => t.literal.to_uppercase() == s.to_uppercase(),
             None => false,
         }
+    }
+    fn cur_precedence(&self) -> usize {
+        let token = match self.cur_token.clone() {
+            Some(t) => t,
+            None => panic!(),
+        };
+        str2precedence(token.literal.as_str())
+    }
+    fn peek_precedence(&self) -> usize {
+        let token = match self.peek_token.clone() {
+            Some(t) => t,
+            None => {return 999;},
+        };
+        str2precedence(token.literal.as_str())
+    }
+}
+
+fn str2precedence(s: &str) -> usize {
+    // precedenc
+    // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+    // 101... [], .
+    // 102... +, - , ~ (unary operator)
+    // 103... *, / , ||
+    // 104... +, - (binary operator)
+    // 105... <<, >>
+    // 106... & (bit operator)
+    // 107... ^ (bit operator)
+    // 108... | (bit operator)
+    // 109... =, <, >, (not)like, between, (not)in
+    // 110... not
+    // 111... and
+    // 112... or
+    // 999... LOWEST
+    match s {
+        "-" => 104,
+        "+" => 104,
+        _ => 999,
     }
 }
 
@@ -381,7 +412,8 @@ mod tests {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
             select 2 two;
-            select * from data1 as one inner join data2 two ON true;"
+            select * from data1 as one inner join data2 two ON true;
+            select -1;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -471,6 +503,15 @@ from:
           self: true
       type:
         self: inner
+semicolon:
+  self: ;",
+// parse_expr precedence
+  "\
+self: select
+columns:
+- self: -
+  right:
+    self: 1
 semicolon:
   self: ;",
         ];
