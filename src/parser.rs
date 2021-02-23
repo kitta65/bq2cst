@@ -209,12 +209,17 @@ impl Parser {
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             table.push_node("as", as_);
             self.next_token(); // alias -> on, clause
+        } else if !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
+            let mut as_ = cst::Node::new_none();
+            as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
+            table.push_node("as", as_);
+            self.next_token(); // alias -> on, clause
         }
         if join.token != None {
             if self.cur_token_is("on") {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
-                //on.push_node("expr", cst::Node::new(self.cur_token.clone().unwrap()));
+                                   //on.push_node("expr", cst::Node::new(self.cur_token.clone().unwrap()));
                 on.push_node("expr", self.parse_expr());
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
@@ -360,7 +365,7 @@ mod tests {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
             select 2 two;
-            select * from data1 as one inner join data2 ON true"
+            select * from data1 as one inner join data2 two ON true"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -438,6 +443,10 @@ from:
       alias:
         self: one
   - self: data2
+    as:
+      self: None
+      alias:
+        self: two
     join:
       self: join
       on:
