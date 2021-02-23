@@ -103,7 +103,7 @@ impl Parser {
         if self.cur_token_is("WHERE") {
             let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            where_.push_node("expr", self.parse_expr());
+            where_.push_node("expr", self.parse_expr(0));
             node.push_node("where", where_)
         }
         // group by
@@ -140,7 +140,7 @@ impl Parser {
         if self.cur_token_is("LIMIT") {
             let mut limit = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr());
+            limit.push_node("expr", self.parse_expr(0));
             node.push_node("limit", limit)
         }
         // ;
@@ -202,6 +202,7 @@ impl Parser {
         };
         // table
         let mut table = cst::Node::new(self.cur_token.clone().unwrap());
+        // TODO '.' operator
         self.next_token(); // `table` -> AS, `table` -> where, `table` -> join, table -> on
         if self.cur_token_is("as") {
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
@@ -220,7 +221,7 @@ impl Parser {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
                                    //on.push_node("expr", cst::Node::new(self.cur_token.clone().unwrap()));
-                on.push_node("expr", self.parse_expr());
+                on.push_node("expr", self.parse_expr(0));
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
             table.push_node("join", join);
@@ -229,16 +230,32 @@ impl Parser {
         table
     }
     fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
-        // TODO... precedence
         let mut exprs: Vec<cst::Node> = Vec::new();
         //let token: token::Token;
         //let node: cst::Node;
         while !self.cur_token_in(until) && self.cur_token != None {
-            exprs.push(self.parse_expr());
+            exprs.push(self.parse_expr(0));
         }
         exprs
     }
-    fn parse_expr(&mut self) -> cst::Node {
+    fn parse_expr(&mut self, precedence: usize) -> cst::Node {
+        // precedenc
+        // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+        // 101... [], .
+        // 102... +, - , ~ (unary operator)
+        // 103... *, / , ||
+        // 104... +, - (binary operator)
+        // 105... <<, >>
+        // 106... & (bit operator)
+        // 107... ^ (bit operator)
+        // 108... | (bit operator)
+        // 109... =, <, >, (not)like, between, (not)in
+        // 110... not
+        // 111... and
+        // 112... or
+        // 999... LOWEST
+
+        // prefix
         let mut left_expr: cst::Node;
         let cur_token = self.cur_token.clone().unwrap();
         if cur_token.is_prefix() {
@@ -249,7 +266,7 @@ impl Parser {
             self.next_token(); // - or ! -> expr
             left_expr
                 .children
-                .insert("right".to_string(), cst::Children::Node(self.parse_expr()));
+                .insert("right".to_string(), cst::Children::Node(self.parse_expr(999)));
         } else {
             left_expr = cst::Node {
                 token: Some(cur_token.clone()),
@@ -285,7 +302,6 @@ impl Parser {
                 }),
             );
         }
-        // TODO... as
         self.next_token(); // expr -> from, ',' -> expr
         left_expr
     }
@@ -365,7 +381,7 @@ mod tests {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
             select 2 two;
-            select * from data1 as one inner join data2 two ON true"
+            select * from data1 as one inner join data2 two ON true;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -454,7 +470,9 @@ from:
         expr:
           self: true
       type:
-        self: inner",
+        self: inner
+semicolon:
+  self: ;",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
