@@ -103,7 +103,7 @@ impl Parser {
         if self.cur_token_is("WHERE") {
             let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            where_.push_node("expr", self.parse_expr(0, &vec!["group", "having", ";", ","]));
+            where_.push_node("expr", self.parse_expr(999, &vec!["group", "having", ";", ","]));
             self.next_token(); // parse_expr needs next_token()
             node.push_node("where", where_);
         }
@@ -141,7 +141,7 @@ impl Parser {
         if self.cur_token_is("LIMIT") {
             let mut limit = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr(0, &vec![";", ","]));
+            limit.push_node("expr", self.parse_expr(999, &vec![";", ","]));
             self.next_token(); // parse_expr needs next_token()
             node.push_node("limit", limit)
         }
@@ -222,7 +222,7 @@ impl Parser {
             if self.cur_token_is("on") {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
-                on.push_node("expr", self.parse_expr(0, &vec!["left", "right", "cross", "inner", ",", "full", "join", "where", "group", "having", ";"]));
+                on.push_node("expr", self.parse_expr(999, &vec!["left", "right", "cross", "inner", ",", "full", "join", "where", "group", "having", ";"]));
                 self.next_token(); // parse_expr needs next_token()
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
@@ -236,7 +236,7 @@ impl Parser {
         //let token: token::Token;
         //let node: cst::Node;
         while !self.cur_token_in(until) && self.cur_token != None {
-            exprs.push(self.parse_expr(0, until));
+            exprs.push(self.parse_expr(999, until));
             self.next_token();
         }
         exprs
@@ -268,7 +268,7 @@ impl Parser {
             }
         }
         // alias
-        if self.peek_token_is("as") {
+        if self.peek_token_is("as") && precedence == 999 {
             self.next_token(); // expr -> as
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // as -> alias
@@ -276,7 +276,7 @@ impl Parser {
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","])
-            && self.peek_token != None
+            && self.peek_token != None && precedence == 999
         {
             self.next_token(); // expr -> alias
             let mut as_ = cst::Node {
@@ -286,7 +286,7 @@ impl Parser {
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left.push_node("as", as_);
         }
-        if self.peek_token_is(",") {
+        if self.peek_token_is(",") && precedence == 999 {
             self.next_token(); // expr -> ,
             left.children.insert(
                 "comma".to_string(),
@@ -413,7 +413,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1;"
+            select -1, 1+1;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -510,6 +510,13 @@ semicolon:
 self: select
 columns:
 - self: -
+  comma:
+    self: ,
+  right:
+    self: 1
+- self: +
+  left:
+    self: 1
   right:
     self: 1
 semicolon:
