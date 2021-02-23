@@ -34,7 +34,7 @@ impl Parser {
         while self.cur_token != None {
             let stmt = self.parse_statement();
             code.push(stmt);
-            self.next_token();
+            //self.next_token();
         }
         code
     }
@@ -48,7 +48,10 @@ impl Parser {
             .to_uppercase()
             .as_str()
         {
-            "SELECT" => self.parse_select_statement(),
+            "SELECT" => {
+                println!("found select!");
+                self.parse_select_statement()
+            }
             _ => self.parse_select_statement(),
         }
     }
@@ -58,6 +61,7 @@ impl Parser {
             children: HashMap::new(),
         };
         self.next_token(); // select -> [distinct]
+
         // distinct
         match self
             .cur_token
@@ -142,7 +146,7 @@ impl Parser {
         if self.cur_token_is(";") {
             node.push_node("semicolon", cst::Node::new(self.cur_token.clone().unwrap()))
         }
-        // for the time being
+        // next statement
         self.next_token(); // ; -> stmt
         node
     }
@@ -151,7 +155,7 @@ impl Parser {
         let mut exprs: Vec<cst::Node> = Vec::new();
         //let token: token::Token;
         //let node: cst::Node;
-        while !self.cur_token_in(until) {
+        while !self.cur_token_in(until) && self.cur_token != None {
             exprs.push(self.parse_expr());
         }
         exprs
@@ -182,7 +186,7 @@ impl Parser {
                 children: HashMap::new(),
             };
         }
-        if self.peek_token.clone().unwrap().literal == ",".to_string() {
+        if self.peek_token_is(",") {
             self.next_token(); // expr -> ,
             left_expr.children.insert(
                 "comma".to_string(),
@@ -268,11 +272,15 @@ mod tests {
     }
     #[test]
     fn test_parse_exprs() {
-        let input = "SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;".to_string();
+        let input = "\
+            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
+            select * from data"
+            .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
-        let tests = vec!["\
+        let tests = vec![
+            "\
 self: SELECT
 columns:
 - self: 'aaa'
@@ -302,7 +310,12 @@ semicolon:
 where:
   self: where
   expr:
-    self: true"];
+    self: true",
+//            "\
+//selef: select
+//columns:
+//- self: *",
+        ];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
         }
