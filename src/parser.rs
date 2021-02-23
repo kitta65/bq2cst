@@ -90,18 +90,32 @@ impl Parser {
             self.next_token(); // from -> table
             from.push_node_vec(
                 "tables",
-                self.parse_exprs("GROUP".to_string()), // TODO... define parse_tables
+                self.parse_exprs("WHERE".to_string()), // TODO... define parse_tables
             );
             node.push_node("from", from);
         }
-        // TODO... where (maybe parse_expr works here)
+        // where
+        if self.cur_token_is("WHERE") {
+            let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // limit -> expr
+            where_.push_node("expr", self.parse_expr());
+            node.push_node("where", where_)
+        }
+        // group by
         if self.cur_token_is("GROUP") {
             let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // group -> by
             groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
             self.next_token(); // by -> expr
-            groupby.push_node_vec("columns", self.parse_exprs(";".to_string()));
+            groupby.push_node_vec("columns", self.parse_exprs("LIMIT".to_string()));
             node.push_node("groupby", groupby);
+        }
+        // limit
+        if self.cur_token_is("LIMIT") {
+            let mut limit = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // limit -> expr
+            limit.push_node("expr", self.parse_expr());
+            node.push_node("limit", limit)
         }
         // ;
         if self.cur_token_is(";") {
@@ -149,6 +163,7 @@ impl Parser {
                 }),
             );
         }
+        // TODO... as
         self.next_token(); // expr -> from, ',' -> expr
         left_expr
     }
@@ -224,7 +239,7 @@ mod tests {
     }
     #[test]
     fn test_parse_exprs() {
-        let input = "SELECT 'aaa', 123 FROM data group by 1;".to_string();
+        let input = "SELECT 'aaa', 123 FROM data where true group by 1 limit 100;".to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
@@ -245,8 +260,16 @@ groupby:
     self: by
   columns:
   - self: 1
+limit:
+  self: limit
+  expr:
+    self: 100
 semicolon:
-  self: ;"];
+  self: ;
+where:
+  self: where
+  expr:
+    self: true"];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
         }
