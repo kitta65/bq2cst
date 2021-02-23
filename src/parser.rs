@@ -168,6 +168,14 @@ impl Parser {
         }
         false
     }
+    //fn peek_token_in(&self, literals: &Vec<&str>) -> bool {
+    //    for l in literals {
+    //        if self.peek_token_is(l) {
+    //            return true;
+    //        };
+    //    }
+    //    false
+    //}
     fn parse_expr(&mut self) -> cst::Node {
         let mut left_expr: cst::Node;
         let cur_token = self.cur_token.clone().unwrap();
@@ -202,6 +210,10 @@ impl Parser {
                     children: HashMap::new(),
                 }),
             );
+        //} else if !self.peek_token_in(&vec!["from", "where", "group", "having", ";"]) && self.peek_token != None {
+        //    self.next_token(); // expr -> alias
+        //    let mut as_ = cst::Node::new()
+        //    left_expr.push_node()
         }
         // TODO... as
         self.next_token(); // expr -> from, ',' -> expr
