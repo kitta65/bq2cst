@@ -186,6 +186,12 @@ impl Parser {
                 children: HashMap::new(),
             };
         }
+        if self.peek_token_is("as") {
+            let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // as -> alias
+            as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
+            left_expr.push_node("as", as_);
+        }
         if self.peek_token_is(",") {
             self.next_token(); // expr -> ,
             left_expr.children.insert(
@@ -274,7 +280,7 @@ mod tests {
     fn test_parse_exprs() {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
-            select * from data"
+            select 1 from data"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -311,10 +317,14 @@ where:
   self: where
   expr:
     self: true",
-//            "\
-//selef: select
-//columns:
-//- self: *",
+            "\
+self: select
+columns:
+- self: 1
+from:
+  self: from
+  tables:
+  - self: data",
         ];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
