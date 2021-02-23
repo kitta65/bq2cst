@@ -107,8 +107,29 @@ impl Parser {
             self.next_token(); // group -> by
             groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
             self.next_token(); // by -> expr
-            groupby.push_node_vec("columns", self.parse_exprs("LIMIT".to_string()));
+            groupby.push_node_vec("columns", self.parse_exprs("HAVING".to_string()));
             node.push_node("groupby", groupby);
+            if self.cur_token_is("HAVING") {
+                let mut having = cst::Node::new(self.cur_token.clone().unwrap());
+                self.next_token(); // by -> expr
+                having.push_node_vec("columns", self.parse_exprs("LIMIT".to_string()));
+                node.push_node("having", having);
+            }
+        }
+        // having
+        if self.cur_token_is("HAVING") {
+            let mut having = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // by -> expr
+            having.push_node_vec("columns", self.parse_exprs("GROUP".to_string()));
+            node.push_node("having", having);
+            if self.cur_token_is("GROUP") {
+                let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
+                self.next_token(); // group -> by
+                groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
+                self.next_token(); // by -> expr
+                groupby.push_node_vec("columns", self.parse_exprs("LIMIT".to_string()));
+                node.push_node("having", groupby);
+            }
         }
         // limit
         if self.cur_token_is("LIMIT") {
@@ -239,7 +260,7 @@ mod tests {
     }
     #[test]
     fn test_parse_exprs() {
-        let input = "SELECT 'aaa', 123 FROM data where true group by 1 limit 100;".to_string();
+        let input = "SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;".to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
@@ -260,6 +281,10 @@ groupby:
     self: by
   columns:
   - self: 1
+having:
+  self: HAVING
+  columns:
+  - self: true
 limit:
   self: limit
   expr:
