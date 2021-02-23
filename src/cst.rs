@@ -10,14 +10,14 @@ pub enum Children {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    pub token: token::Token,
+    pub token: Option<token::Token>,
     pub children: HashMap<String, Children>,
 }
 
 impl Node {
     pub fn new(token: token::Token) -> Node {
         Node {
-            token,
+            token: Some(token),
             children: HashMap::new()
         }
     }
@@ -28,13 +28,19 @@ impl Node {
             res.push(format!(
                 "{}- self: {}",
                 " ".repeat((indent - 1) * 2 ),
-                self.token.literal.clone()
+                match self.token.clone() {
+                    Some(token) => token.literal.clone(),
+                    None => "None".to_string(),
+                },
             ))
         } else {
             res.push(format!(
                 "{}self: {}",
                 " ".repeat(indent * 2),
-                self.token.literal.clone()
+                match self.token.clone() {
+                    Some(token) => token.literal.clone(),
+                    None => "None".to_string(),
+                },
             ))
         }
         // prepare keys
@@ -76,7 +82,7 @@ mod tests {
         // this function is only used in test_to_string.
         // so line and column are 0.
         Node {
-            token: token::Token::new(0, 0, literal),
+            token: Some(token::Token::new(0, 0, literal)),
             children: HashMap::new(),
         }
     }

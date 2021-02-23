@@ -57,7 +57,7 @@ impl Parser {
     }
     fn parse_select_statement(&mut self) -> cst::Node {
         let mut node = cst::Node {
-            token: self.cur_token.clone().unwrap(),
+            token: Some(self.cur_token.clone().unwrap()),
             children: HashMap::new(),
         };
         self.next_token(); // select -> [distinct]
@@ -75,7 +75,7 @@ impl Parser {
                 node.children.insert(
                     "DISTINCT".to_string(),
                     cst::Children::Node(cst::Node {
-                        token: self.cur_token.clone().unwrap(),
+                        token: Some(self.cur_token.clone().unwrap()),
                         children: HashMap::new(),
                     }),
                 );
@@ -181,7 +181,7 @@ impl Parser {
         let cur_token = self.cur_token.clone().unwrap();
         if cur_token.is_prefix() {
             left_expr = cst::Node {
-                token: cur_token.clone(),
+                token: Some(cur_token.clone()),
                 children: HashMap::new(),
             };
             self.next_token(); // - or ! -> expr
@@ -190,7 +190,7 @@ impl Parser {
                 .insert("right".to_string(), cst::Children::Node(self.parse_expr()));
         } else {
             left_expr = cst::Node {
-                token: cur_token.clone(),
+                token: Some(cur_token.clone()),
                 children: HashMap::new(),
             };
         }
@@ -206,7 +206,7 @@ impl Parser {
             left_expr.children.insert(
                 "comma".to_string(),
                 cst::Children::Node(cst::Node {
-                    token: self.cur_token.clone().unwrap(),
+                    token: Some(self.cur_token.clone().unwrap()),
                     children: HashMap::new(),
                 }),
             );
@@ -357,20 +357,5 @@ columns:
             assert_eq!(stmt[i].to_string(0, false), tests[i])
         }
         //test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
-    }
-    fn test_parse_select_statement(stmt: &cst::Node, distinct: bool, columns: Vec<String>) {
-        if distinct {
-            assert!(stmt.children.contains_key(&"DISTINCT".to_string()));
-        } else {
-            assert!(!stmt.children.contains_key(&"DISTINCT".to_string()));
-        }
-        assert!(stmt.children.contains_key(&"columns".to_string()));
-        let nodes = match stmt.children.get(&"columns".to_string()).unwrap() {
-            cst::Children::Node(node) => panic!(),
-            cst::Children::NodeVec(nodes) => nodes,
-        };
-        for i in 0..nodes.len() {
-            assert_eq!(nodes[i].token.literal, columns[i]);
-        }
     }
 }
