@@ -203,6 +203,13 @@ impl Parser {
         // table
         let mut table = cst::Node::new(self.cur_token.clone().unwrap());
         self.next_token(); // `table` -> AS, `table` -> where, `table` -> join, table -> on
+        if self.cur_token_is("as") {
+            let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
+            self.next_token(); // as -> alias
+            as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
+            table.push_node("as", as_);
+            self.next_token(); // alias -> on, clause
+        }
         if join.token != None {
             if self.cur_token_is("on") {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
@@ -214,7 +221,6 @@ impl Parser {
             table.push_node("join", join);
         }
         // TODO... using()
-        // TODO... as
         table
     }
     fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
@@ -354,7 +360,7 @@ mod tests {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
             select 2 two;
-            select * from data1 inner join data2 ON true"
+            select * from data1 as one inner join data2 ON true"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -427,6 +433,10 @@ from:
   self: from
   tables:
   - self: data1
+    as:
+      self: as
+      alias:
+        self: one
   - self: data2
     join:
       self: join
