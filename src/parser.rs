@@ -168,14 +168,14 @@ impl Parser {
         }
         false
     }
-    //fn peek_token_in(&self, literals: &Vec<&str>) -> bool {
-    //    for l in literals {
-    //        if self.peek_token_is(l) {
-    //            return true;
-    //        };
-    //    }
-    //    false
-    //}
+    fn peek_token_in(&self, literals: &Vec<&str>) -> bool {
+        for l in literals {
+            if self.peek_token_is(l) {
+                return true;
+            };
+        }
+        false
+    }
     fn parse_expr(&mut self) -> cst::Node {
         let mut left_expr: cst::Node;
         let cur_token = self.cur_token.clone().unwrap();
@@ -194,10 +194,17 @@ impl Parser {
                 children: HashMap::new(),
             };
         }
+        // alias
         if self.peek_token_is("as") {
             self.next_token(); // expr -> as
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // as -> alias
+            as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
+            left_expr.push_node("as", as_);
+        }
+        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","]) && self.peek_token != None {
+            self.next_token(); // expr -> alias
+            let mut as_ = cst::Node {token: None, children: HashMap::new()};
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left_expr.push_node("as", as_);
         }
@@ -210,10 +217,6 @@ impl Parser {
                     children: HashMap::new(),
                 }),
             );
-        //} else if !self.peek_token_in(&vec!["from", "where", "group", "having", ";"]) && self.peek_token != None {
-        //    self.next_token(); // expr -> alias
-        //    let mut as_ = cst::Node::new()
-        //    left_expr.push_node()
         }
         // TODO... as
         self.next_token(); // expr -> from, ',' -> expr
@@ -294,7 +297,7 @@ mod tests {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
-            select 2 as two"
+            select 2 two"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -349,7 +352,7 @@ self: select
 columns:
 - self: 2
   as:
-    self: as
+    self: None
     alias:
       self: two"
         ];
