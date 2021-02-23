@@ -169,14 +169,18 @@ impl Parser {
     }
     fn parse_tables(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
         let mut tables: Vec<cst::Node> = Vec::new();
-        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";"]) && self.cur_token != None {
+        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";"])
+            && self.cur_token != None
+        {
             tables.push(self.parse_table());
         }
         tables
     }
     fn parse_table(&mut self) -> cst::Node {
         // join
-        let join = if self.cur_token_in(&vec!["left", "right", "cross", "inner", ",", "full", "join"]) {
+        let join = if self.cur_token_in(&vec![
+            "left", "right", "cross", "inner", ",", "full", "join",
+        ]) {
             if self.cur_token_in(&vec!["join", ","]) {
                 let join = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // join -> table
@@ -239,9 +243,14 @@ impl Parser {
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left_expr.push_node("as", as_);
         }
-        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","]) && self.peek_token != None {
+        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","])
+            && self.peek_token != None
+        {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node {token: None, children: HashMap::new()};
+            let mut as_ = cst::Node {
+                token: None,
+                children: HashMap::new(),
+            };
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left_expr.push_node("as", as_);
         }
@@ -334,12 +343,14 @@ mod tests {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
-            select 2 two;"
+            select 2 two;
+            select * from data1 inner join data2"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         let stmt = p.parse_code();
         let tests = vec![
+            // simple select
             "\
 self: SELECT
 columns:
@@ -371,6 +382,7 @@ where:
   self: where
   expr:
     self: true",
+            // alias
             "\
 self: select
 columns:
@@ -384,7 +396,9 @@ from:
   tables:
   - self: data
 semicolon:
-  self: ;","\
+  self: ;",
+            // implicit alias
+            "\
 self: select
 columns:
 - self: 2
@@ -393,7 +407,21 @@ columns:
     alias:
       self: two
 semicolon:
-  self: ;"
+  self: ;",
+            // join
+            "\
+self: select
+columns:
+- self: *
+from:
+  self: from
+  tables:
+  - self: data1
+  - self: data2
+    join:
+      self: join
+      type:
+        self: inner",
         ];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
