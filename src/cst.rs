@@ -21,6 +21,12 @@ impl Node {
             children: HashMap::new()
         }
     }
+    pub fn new_none() -> Node {
+        Node {
+            token: None,
+            children: HashMap::new(),
+        }
+    }
     pub fn to_string(&self, indent: usize, is_array: bool) -> String {
         let mut res = Vec::new();
         // push `self: xxx` or `- self: xxx`

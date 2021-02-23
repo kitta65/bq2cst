@@ -86,7 +86,7 @@ impl Parser {
         // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from"])),
+            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";"])),
         );
         // from
         if self.cur_token_is("FROM") {
@@ -94,7 +94,8 @@ impl Parser {
             self.next_token(); // from -> table
             from.push_node_vec(
                 "tables",
-                self.parse_exprs(&vec!["where", "group", "having", "limit", ";"]), // TODO... define parse_tables
+                //self.parse_exprs(&vec!["where", "group", "having", "limit", ";"]),
+                self.parse_tables(&vec![]),
             );
             node.push_node("from", from);
         }
@@ -150,16 +151,6 @@ impl Parser {
         self.next_token(); // ; -> stmt
         node
     }
-    fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
-        // TODO... precedence
-        let mut exprs: Vec<cst::Node> = Vec::new();
-        //let token: token::Token;
-        //let node: cst::Node;
-        while !self.cur_token_in(until) && self.cur_token != None {
-            exprs.push(self.parse_expr());
-        }
-        exprs
-    }
     fn cur_token_in(&self, literals: &Vec<&str>) -> bool {
         for l in literals {
             if self.cur_token_is(l) {
@@ -175,6 +166,52 @@ impl Parser {
             };
         }
         false
+    }
+    fn parse_tables(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
+        let mut tables: Vec<cst::Node> = Vec::new();
+        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";"]) && self.cur_token != None {
+            tables.push(self.parse_table());
+        }
+        tables
+    }
+    fn parse_table(&mut self) -> cst::Node {
+        // join
+        let join = if self.cur_token_in(&vec!["left", "right", "cross", "inner", ",", "full", "join"]) {
+            if self.cur_token_in(&vec!["join", ","]) {
+                let join = cst::Node::new(self.cur_token.clone().unwrap());
+                self.next_token(); // join -> table
+                join
+            } else {
+                let mut type_ = cst::Node::new(self.cur_token.clone().unwrap());
+                self.next_token(); // type -> outer, type -> join
+                if self.cur_token_is("outer") {
+                    type_.push_node("outer", cst::Node::new(self.cur_token.clone().unwrap()));
+                    self.next_token(); // outer -> join
+                }
+                let mut join = cst::Node::new(self.cur_token.clone().unwrap());
+                join.push_node("type", type_);
+                self.next_token(); // join -> table,
+                join
+            }
+        } else {
+            cst::Node::new_none()
+        };
+        let mut table = cst::Node::new(self.cur_token.clone().unwrap());
+        if join.token != None {
+            table.push_node("join", join);
+        }
+        self.next_token(); // `table` -> AS, `table` -> where, `table` -> join
+        table
+    }
+    fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
+        // TODO... precedence
+        let mut exprs: Vec<cst::Node> = Vec::new();
+        //let token: token::Token;
+        //let node: cst::Node;
+        while !self.cur_token_in(until) && self.cur_token != None {
+            exprs.push(self.parse_expr());
+        }
+        exprs
     }
     fn parse_expr(&mut self) -> cst::Node {
         let mut left_expr: cst::Node;
@@ -297,7 +334,7 @@ mod tests {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
-            select 2 two"
+            select 2 two;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -354,7 +391,9 @@ columns:
   as:
     self: None
     alias:
-      self: two"
+      self: two
+semicolon:
+  self: ;"
         ];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
