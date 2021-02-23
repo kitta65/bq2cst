@@ -187,6 +187,7 @@ impl Parser {
             };
         }
         if self.peek_token_is("as") {
+            self.next_token(); // expr -> as
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // as -> alias
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
@@ -280,7 +281,7 @@ mod tests {
     fn test_parse_exprs() {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
-            select 1 from data"
+            select 1 as num from data"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -321,6 +322,10 @@ where:
 self: select
 columns:
 - self: 1
+  as:
+    self: as
+    alias:
+      self: num
 from:
   self: from
   tables:
