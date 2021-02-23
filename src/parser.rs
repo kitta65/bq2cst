@@ -281,7 +281,8 @@ mod tests {
     fn test_parse_exprs() {
         let input = "\
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
-            select 1 as num from data"
+            select 1 as num from data;
+            select 2 as two"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -329,7 +330,16 @@ columns:
 from:
   self: from
   tables:
-  - self: data",
+  - self: data
+semicolon:
+  self: ;","\
+self: select
+columns:
+- self: 2
+  as:
+    self: as
+    alias:
+      self: two"
         ];
         for i in 0..tests.len() {
             assert_eq!(stmt[i].to_string(0, false), tests[i])
