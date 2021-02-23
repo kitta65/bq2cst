@@ -49,7 +49,7 @@ impl Parser {
             .as_str()
         {
             "SELECT" => {
-                println!("found select!");
+                //println!("found select!");
                 self.parse_select_statement()
             }
             _ => self.parse_select_statement(),
@@ -178,7 +178,7 @@ impl Parser {
     }
     fn parse_table(&mut self) -> cst::Node {
         // join
-        let join = if self.cur_token_in(&vec![
+        let mut join = if self.cur_token_in(&vec![
             "left", "right", "cross", "inner", ",", "full", "join",
         ]) {
             if self.cur_token_in(&vec!["join", ","]) {
@@ -200,11 +200,21 @@ impl Parser {
         } else {
             cst::Node::new_none()
         };
+        // table
         let mut table = cst::Node::new(self.cur_token.clone().unwrap());
+        self.next_token(); // `table` -> AS, `table` -> where, `table` -> join, table -> on
         if join.token != None {
+            if self.cur_token_is("on") {
+                let mut on = cst::Node::new(self.cur_token.clone().unwrap());
+                self.next_token(); // on -> expr
+                //on.push_node("expr", cst::Node::new(self.cur_token.clone().unwrap()));
+                on.push_node("expr", self.parse_expr());
+                join.push_node("on", on);
+            } //else self.cur_token_is("using") {}
             table.push_node("join", join);
         }
-        self.next_token(); // `table` -> AS, `table` -> where, `table` -> join
+        // TODO... using()
+        // TODO... as
         table
     }
     fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
@@ -344,7 +354,7 @@ mod tests {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
             select 1 as num from data;
             select 2 two;
-            select * from data1 inner join data2"
+            select * from data1 inner join data2 ON true"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -420,11 +430,16 @@ from:
   - self: data2
     join:
       self: join
+      on:
+        self: ON
+        expr:
+          self: true
       type:
         self: inner",
         ];
         for i in 0..tests.len() {
-            assert_eq!(stmt[i].to_string(0, false), tests[i])
+            println!("{}\n", stmt[i].to_string(0, false));
+            assert_eq!(stmt[i].to_string(0, false), tests[i]);
         }
         //test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
     }
