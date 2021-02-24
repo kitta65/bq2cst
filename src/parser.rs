@@ -40,7 +40,7 @@ impl Parser {
     }
     fn parse_statement(&mut self) -> cst::Node {
         // i dont wanna use clone but i dont know how to avoid
-        match self
+        let node = match self
             .cur_token
             .clone()
             .unwrap()
@@ -53,7 +53,9 @@ impl Parser {
                 self.parse_select_statement()
             }
             _ => self.parse_select_statement(),
-        }
+        };
+        self.next_token();
+        node
     }
     fn parse_select_statement(&mut self) -> cst::Node {
         let mut node = cst::Node {
@@ -86,7 +88,7 @@ impl Parser {
         // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";"])),
+            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit"])),
         );
         // from
         if self.cur_token_is("FROM") {
@@ -153,7 +155,7 @@ impl Parser {
             node.push_node("semicolon", cst::Node::new(self.cur_token.clone().unwrap()))
         }
         // next statement
-        self.next_token(); // ; -> stmt
+        //self.next_token(); // ; -> stmt
         node
     }
     fn cur_token_in(&self, literals: &Vec<&str>) -> bool {
@@ -251,6 +253,7 @@ impl Parser {
             exprs.push(self.parse_expr(999, until));
             self.next_token();
         }
+        // TODO back one token here!
         exprs
     }
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
@@ -288,6 +291,9 @@ impl Parser {
                 self.next_token(); // expr -> hour
                 left.push_node("date_part", cst::Node::new(self.cur_token.clone().unwrap()));
                 left.push_node("right", right);
+            }
+            "SELECT" => {
+                left = self.parse_select_statement();
             }
             _ => (),
         };
@@ -481,7 +487,8 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2));"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)),;"
+            //select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1);"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -638,6 +645,8 @@ columns:
   right:
     self: 1
 - self: (
+  comma:
+    self: ,
   expr:
     self: (
     expr:
@@ -648,6 +657,17 @@ columns:
     self: )
 semicolon:
   self: ;",
+//- self: (
+//  expr:
+//    self: select
+//    columns:
+//    - self: info
+//    limit:
+//      self: limit
+//      expr:
+//        self: 1
+//  rparen:
+//    self: )
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
