@@ -483,7 +483,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1;"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), ((1+1))*1;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
