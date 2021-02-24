@@ -383,6 +383,9 @@ fn str2precedence(s: &str) -> usize {
     match s {
         "-" => 104,
         "+" => 104,
+        "*" => 103,
+        "/" => 103,
+        "||" => 103,
         _ => 999,
     }
 }
@@ -450,7 +453,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1, date '2020-02-24', TIMESTAMP '2020-01-01';"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -555,7 +558,11 @@ columns:
   comma:
     self: ,
   left:
-    self: 1
+    self: +
+    left:
+      self: 1
+    right:
+      self: 1
   right:
     self: 1
 - self: date
@@ -564,8 +571,15 @@ columns:
   right:
     self: '2020-02-24'
 - self: TIMESTAMP
+  comma:
+    self: ,
   right:
     self: '2020-01-01'
+- self: interval
+  date_part:
+    self: year
+  right:
+    self: 9
 semicolon:
   self: ;",
         ];
