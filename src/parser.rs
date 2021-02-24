@@ -271,10 +271,17 @@ impl Parser {
             }
             "TIMESTAMP" => {
                 if self.peek_token.clone().unwrap().is_string() {
-                    self.next_token(); // date -> 'yyyy-mm-dd'
+                    self.next_token(); // timestamp -> 'yyyy-mm-dd'
                     let right = self.parse_expr(001, until);
                     left.push_node("right", right);
                 }
+            }
+            "INTERVAL" => {
+                self.next_token(); // interval -> expr
+                let right = self.parse_expr(001, &vec!["hour", "month", "year"]);
+                self.next_token(); // expr -> hour
+                left.push_node("date_part", cst::Node::new(self.cur_token.clone().unwrap()));
+                left.push_node("right", right);
             }
             _ => (),
         };
