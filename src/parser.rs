@@ -259,9 +259,7 @@ impl Parser {
         match self.cur_token.clone().unwrap().literal.to_uppercase().as_str() {
             "(" => {
                 self.next_token(); // ( -> expr
-                let mut node = self.parse_expr(999, until);
-                node.push_node("lparen", left);
-                left = node;
+                left.push_node("expr", self.parse_expr(999, until));
                 self.next_token(); // expr -> )
                 left.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
             }
@@ -483,7 +481,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), ((1+1))*1;"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2));"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -625,18 +623,29 @@ columns:
   rparen:
     self: )
 - self: *
+  comma:
+    self: ,
   left:
-    self: +
-    left:
-      self: 1
-    lparen:
-      self: (
-    right:
-      self: 1
+    self: (
+    expr:
+      self: +
+      left:
+        self: 1
+      right:
+        self: 1
     rparen:
       self: )
   right:
     self: 1
+- self: (
+  expr:
+    self: (
+    expr:
+      self: 2
+    rparen:
+      self: )
+  rparen:
+    self: )
 semicolon:
   self: ;",
         ];
