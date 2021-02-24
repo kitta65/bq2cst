@@ -269,6 +269,13 @@ impl Parser {
                     left.push_node("right", right);
                 }
             }
+            "TIMESTAMP" => {
+                if self.peek_token.clone().unwrap().is_string() {
+                    self.next_token(); // date -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
             _ => (),
         };
         while !self.peek_token_in(until) && self.peek_precedence() < precedence {
@@ -436,7 +443,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1, date '2020-02-24';"
+            select -1, 1+1, date '2020-02-24', TIMESTAMP '2020-01-01';"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -545,8 +552,13 @@ columns:
   right:
     self: 1
 - self: date
+  comma:
+    self: ,
   right:
     self: '2020-02-24'
+- self: TIMESTAMP
+  right:
+    self: '2020-01-01'
 semicolon:
   self: ;",
         ];
