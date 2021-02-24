@@ -103,7 +103,10 @@ impl Parser {
         if self.cur_token_is("WHERE") {
             let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
-            where_.push_node("expr", self.parse_expr(999, &vec!["group", "having", ";", ","]));
+            where_.push_node(
+                "expr",
+                self.parse_expr(999, &vec!["group", "having", ";", ","]),
+            );
             self.next_token(); // parse_expr needs next_token()
             node.push_node("where", where_);
         }
@@ -222,7 +225,16 @@ impl Parser {
             if self.cur_token_is("on") {
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
-                on.push_node("expr", self.parse_expr(999, &vec!["left", "right", "cross", "inner", ",", "full", "join", "where", "group", "having", ";"]));
+                on.push_node(
+                    "expr",
+                    self.parse_expr(
+                        999,
+                        &vec![
+                            "left", "right", "cross", "inner", ",", "full", "join", "where",
+                            "group", "having", ";",
+                        ],
+                    ),
+                );
                 self.next_token(); // parse_expr needs next_token()
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
@@ -244,12 +256,19 @@ impl Parser {
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
         // prefix or literal
         let mut left = cst::Node::new(self.cur_token.clone().unwrap());
-        match self.cur_token.clone().unwrap().literal.as_str() {
+        match self.cur_token.clone().unwrap().literal.to_uppercase().as_str() {
             "-" => {
                 self.next_token(); // - -> expr
                 let right = self.parse_expr(102, until);
                 left.push_node("right", right);
-            },
+            }
+            "DATE" => {
+                if self.peek_token.clone().unwrap().is_string() {
+                    self.next_token(); // date -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
             _ => (),
         };
         while !self.peek_token_in(until) && self.peek_precedence() < precedence {
@@ -263,7 +282,7 @@ impl Parser {
                     node.push_node("left", left);
                     node.push_node("right", self.parse_expr(precedence, until));
                     left = node;
-                },
+                }
                 _ => panic!(),
             }
         }
@@ -276,7 +295,8 @@ impl Parser {
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","])
-            && self.peek_token != None && precedence == 999
+            && self.peek_token != None
+            && precedence == 999
         {
             self.next_token(); // expr -> alias
             let mut as_ = cst::Node {
@@ -321,7 +341,9 @@ impl Parser {
     fn peek_precedence(&self) -> usize {
         let token = match self.peek_token.clone() {
             Some(t) => t,
-            None => {return 999;},
+            None => {
+                return 999;
+            }
         };
         str2precedence(token.literal.as_str())
     }
@@ -330,6 +352,7 @@ impl Parser {
 fn str2precedence(s: &str) -> usize {
     // precedenc
     // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+    // 001... date, timestamp (literal)
     // 101... [], .
     // 102... +, - , ~ (unary operator)
     // 103... *, / , ||
@@ -413,7 +436,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1;"
+            select -1, 1+1, date '2020-02-24';"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -505,8 +528,8 @@ from:
         self: inner
 semicolon:
   self: ;",
-// parse_expr precedence
-  "\
+            // parse_expr precedence
+            "\
 self: select
 columns:
 - self: -
@@ -515,10 +538,15 @@ columns:
   right:
     self: 1
 - self: +
+  comma:
+    self: ,
   left:
     self: 1
   right:
     self: 1
+- self: date
+  right:
+    self: '2020-02-24'
 semicolon:
   self: ;",
         ];
