@@ -257,6 +257,14 @@ impl Parser {
         // prefix or literal
         let mut left = cst::Node::new(self.cur_token.clone().unwrap());
         match self.cur_token.clone().unwrap().literal.to_uppercase().as_str() {
+            "(" => {
+                self.next_token(); // ( -> expr
+                let mut node = self.parse_expr(999, until);
+                node.push_node("lparen", left);
+                left = node;
+                self.next_token(); // expr -> )
+                left.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
+            }
             "-" => {
                 self.next_token(); // - -> expr
                 let right = self.parse_expr(102, until);
@@ -297,17 +305,24 @@ impl Parser {
                     node.push_node("right", self.parse_expr(precedence, until));
                     left = node;
                 }
+                "*" => {
+                    self.next_token(); // expr -> +
+                    let precedence = self.cur_precedence();
+                    let mut node = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // + -> expr
+                    node.push_node("left", left);
+                    node.push_node("right", self.parse_expr(precedence, until));
+                    left = node;
+                }
                 "(" => {
                     self.next_token(); // expr -> (
-                    println!("{:?}", self.cur_token.clone()); // (
                     //let precedence = self.cur_precedence();
                     let mut node = cst::Node::new(self.cur_token.clone().unwrap());
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
-                    println!("{:?}", self.cur_token.clone()); // true
                     node.push_node_vec("args", self.parse_exprs(&vec![")"]));
-                    println!("{:?}", self.cur_token.clone()); // None
                     node.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
+                    // TODO window function
                     left = node;
                 }
                 _ => panic!(),
@@ -468,7 +483,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true');"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -603,10 +618,25 @@ columns:
     comma:
       self: ,
   - self: 'true'
+  comma:
+    self: ,
   func:
     self: if
   rparen:
     self: )
+- self: *
+  left:
+    self: +
+    left:
+      self: 1
+    lparen:
+      self: (
+    right:
+      self: 1
+    rparen:
+      self: )
+  right:
+    self: 1
 semicolon:
   self: ;",
         ];
