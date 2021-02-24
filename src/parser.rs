@@ -297,6 +297,19 @@ impl Parser {
                     node.push_node("right", self.parse_expr(precedence, until));
                     left = node;
                 }
+                "(" => {
+                    self.next_token(); // expr -> (
+                    println!("{:?}", self.cur_token.clone()); // (
+                    //let precedence = self.cur_precedence();
+                    let mut node = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // ( -> args
+                    node.push_node("func", left);
+                    println!("{:?}", self.cur_token.clone()); // true
+                    node.push_node_vec("args", self.parse_exprs(&vec![")"]));
+                    println!("{:?}", self.cur_token.clone()); // None
+                    node.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
+                    left = node;
+                }
                 _ => panic!(),
             }
         }
@@ -308,7 +321,7 @@ impl Parser {
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left.push_node("as", as_);
         }
-        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ","])
+        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ",", ")"])
             && self.peek_token != None
             && precedence == 999
         {
@@ -367,6 +380,7 @@ fn str2precedence(s: &str) -> usize {
     // precedenc
     // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
     // 001... date, timestamp (literal)
+    // 005... ( (call expression)
     // 101... [], .
     // 102... +, - , ~ (unary operator)
     // 103... *, / , ||
@@ -381,6 +395,7 @@ fn str2precedence(s: &str) -> usize {
     // 112... or
     // 999... LOWEST
     match s {
+        "(" => 005,
         "-" => 104,
         "+" => 104,
         "*" => 103,
@@ -453,7 +468,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year;"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true');"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -576,10 +591,22 @@ columns:
   right:
     self: '2020-01-01'
 - self: interval
+  comma:
+    self: ,
   date_part:
     self: year
   right:
     self: 9
+- self: (
+  args:
+  - self: true
+    comma:
+      self: ,
+  - self: 'true'
+  func:
+    self: if
+  rparen:
+    self: )
 semicolon:
   self: ;",
         ];
