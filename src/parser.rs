@@ -90,13 +90,13 @@ impl Parser {
             "columns".to_string(),
             cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit"])),
         );
+        self.next_token(); // expr -> from
         // from
         if self.cur_token_is("FROM") {
             let mut from = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // from -> table
             from.push_node_vec(
                 "tables",
-                //self.parse_exprs(&vec!["where", "group", "having", "limit", ";"]),
                 self.parse_tables(&vec![]),
             );
             node.push_node("from", from);
@@ -119,11 +119,13 @@ impl Parser {
             groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
             self.next_token(); // by -> expr
             groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";"]));
+            self.next_token(); // expr -> group
             node.push_node("groupby", groupby);
             if self.cur_token_is("HAVING") {
                 let mut having = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // by -> expr
                 having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
+                self.next_token(); // expr -> limit
                 node.push_node("having", having);
             }
         }
@@ -132,6 +134,7 @@ impl Parser {
             let mut having = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // by -> expr
             having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";"]));
+            self.next_token(); // expr -> group
             node.push_node("having", having);
             if self.cur_token_is("GROUP") {
                 let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
@@ -139,6 +142,7 @@ impl Parser {
                 groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
                 self.next_token(); // by -> expr
                 groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
+                self.next_token(); // expr -> limit
                 node.push_node("having", groupby);
             }
         }
@@ -251,10 +255,13 @@ impl Parser {
         //let node: cst::Node;
         while !self.cur_token_in(until) && self.cur_token != None {
             exprs.push(self.parse_expr(999, until));
-            self.next_token();
+            if !self.peek_token_in(until) && self.peek_token != None {
+                self.next_token();
+            } else {
+                return exprs;
+            }
         }
-        // TODO back one token here!
-        exprs
+        exprs // maybe not needed
     }
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
         // prefix or literal
@@ -325,6 +332,7 @@ impl Parser {
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
                     node.push_node_vec("args", self.parse_exprs(&vec![")"]));
+                    self.next_token(); // expr -> )
                     node.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
                     // TODO window function
                     left = node;
@@ -673,6 +681,5 @@ semicolon:
             println!("{}\n", stmt[i].to_string(0, false));
             assert_eq!(stmt[i].to_string(0, false), tests[i]);
         }
-        //test_parse_select_statement(&stmt[0], false, vec!["'aaa'".to_string(), "123".to_string()])
     }
 }
