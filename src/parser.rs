@@ -49,7 +49,6 @@ impl Parser {
             .as_str()
         {
             "SELECT" => {
-                //println!("found select!");
                 self.parse_select_statement()
             }
             _ => self.parse_select_statement(),
@@ -90,72 +89,74 @@ impl Parser {
             "columns".to_string(),
             cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit"])),
         );
-        self.next_token(); // expr -> from
         // from
-        if self.cur_token_is("FROM") {
+        if self.peek_token_is("FROM") {
+            self.next_token(); // expr -> from
             let mut from = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // from -> table
-            from.push_node_vec(
-                "tables",
-                self.parse_tables(&vec![]),
-            );
+            from.push_node_vec("tables", self.parse_tables(&vec![]));
             node.push_node("from", from);
         }
         // where
-        if self.cur_token_is("WHERE") {
+        if self.peek_token_is("WHERE") {
+            self.next_token(); // expr -> where
             let mut where_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
             where_.push_node(
                 "expr",
                 self.parse_expr(999, &vec!["group", "having", ";", ","]),
             );
-            self.next_token(); // parse_expr needs next_token()
+            //self.next_token(); // parse_expr needs next_token()
             node.push_node("where", where_);
         }
         // group by
-        if self.cur_token_is("GROUP") {
+        if self.peek_token_is("GROUP") {
+            self.next_token(); // expr -> group
             let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // group -> by
             groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
             self.next_token(); // by -> expr
             groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";"]));
-            self.next_token(); // expr -> group
             node.push_node("groupby", groupby);
-            if self.cur_token_is("HAVING") {
+            if self.peek_token_is("HAVING") {
+                self.next_token(); // expr -> having
                 let mut having = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // by -> expr
                 having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
-                self.next_token(); // expr -> limit
+                //self.next_token(); // expr -> limit
                 node.push_node("having", having);
             }
         }
         // having
-        if self.cur_token_is("HAVING") {
+        if self.peek_token_is("HAVING") {
+            self.next_token(); // expr -> having
             let mut having = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // by -> expr
             having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";"]));
-            self.next_token(); // expr -> group
             node.push_node("having", having);
-            if self.cur_token_is("GROUP") {
+            if self.peek_token_is("GROUP") {
+                self.next_token(); // expr -> group
                 let mut groupby = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // group -> by
                 groupby.push_node("by", cst::Node::new(self.cur_token.clone().unwrap()));
                 self.next_token(); // by -> expr
                 groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
-                self.next_token(); // expr -> limit
+                //self.next_token(); // expr -> limit
                 node.push_node("having", groupby);
             }
         }
         // limit
-        if self.cur_token_is("LIMIT") {
+        if self.peek_token_is("LIMIT") {
+            self.next_token(); // expr -> limit
             let mut limit = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // limit -> expr
             limit.push_node("expr", self.parse_expr(999, &vec![";", ","]));
-            self.next_token(); // parse_expr needs next_token()
+            //self.next_token(); // parse_expr needs next_token()
             node.push_node("limit", limit)
         }
         // ;
-        if self.cur_token_is(";") {
+        if self.peek_token_is(";") {
+            self.next_token(); // expr -> ;
             node.push_node("semicolon", cst::Node::new(self.cur_token.clone().unwrap()))
         }
         // next statement
@@ -184,8 +185,13 @@ impl Parser {
             && self.cur_token != None
         {
             tables.push(self.parse_table());
+            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";"]) && self.peek_token != None {
+                self.next_token();
+            } else {
+                return tables;
+            }
         }
-        tables
+        tables // maybe not needed
     }
     fn parse_table(&mut self) -> cst::Node {
         // join
@@ -214,21 +220,23 @@ impl Parser {
         // table
         let mut table = cst::Node::new(self.cur_token.clone().unwrap());
         // TODO '.' operator
-        self.next_token(); // `table` -> AS, `table` -> where, `table` -> join, table -> on
-        if self.cur_token_is("as") {
+        if self.peek_token_is("as") {
+            self.next_token(); // `table` -> AS
             let mut as_ = cst::Node::new(self.cur_token.clone().unwrap());
             self.next_token(); // as -> alias
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             table.push_node("as", as_);
-            self.next_token(); // alias -> on, clause
-        } else if !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
+            //self.next_token(); // alias -> on, clause
+        } else if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
+            self.next_token(); // `table` -> alias
             let mut as_ = cst::Node::new_none();
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             table.push_node("as", as_);
-            self.next_token(); // alias -> on, clause
+            //self.next_token(); // alias -> on, clause
         }
         if join.token != None {
-            if self.cur_token_is("on") {
+            if self.peek_token_is("on") {
+                self.next_token(); // `table` -> on
                 let mut on = cst::Node::new(self.cur_token.clone().unwrap());
                 self.next_token(); // on -> expr
                 on.push_node(
@@ -241,7 +249,7 @@ impl Parser {
                         ],
                     ),
                 );
-                self.next_token(); // parse_expr needs next_token()
+                //self.next_token(); // parse_expr needs next_token()
                 join.push_node("on", on);
             } //else self.cur_token_is("using") {}
             table.push_node("join", join);
@@ -266,7 +274,14 @@ impl Parser {
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
         // prefix or literal
         let mut left = cst::Node::new(self.cur_token.clone().unwrap());
-        match self.cur_token.clone().unwrap().literal.to_uppercase().as_str() {
+        match self
+            .cur_token
+            .clone()
+            .unwrap()
+            .literal
+            .to_uppercase()
+            .as_str()
+        {
             "(" => {
                 self.next_token(); // ( -> expr
                 left.push_node("expr", self.parse_expr(999, until));
@@ -300,6 +315,7 @@ impl Parser {
                 left.push_node("right", right);
             }
             "SELECT" => {
+                println!("{:?}", self.cur_token.clone().unwrap());
                 left = self.parse_select_statement();
             }
             _ => (),
@@ -327,7 +343,7 @@ impl Parser {
                 }
                 "(" => {
                     self.next_token(); // expr -> (
-                    //let precedence = self.cur_precedence();
+                                       //let precedence = self.cur_precedence();
                     let mut node = cst::Node::new(self.cur_token.clone().unwrap());
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
@@ -348,8 +364,9 @@ impl Parser {
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             left.push_node("as", as_);
         }
-        if !self.peek_token_in(&vec!["from", "where", "group", "having", "limit", ";", ",", ")"])
-            && self.peek_token != None
+        if !self.peek_token_in(&vec![
+            "from", "where", "group", "having", "limit", ";", ",", ")",
+        ]) && self.peek_token != None
             && precedence == 999
         {
             self.next_token(); // expr -> alias
@@ -495,8 +512,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)),;"
-            //select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1);"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1);"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -663,19 +679,19 @@ columns:
       self: )
   rparen:
     self: )
+- self: (
+  expr:
+    self: select
+    columns:
+    - self: info
+    limit:
+      self: limit
+      expr:
+        self: 1
+  rparen:
+    self: )
 semicolon:
   self: ;",
-//- self: (
-//  expr:
-//    self: select
-//    columns:
-//    - self: info
-//    limit:
-//      self: limit
-//      expr:
-//        self: 1
-//  rparen:
-//    self: )
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
