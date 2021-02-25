@@ -322,7 +322,7 @@ impl Parser {
         };
         while !self.peek_token_in(until) && self.peek_precedence() < precedence {
             // actually, until is not needed
-            match self.peek_token.clone().unwrap().literal.as_str() {
+            match self.peek_token.clone().unwrap().literal.to_uppercase().as_str() {
                 "+" => {
                     self.next_token(); // expr -> +
                     let precedence = self.cur_precedence();
@@ -339,6 +339,20 @@ impl Parser {
                     self.next_token(); // + -> expr
                     node.push_node("left", left);
                     node.push_node("right", self.parse_expr(precedence, until));
+                    left = node;
+                }
+                "IN" => {
+                    self.next_token(); // expr -> in
+                    //let precedence = self.cur_precedence();
+                    let mut node = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // in -> (
+                    node.push_node("left", left);
+                    let mut right = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // ( -> expr
+                    right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
+                    self.next_token(); // expr -> )
+                    right.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
+                    node.push_node("right", right);
                     left = node;
                 }
                 "(" => {
@@ -438,13 +452,14 @@ fn str2precedence(s: &str) -> usize {
     // 111... and
     // 112... or
     // 999... LOWEST
-    match s {
+    match s.to_uppercase().as_str() {
         "(" => 005,
         "-" => 104,
         "+" => 104,
         "*" => 103,
         "/" => 103,
         "||" => 103,
+        "IN" => 109,
         _ => 999,
     }
 }
@@ -512,7 +527,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1);"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -690,8 +705,27 @@ columns:
         self: 1
   rparen:
     self: )
+from:
+  self: from
+  tables:
+  - self: data
 semicolon:
-  self: ;",
+  self: ;
+where:
+  self: where
+  expr:
+    self: in
+    left:
+      self: 1
+    right:
+      self: (
+      exprs:
+      - self: 1
+        comma:
+          self: ,
+      - self: 2
+      rparen:
+        self: )",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
