@@ -324,11 +324,6 @@ impl Parser {
             }
             _ => (),
         };
-        let mut not = None;
-        if self.peek_token_is("not") {
-            self.next_token();
-            not = Some(cst::Node::new(self.cur_token.clone().unwrap()));
-        }
         while !self.peek_token_in(until) && self.peek_precedence() < precedence {
             // actually, until is not needed
             match self
@@ -372,6 +367,18 @@ impl Parser {
                     node.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
                     // TODO window function
                     left = node;
+                }
+                "NOT" => {
+                    println!("{:?}", "from not");
+                    self.next_token(); // expr -> not
+                    let not = cst::Node::new(self.cur_token.clone().unwrap());
+                    self.next_token(); // not -> in, like
+                    if self.cur_token_is("in") {
+                        left = self.parse_in_operator(left);
+                        left.push_node("not", not);
+                    } else {
+                        panic!();
+                    }
                 }
                 _ => panic!(),
             }
@@ -478,6 +485,7 @@ fn str2precedence(s: &str) -> usize {
         "/" => 103,
         "||" => 103,
         "IN" => 109,
+        "NOT" => 109, // TODO distinguish `not boolean` from `not in`
         _ => 999,
     }
 }
@@ -546,7 +554,7 @@ mod tests {
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
-            select 1 from data;"
+            select 1 from data where 1 NOT in (1, 2);"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -745,7 +753,7 @@ where:
       - self: 2
       rparen:
         self: )",
-        // window clause
+        // window clause, not in
             "\
 self: select
 columns:
@@ -755,7 +763,24 @@ from:
   tables:
   - self: data
 semicolon:
-  self: ;",
+  self: ;
+where:
+  self: where
+  expr:
+    self: in
+    left:
+      self: 1
+    not:
+      self: NOT
+    right:
+      self: (
+      exprs:
+      - self: 1
+        comma:
+          self: ,
+      - self: 2
+      rparen:
+        self: )",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
