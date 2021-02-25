@@ -48,9 +48,7 @@ impl Parser {
             .to_uppercase()
             .as_str()
         {
-            "SELECT" => {
-                self.parse_select_statement()
-            }
+            "SELECT" => self.parse_select_statement(),
             _ => self.parse_select_statement(),
         };
         self.next_token();
@@ -185,7 +183,9 @@ impl Parser {
             && self.cur_token != None
         {
             tables.push(self.parse_table());
-            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";"]) && self.peek_token != None {
+            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";"])
+                && self.peek_token != None
+            {
                 self.next_token();
             } else {
                 return tables;
@@ -226,7 +226,7 @@ impl Parser {
             self.next_token(); // as -> alias
             as_.push_node("alias", cst::Node::new(self.cur_token.clone().unwrap()));
             table.push_node("as", as_);
-            //self.next_token(); // alias -> on, clause
+        //self.next_token(); // alias -> on, clause
         } else if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
             self.next_token(); // `table` -> alias
             let mut as_ = cst::Node::new_none();
@@ -318,11 +318,27 @@ impl Parser {
                 println!("{:?}", self.cur_token.clone().unwrap());
                 left = self.parse_select_statement();
             }
+            "NOT" => { // not in, not like
+                println!("{:?}", self.cur_token.clone().unwrap());
+                left = self.parse_select_statement();
+            }
             _ => (),
         };
+        let mut not = None;
+        if self.peek_token_is("not") {
+            self.next_token();
+            not = Some(cst::Node::new(self.cur_token.clone().unwrap()));
+        }
         while !self.peek_token_in(until) && self.peek_precedence() < precedence {
             // actually, until is not needed
-            match self.peek_token.clone().unwrap().literal.to_uppercase().as_str() {
+            match self
+                .peek_token
+                .clone()
+                .unwrap()
+                .literal
+                .to_uppercase()
+                .as_str()
+            {
                 "+" => {
                     self.next_token(); // expr -> +
                     let precedence = self.cur_precedence();
@@ -343,17 +359,7 @@ impl Parser {
                 }
                 "IN" => {
                     self.next_token(); // expr -> in
-                    //let precedence = self.cur_precedence();
-                    let mut node = cst::Node::new(self.cur_token.clone().unwrap());
-                    self.next_token(); // in -> (
-                    node.push_node("left", left);
-                    let mut right = cst::Node::new(self.cur_token.clone().unwrap());
-                    self.next_token(); // ( -> expr
-                    right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
-                    self.next_token(); // expr -> )
-                    right.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
-                    node.push_node("right", right);
-                    left = node;
+                    left = self.parse_in_operator(left);
                 }
                 "(" => {
                     self.next_token(); // expr -> (
@@ -403,6 +409,18 @@ impl Parser {
         }
         //self.next_token(); // expr -> from, ',' -> expr
         left
+    }
+    fn parse_in_operator(&mut self, mut left: cst::Node) -> cst::Node {
+        let mut node = cst::Node::new(self.cur_token.clone().unwrap());
+        self.next_token(); // in -> (
+        node.push_node("left", left);
+        let mut right = cst::Node::new(self.cur_token.clone().unwrap());
+        self.next_token(); // ( -> expr
+        right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
+        self.next_token(); // expr -> )
+        right.push_node("rparen", cst::Node::new(self.cur_token.clone().unwrap()));
+        node.push_node("right", right);
+        node
     }
     fn peek_token_is(&self, s: &str) -> bool {
         match self.peek_token.clone() {
@@ -527,7 +545,8 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);"
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
+            select 1 from data;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -726,6 +745,17 @@ where:
       - self: 2
       rparen:
         self: )",
+        // window clause
+            "\
+self: select
+columns:
+- self: 1
+from:
+  self: from
+  tables:
+  - self: data
+semicolon:
+  self: ;",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
