@@ -31,9 +31,8 @@ impl Parser {
     fn get_offset_index(&self, offset: usize) -> usize {
         let mut cnt = 0;
         let mut idx = self.position + 1;
-        while cnt < offset {
+        while cnt < offset && idx < self.tokens.len() {
             while self.tokens[idx].is_comment() {
-                println!("{:?}", self.tokens[idx]);
                 idx += 1;
             }
             cnt += 1;
@@ -44,9 +43,11 @@ impl Parser {
         idx
     }
     fn next_token(&mut self) {
-        self.position += 1;
+        let idx = self.get_offset_index(1);
+        self.position = idx;
     }
     fn get_token(&self, offset: usize) -> token::Token {
+        //let idx = self.get_offset_index(offset);
         if self.position + offset <= self.tokens.len() - 1 {
             return self.tokens[self.position + offset].clone();
         }
@@ -771,10 +772,16 @@ select -- comment
 -- comment2
 *;".to_string();
         let l = lexer::Lexer::new(input);
-        let p = Parser::new(l);
-        println!("{:?}", p.tokens.len());
+        let mut p = Parser::new(l);
         assert_eq!(p.position, 1); // select
         assert_eq!(p.get_offset_index(1), 4); // *
         assert_eq!(p.get_offset_index(2), 5); // ;
+        assert_eq!(p.get_offset_index(3), 6); // ;
+        p.next_token();
+        assert_eq!(p.position, 4);
+        p.next_token();
+        assert_eq!(p.position, 5);
+        assert_eq!(p.get_offset_index(1), 6);
+        assert_eq!(p.get_offset_index(2), 6);
     }
 }
