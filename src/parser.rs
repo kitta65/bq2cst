@@ -98,12 +98,21 @@ impl Parser {
     }
     fn construct_node(&self) -> cst::Node {
         let mut node = cst::Node::new(self.get_token(0).clone());
+        // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
             leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
+        }
+        // following comments
+        let mut following_comment_nodes = Vec::new();
+        for idx in &self.following_comment_indices {
+            following_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
+        }
+        if 0 < following_comment_nodes.len() {
+            node.push_node_vec("following_comments", following_comment_nodes);
         }
         node
     }
@@ -814,6 +823,8 @@ where:
 self: select
 columns:
 - self: (
+  following_comments:
+  - self: -- lparen
   func:
     self: current_date
   rparen:
