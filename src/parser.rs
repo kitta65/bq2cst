@@ -94,10 +94,6 @@ impl Parser {
         node
     }
     fn parse_select_statement(&mut self) -> cst::Node {
-        //let mut node = cst::Node {
-        //    token: Some(self.get_token(0).clone()),
-        //    children: HashMap::new(),
-        //};
         let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
 
@@ -106,10 +102,7 @@ impl Parser {
             "DISTINCT" => {
                 node.children.insert(
                     "DISTINCT".to_string(),
-                    cst::Children::Node(cst::Node {
-                        token: Some(self.get_token(0).clone()),
-                        children: HashMap::new(),
-                    }),
+                    cst::Children::Node(self.construct_node()),
                 );
                 self.next_token(); // distinct -> columns
             }
@@ -123,7 +116,7 @@ impl Parser {
         // from
         if self.peek_token_is("FROM") {
             self.next_token(); // expr -> from
-            let mut from = cst::Node::new(self.get_token(0).clone());
+            let mut from = self.construct_node();
             self.next_token(); // from -> table
             from.push_node_vec("tables", self.parse_tables(&vec![]));
             node.push_node("from", from);
@@ -131,7 +124,7 @@ impl Parser {
         // where
         if self.peek_token_is("WHERE") {
             self.next_token(); // expr -> where
-            let mut where_ = cst::Node::new(self.get_token(0).clone());
+            let mut where_ = self.construct_node();
             self.next_token(); // limit -> expr
             where_.push_node(
                 "expr",
@@ -143,15 +136,15 @@ impl Parser {
         // group by
         if self.peek_token_is("GROUP") {
             self.next_token(); // expr -> group
-            let mut groupby = cst::Node::new(self.get_token(0).clone());
+            let mut groupby = self.construct_node();
             self.next_token(); // group -> by
-            groupby.push_node("by", cst::Node::new(self.get_token(0).clone()));
+            groupby.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
             groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";"]));
             node.push_node("groupby", groupby);
             if self.peek_token_is("HAVING") {
                 self.next_token(); // expr -> having
-                let mut having = cst::Node::new(self.get_token(0).clone());
+                let mut having = self.construct_node();
                 self.next_token(); // by -> expr
                 having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
                 //self.next_token(); // expr -> limit
@@ -161,15 +154,15 @@ impl Parser {
         // having
         if self.peek_token_is("HAVING") {
             self.next_token(); // expr -> having
-            let mut having = cst::Node::new(self.get_token(0).clone());
+            let mut having = self.construct_node();
             self.next_token(); // by -> expr
             having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";"]));
             node.push_node("having", having);
             if self.peek_token_is("GROUP") {
                 self.next_token(); // expr -> group
-                let mut groupby = cst::Node::new(self.get_token(0).clone());
+                let mut groupby = self.construct_node();
                 self.next_token(); // group -> by
-                groupby.push_node("by", cst::Node::new(self.get_token(0).clone()));
+                groupby.push_node("by", self.construct_node());
                 self.next_token(); // by -> expr
                 groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
                 //self.next_token(); // expr -> limit
@@ -179,7 +172,7 @@ impl Parser {
         // limit
         if self.peek_token_is("LIMIT") {
             self.next_token(); // expr -> limit
-            let mut limit = cst::Node::new(self.get_token(0).clone());
+            let mut limit = self.construct_node();
             self.next_token(); // limit -> expr
             limit.push_node("expr", self.parse_expr(999, &vec![";", ","]));
             //self.next_token(); // parse_expr needs next_token()
@@ -188,7 +181,7 @@ impl Parser {
         // ;
         if self.peek_token_is(";") {
             self.next_token(); // expr -> ;
-            node.push_node("semicolon", cst::Node::new(self.get_token(0).clone()))
+            node.push_node("semicolon", self.construct_node())
         }
         node
     }
@@ -229,17 +222,17 @@ impl Parser {
             "left", "right", "cross", "inner", ",", "full", "join",
         ]) {
             if self.cur_token_in(&vec!["join", ","]) {
-                let join = cst::Node::new(self.get_token(0).clone());
+                let join = self.construct_node();
                 self.next_token(); // join -> table
                 join
             } else {
-                let mut type_ = cst::Node::new(self.get_token(0).clone());
+                let mut type_ = self.construct_node();
                 self.next_token(); // type -> outer, type -> join
                 if self.cur_token_is("outer") {
-                    type_.push_node("outer", cst::Node::new(self.get_token(0).clone()));
+                    type_.push_node("outer", self.construct_node());
                     self.next_token(); // outer -> join
                 }
-                let mut join = cst::Node::new(self.get_token(0).clone());
+                let mut join = self.construct_node();
                 join.push_node("type", type_);
                 self.next_token(); // join -> table,
                 join
@@ -248,26 +241,26 @@ impl Parser {
             cst::Node::new_none()
         };
         // table
-        let mut table = cst::Node::new(self.get_token(0).clone());
+        let mut table = self.construct_node();
         // TODO '.' operator
         if self.peek_token_is("as") {
             self.next_token(); // `table` -> AS
-            let mut as_ = cst::Node::new(self.get_token(0).clone());
+            let mut as_ = self.construct_node();
             self.next_token(); // as -> alias
-            as_.push_node("alias", cst::Node::new(self.get_token(0).clone()));
+            as_.push_node("alias", self.construct_node());
             table.push_node("as", as_);
         //self.next_token(); // alias -> on, clause
         } else if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
             self.next_token(); // `table` -> alias
             let mut as_ = cst::Node::new_none();
-            as_.push_node("alias", cst::Node::new(self.get_token(0).clone()));
+            as_.push_node("alias", self.construct_node());
             table.push_node("as", as_);
             //self.next_token(); // alias -> on, clause
         }
         if join.token != None {
             if self.peek_token_is("on") {
                 self.next_token(); // `table` -> on
-                let mut on = cst::Node::new(self.get_token(0).clone());
+                let mut on = self.construct_node();
                 self.next_token(); // on -> expr
                 on.push_node(
                     "expr",
@@ -301,13 +294,13 @@ impl Parser {
     }
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
         // prefix or literal
-        let mut left = cst::Node::new(self.get_token(0).clone());
+        let mut left = self.construct_node();
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 self.next_token(); // ( -> expr
                 left.push_node("expr", self.parse_expr(999, until));
                 self.next_token(); // expr -> )
-                left.push_node("rparen", cst::Node::new(self.get_token(0).clone()));
+                left.push_node("rparen", self.construct_node());
             }
             "-" => {
                 self.next_token(); // - -> expr
@@ -332,7 +325,7 @@ impl Parser {
                 self.next_token(); // interval -> expr
                 let right = self.parse_expr(001, &vec!["hour", "month", "year"]);
                 self.next_token(); // expr -> hour
-                left.push_node("date_part", cst::Node::new(self.get_token(0).clone()));
+                left.push_node("date_part", self.construct_node());
                 left.push_node("right", right);
             }
             "SELECT" => {
@@ -350,7 +343,7 @@ impl Parser {
                 "+" => {
                     self.next_token(); // expr -> +
                     let precedence = self.cur_precedence();
-                    let mut node = cst::Node::new(self.get_token(0).clone());
+                    let mut node = self.construct_node();
                     self.next_token(); // + -> expr
                     node.push_node("left", left);
                     node.push_node("right", self.parse_expr(precedence, until));
@@ -359,7 +352,7 @@ impl Parser {
                 "*" => {
                     self.next_token(); // expr -> +
                     let precedence = self.cur_precedence();
-                    let mut node = cst::Node::new(self.get_token(0).clone());
+                    let mut node = self.construct_node();
                     self.next_token(); // + -> expr
                     node.push_node("left", left);
                     node.push_node("right", self.parse_expr(precedence, until));
@@ -372,19 +365,19 @@ impl Parser {
                 "(" => {
                     self.next_token(); // expr -> (
                                        //let precedence = self.cur_precedence();
-                    let mut node = cst::Node::new(self.get_token(0).clone());
+                    let mut node = self.construct_node();
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
                     node.push_node_vec("args", self.parse_exprs(&vec![")"]));
                     self.next_token(); // expr -> )
-                    node.push_node("rparen", cst::Node::new(self.get_token(0).clone()));
+                    node.push_node("rparen", self.construct_node());
                     // TODO window function
                     left = node;
                 }
                 "NOT" => {
                     println!("{:?}", "from not");
                     self.next_token(); // expr -> not
-                    let not = cst::Node::new(self.get_token(0).clone());
+                    let not = self.construct_node();
                     self.next_token(); // not -> in, like
                     if self.cur_token_is("in") {
                         left = self.parse_in_operator(left);
@@ -399,9 +392,9 @@ impl Parser {
         // alias
         if self.peek_token_is("as") && precedence == 999 {
             self.next_token(); // expr -> as
-            let mut as_ = cst::Node::new(self.get_token(0).clone());
+            let mut as_ = self.construct_node();
             self.next_token(); // as -> alias
-            as_.push_node("alias", cst::Node::new(self.get_token(0).clone()));
+            as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec![
@@ -414,31 +407,28 @@ impl Parser {
                 token: None,
                 children: HashMap::new(),
             };
-            as_.push_node("alias", cst::Node::new(self.get_token(0).clone()));
+            as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
         if self.peek_token_is(",") && precedence == 999 {
             self.next_token(); // expr -> ,
             left.children.insert(
                 "comma".to_string(),
-                cst::Children::Node(cst::Node {
-                    token: Some(self.get_token(0).clone()),
-                    children: HashMap::new(),
-                }),
+                cst::Children::Node(self.construct_node()),
             );
         }
         //self.next_token(); // expr -> from, ',' -> expr
         left
     }
     fn parse_in_operator(&mut self, mut left: cst::Node) -> cst::Node {
-        let mut node = cst::Node::new(self.get_token(0).clone());
+        let mut node = self.construct_node();
         self.next_token(); // in -> (
         node.push_node("left", left);
-        let mut right = cst::Node::new(self.get_token(0).clone());
+        let mut right = self.construct_node();
         self.next_token(); // ( -> expr
         right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
         self.next_token(); // expr -> )
-        right.push_node("rparen", cst::Node::new(self.get_token(0).clone()));
+        right.push_node("rparen", self.construct_node());
         node.push_node("right", right);
         node
     }
