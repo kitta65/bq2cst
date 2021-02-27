@@ -13,10 +13,13 @@ npm publish --access public
 ## usage
 ### installation
 ```
-npm install @dr666m1/bq2ast
+npm install @dr666m1/bq2cst
 ```
 
 ```
-const parser = require("@dr666m1/bq2ast");
+const parser = require("@dr666m1/bq2cst");
+parser.parse(`
+select -- comment
+*;`)
 ```
 
