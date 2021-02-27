@@ -78,7 +78,7 @@ impl Parser {
         let mut node = cst::Node::new(self.get_token(0).clone());
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(cst::Node::new(self.get_token(*idx)))
+            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -337,6 +337,7 @@ impl Parser {
             }
             _ => (),
         };
+        // infix
         while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
@@ -367,8 +368,10 @@ impl Parser {
                     let mut node = self.construct_node();
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
-                    node.push_node_vec("args", self.parse_exprs(&vec![")"]));
-                    self.next_token(); // expr -> )
+                    if !self.cur_token_is(")") {
+                        node.push_node_vec("args", self.parse_exprs(&vec![")"]));
+                        self.next_token(); // expr -> )
+                    }
                     node.push_node("rparen", self.construct_node());
                     // TODO window function
                     left = node;
@@ -553,7 +556,11 @@ mod tests {
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
-            select 1 from data where 1 NOT in (1, 2);"
+            select 1 from data where 1 NOT in (1, 2);
+            -- head
+            select current_date(
+            -- args
+            );"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -780,6 +787,21 @@ where:
       - self: 2
       rparen:
         self: )",
+        // comment
+        "\
+self: select
+columns:
+- self: (
+  func:
+    self: current_date
+  rparen:
+    self: )
+    leading_comments:
+    - self: -- args
+leading_comments:
+- self: -- head
+semicolon:
+  self: ;",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
@@ -802,6 +824,7 @@ select -- comment
         assert_eq!(p.get_offset_index(3), 6); // ;
         p.next_token();
         assert_eq!(p.position, 4);
+        assert_eq!(p.leading_comment_indices, vec![2,3]);
         p.next_token();
         assert_eq!(p.position, 5);
         assert_eq!(p.get_offset_index(1), 6);
