@@ -55,7 +55,8 @@ impl Parser {
         token::Token::new(usize::MAX, usize::MAX, "") // eof token
     }
     fn is_eof(&self, offset: usize) -> bool {
-        self.tokens.len() < self.position + offset
+        let idx = self.get_offset_index(offset);
+        self.tokens.len() < idx
     }
     fn parse_code(&mut self) -> Vec<cst::Node> {
         println!("{:?}", "parse_code!");
