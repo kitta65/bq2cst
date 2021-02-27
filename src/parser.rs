@@ -3,7 +3,7 @@ use crate::lexer;
 use crate::token;
 use std::collections::HashMap;
 
-struct Parser {
+pub struct Parser {
     tokens: Vec<token::Token>,
     position: usize,
     leading_comment_indices: Vec<usize>,
@@ -11,7 +11,7 @@ struct Parser {
 }
 
 impl Parser {
-    fn new(mut l: lexer::Lexer) -> Parser {
+    pub fn new(mut l: lexer::Lexer) -> Parser {
         let mut tokens = Vec::new();
         let mut token = l.next_token();
         while !token.is_none() {
@@ -86,7 +86,7 @@ impl Parser {
         let idx = self.get_offset_index(offset);
         self.tokens.len() < idx
     }
-    fn parse_code(&mut self) -> Vec<cst::Node> {
+    pub fn parse_code(&mut self) -> Vec<cst::Node> {
         println!("{:?}", "parse_code!");
         let mut code: Vec<cst::Node> = Vec::new();
         while !self.is_eof(0) {
