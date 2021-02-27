@@ -7,6 +7,7 @@ struct Parser {
     tokens: Vec<token::Token>,
     position: usize,
     leading_comment_indices: Vec<usize>,
+    following_comment_indices: Vec<usize>,
 }
 
 impl Parser {
@@ -21,10 +22,16 @@ impl Parser {
             tokens,
             position: 0,
             leading_comment_indices: Vec::new(),
+            following_comment_indices: Vec::new(),
         };
         while p.tokens[p.position].is_comment() {
             p.leading_comment_indices.push(p.position);
             p.position += 1;
+        }
+        let mut following_comment_idx = p.position + 1;
+        while p.tokens[following_comment_idx].is_comment() {
+            p.following_comment_indices.push(following_comment_idx);
+            following_comment_idx += 1;
         }
         p
     }
@@ -46,12 +53,27 @@ impl Parser {
         idx
     }
     fn next_token(&mut self) {
+        // leading comments
         self.leading_comment_indices = Vec::new();
         let idx = self.get_offset_index(1);
-        for i in self.position + 1..idx {
+        let from_idx = match self.following_comment_indices.iter().rev().next() {
+            Some(n) => *n,
+            None => self.position,
+        };
+        for i in from_idx + 1..idx {
             self.leading_comment_indices.push(i);
         }
         self.position = idx;
+        // following comments
+        self.following_comment_indices = Vec::new();
+        let mut following_comment_idx = self.position + 1;
+        while following_comment_idx < self.tokens.len()
+            && self.tokens[following_comment_idx].is_comment()
+            && self.get_token(0).line == self.tokens[following_comment_idx].line
+        {
+            self.following_comment_indices.push(following_comment_idx);
+            following_comment_idx += 1;
+        }
     }
     fn get_token(&self, offset: usize) -> token::Token {
         let idx = self.get_offset_index(offset);
@@ -558,7 +580,7 @@ mod tests {
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
             select 1 from data where 1 NOT in (1, 2);
             -- head
-            select current_date(
+            select current_date( -- lparen
             -- args
             );"
             .to_string();
@@ -787,8 +809,8 @@ where:
       - self: 2
       rparen:
         self: )",
-        // comment
-        "\
+            // comment
+            "\
 self: select
 columns:
 - self: (
@@ -824,7 +846,6 @@ select -- comment
         assert_eq!(p.get_offset_index(3), 6); // ;
         p.next_token();
         assert_eq!(p.position, 4);
-        assert_eq!(p.leading_comment_indices, vec![2,3]);
         p.next_token();
         assert_eq!(p.position, 5);
         assert_eq!(p.get_offset_index(1), 6);
