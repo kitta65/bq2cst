@@ -75,7 +75,15 @@ impl Parser {
         code
     }
     fn construct_node(&self) -> cst::Node {
-        cst::Node::new(self.get_token(0).clone())
+        let mut node = cst::Node::new(self.get_token(0).clone());
+        let mut leading_comment_nodes = Vec::new();
+        for idx in &self.leading_comment_indices {
+            leading_comment_nodes.push(cst::Node::new(self.get_token(*idx)))
+        }
+        if 0 < leading_comment_nodes.len() {
+            node.push_node_vec("leading_comments", leading_comment_nodes);
+        }
+        node
     }
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
