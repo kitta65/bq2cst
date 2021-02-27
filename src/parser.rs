@@ -337,12 +337,12 @@ impl Parser {
             }
             _ => (),
         };
-        while !self.peek_token_in(until) && self.peek_precedence() < precedence {
+        while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
                 "+" => {
                     self.next_token(); // expr -> +
-                    let precedence = self.cur_precedence();
+                    let precedence = self.get_precedence(0);
                     let mut node = self.construct_node();
                     self.next_token(); // + -> expr
                     node.push_node("left", left);
@@ -351,7 +351,7 @@ impl Parser {
                 }
                 "*" => {
                     self.next_token(); // expr -> +
-                    let precedence = self.cur_precedence();
+                    let precedence = self.get_precedence(0);
                     let mut node = self.construct_node();
                     self.next_token(); // + -> expr
                     node.push_node("left", left);
@@ -364,7 +364,6 @@ impl Parser {
                 }
                 "(" => {
                     self.next_token(); // expr -> (
-                                       //let precedence = self.cur_precedence();
                     let mut node = self.construct_node();
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
@@ -437,14 +436,6 @@ impl Parser {
     }
     fn cur_token_is(&self, s: &str) -> bool {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
-    }
-    fn cur_precedence(&self) -> usize {
-        //self.str2precedence(self.get_token(0).literal.as_str())
-        self.get_precedence(0)
-    }
-    fn peek_precedence(&self) -> usize {
-        //self.str2precedence(self.get_token(1).literal.as_str())
-        self.get_precedence(1)
     }
     fn get_precedence(&self, offset: usize) -> usize {
         // precedenc
