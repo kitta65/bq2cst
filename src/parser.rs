@@ -29,6 +29,7 @@ impl Parser {
         p
     }
     fn get_offset_index(&self, offset: usize) -> usize {
+        if offset == 0 {return self.position;}
         let mut cnt = 0;
         let mut idx = self.position + 1;
         while cnt < offset && idx < self.tokens.len() {
@@ -47,9 +48,9 @@ impl Parser {
         self.position = idx;
     }
     fn get_token(&self, offset: usize) -> token::Token {
-        //let idx = self.get_offset_index(offset);
-        if self.position + offset <= self.tokens.len() - 1 {
-            return self.tokens[self.position + offset].clone();
+        let idx = self.get_offset_index(offset);
+        if idx <= self.tokens.len() - 1 {
+            return self.tokens[idx].clone();
         }
         token::Token::new(usize::MAX, usize::MAX, "") // eof token
     }
