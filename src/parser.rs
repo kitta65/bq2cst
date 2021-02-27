@@ -29,7 +29,9 @@ impl Parser {
         p
     }
     fn get_offset_index(&self, offset: usize) -> usize {
-        if offset == 0 {return self.position;}
+        if offset == 0 {
+            return self.position;
+        }
         let mut cnt = 0;
         let mut idx = self.position + 1;
         while cnt < offset && idx < self.tokens.len() {
@@ -44,7 +46,11 @@ impl Parser {
         idx
     }
     fn next_token(&mut self) {
+        self.leading_comment_indices = Vec::new();
         let idx = self.get_offset_index(1);
+        for i in self.position + 1..idx {
+            self.leading_comment_indices.push(i);
+        }
         self.position = idx;
     }
     fn get_token(&self, offset: usize) -> token::Token {
@@ -68,6 +74,9 @@ impl Parser {
         }
         code
     }
+    fn construct_node(&self) -> cst::Node {
+        cst::Node::new(self.get_token(0).clone())
+    }
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "SELECT" => self.parse_select_statement(),
@@ -77,10 +86,11 @@ impl Parser {
         node
     }
     fn parse_select_statement(&mut self) -> cst::Node {
-        let mut node = cst::Node {
-            token: Some(self.get_token(0).clone()),
-            children: HashMap::new(),
-        };
+        //let mut node = cst::Node {
+        //    token: Some(self.get_token(0).clone()),
+        //    children: HashMap::new(),
+        //};
+        let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
 
         // distinct
@@ -520,10 +530,19 @@ mod tests {
                 literal: ";".to_string(),
             }
         );
-        assert_eq!(p.get_token(1), token::Token::new(usize::MAX, usize::MAX, ""));
+        assert_eq!(
+            p.get_token(1),
+            token::Token::new(usize::MAX, usize::MAX, "")
+        );
         p.next_token();
-        assert_eq!(p.get_token(0), token::Token::new(usize::MAX, usize::MAX, ""));
-        assert_eq!(p.get_token(1), token::Token::new(usize::MAX, usize::MAX, ""));
+        assert_eq!(
+            p.get_token(0),
+            token::Token::new(usize::MAX, usize::MAX, "")
+        );
+        assert_eq!(
+            p.get_token(1),
+            token::Token::new(usize::MAX, usize::MAX, "")
+        );
     }
     #[test]
     fn test_parse_exprs() {
@@ -772,7 +791,8 @@ where:
 #standardSQL
 select -- comment
 -- comment2
-*;".to_string();
+*;"
+        .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
         assert_eq!(p.position, 1); // select
