@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
@@ -37,11 +37,28 @@ impl Token {
     }
     pub fn is_comment(&self) -> bool {
         let mut iter = self.literal.chars();
-        let first_char = iter.next().unwrap();
-        let second_char = iter.next().unwrap();
-        if first_char == '#' {
-            true
-        } else if first_char == '-' || second_char == '-' {
+        let first_char = match iter.next() {
+            Some(c) => match c {
+                '#' => {
+                    return true;
+                }
+                '-' => c,
+                '/' => c,
+                _ => {
+                    return false;
+                }
+            },
+            None => {
+                return false;
+            }
+        };
+        let second_char = match iter.next() {
+            Some(c) => c,
+            None => {
+                return false;
+            }
+        };
+        if first_char == '-' || second_char == '-' {
             true
         } else {
             false

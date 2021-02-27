@@ -6,6 +6,7 @@ use std::collections::HashMap;
 struct Parser {
     tokens: Vec<token::Token>,
     position: usize,
+    leading_comment_indices: Vec<usize>,
 }
 
 impl Parser {
@@ -16,10 +17,31 @@ impl Parser {
             tokens.push(token.unwrap());
             token = l.next_token();
         }
-        Parser {
+        let mut p = Parser {
             tokens,
             position: 0,
+            leading_comment_indices: Vec::new(),
+        };
+        while p.tokens[p.position].is_comment() {
+            p.leading_comment_indices.push(p.position);
+            p.position += 1;
         }
+        p
+    }
+    fn get_offset_index(&self, offset: usize) -> usize {
+        let mut cnt = 0;
+        let mut idx = self.position + 1;
+        while cnt < offset {
+            while self.tokens[idx].is_comment() {
+                println!("{:?}", self.tokens[idx]);
+                idx += 1;
+            }
+            cnt += 1;
+            if cnt < offset {
+                idx += 1;
+            }
+        }
+        idx
     }
     fn next_token(&mut self) {
         self.position += 1;
@@ -740,5 +762,19 @@ where:
             println!("{}\n", stmt[i].to_string(0, false));
             assert_eq!(stmt[i].to_string(0, false), tests[i]);
         }
+    }
+    #[test]
+    fn test_get_offset_index() {
+        let input = "\
+#standardSQL
+select -- comment
+-- comment2
+*;".to_string();
+        let l = lexer::Lexer::new(input);
+        let p = Parser::new(l);
+        println!("{:?}", p.tokens.len());
+        assert_eq!(p.position, 1); // select
+        assert_eq!(p.get_offset_index(1), 4); // *
+        assert_eq!(p.get_offset_index(2), 5); // ;
     }
 }
