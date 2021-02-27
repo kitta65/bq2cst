@@ -439,41 +439,53 @@ impl Parser {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
     }
     fn cur_precedence(&self) -> usize {
-        str2precedence(self.get_token(0).literal.as_str())
+        //self.str2precedence(self.get_token(0).literal.as_str())
+        self.get_precedence(0)
     }
     fn peek_precedence(&self) -> usize {
-        str2precedence(self.get_token(1).literal.as_str())
+        //self.str2precedence(self.get_token(1).literal.as_str())
+        self.get_precedence(1)
     }
-}
-
-fn str2precedence(s: &str) -> usize {
-    // precedenc
-    // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
-    // 001... date, timestamp (literal)
-    // 005... ( (call expression)
-    // 101... [], .
-    // 102... +, - , ~ (unary operator)
-    // 103... *, / , ||
-    // 104... +, - (binary operator)
-    // 105... <<, >>
-    // 106... & (bit operator)
-    // 107... ^ (bit operator)
-    // 108... | (bit operator)
-    // 109... =, <, >, (not)like, between, (not)in
-    // 110... not
-    // 111... and
-    // 112... or
-    // 999... LOWEST
-    match s.to_uppercase().as_str() {
-        "(" => 005,
-        "-" => 104,
-        "+" => 104,
-        "*" => 103,
-        "/" => 103,
-        "||" => 103,
-        "IN" => 109,
-        "NOT" => 109, // TODO distinguish `not boolean` from `not in`
-        _ => 999,
+    fn get_precedence(&self, offset: usize) -> usize {
+        // precedenc
+        // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+        // 001... date, timestamp (literal)
+        // 005... ( (call expression)
+        // 101... [], .
+        // 102... +, - , ~ (unary operator)
+        // 103... *, / , ||
+        // 104... +, - (binary operator)
+        // 105... <<, >>
+        // 106... & (bit operator)
+        // 107... ^ (bit operator)
+        // 108... | (bit operator)
+        // 109... =, <, >, (not)like, between, (not)in
+        // 110... not
+        // 111... and
+        // 112... or
+        // 999... LOWEST
+        match self.get_token(offset).literal.to_uppercase().as_str() {
+            "(" => 005,
+            "-" => 104,
+            "+" => 104,
+            "*" => 103,
+            "/" => 103,
+            "||" => 103,
+            "IN" => 109,
+            "NOT" => {
+                match self.get_token(offset + 1).literal.to_uppercase().as_str() {
+                    "IN" => {
+                        return 109;
+                    }
+                    "LIKE" => {
+                        return 109;
+                    }
+                    _ => (),
+                }
+                110
+            } // TODO distinguish `not boolean` from `not in`
+            _ => 999,
+        }
     }
 }
 
