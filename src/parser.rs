@@ -437,10 +437,10 @@ impl Parser {
                         let mut over = self.construct_node();
                         if self.peek_token_is("(") {
                             self.next_token(); // over -> (
-                            over.push_node("lparen", self.construct_node());
+                            let mut window = self.construct_node();
                             if self.get_token(1).is_identifier() {
                                 self.next_token(); // ( -> identifier
-                                over.push_node("name", self.construct_node());
+                                window.push_node("name", self.construct_node());
                             }
                             if self.peek_token_is("partition") {
                                 self.next_token(); // ( -> partition, order, frame
@@ -449,7 +449,7 @@ impl Parser {
                                 partition.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
                                 partition.push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"]));
-                                over.push_node("partition", partition);
+                                window.push_node("partition", partition);
                             }
                             if self.peek_token_is("order") {
                                 self.next_token(); // ( -> order, expr -> order
@@ -458,7 +458,7 @@ impl Parser {
                                 order.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
                                 order.push_node_vec("exprs", self.parse_exprs(&vec!["rows", "range"]));
-                                over.push_node("order", order);
+                                window.push_node("order", order);
                             }
                             if self.peek_token_in(&vec!["range", "rows"]) {
                                 self.next_token(); // ( -> rows, expr -> rows
@@ -489,16 +489,18 @@ impl Parser {
                                         frame.push_node("start", start);
                                     }
                                 }
+                                window.push_node("frame", frame)
                             }
                             self.next_token(); // -> )
-                            over.push_node("rparen", self.construct_node());
+                            window.push_node("rparen", self.construct_node());
+                            over.push_node("window", window);
                             node.push_node("over", over);
                         } else {
-                            over.push_node("name", self.construct_node());
+                            self.next_token(); // over -> identifier
+                            over.push_node("window", self.construct_node());
                             node.push_node("over", over);
                         }
                     }
-                    // TODO window function
                     left = node;
                 }
                 "NOT" => {
@@ -703,6 +705,8 @@ mod tests {
             ;
             select
               sum() over (),
+              sum() over named_clause,
+              sum() over (named_clause),
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -1024,10 +1028,36 @@ columns:
     self: sum
   over:
     self: over
-    lparen:
+    window:
       self: (
-    rparen:
-      self: )
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: named_clause
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      name:
+        self: named_clause
+      rparen:
+        self: )
   rparen:
     self: )
 semicolon:
