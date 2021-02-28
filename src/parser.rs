@@ -432,6 +432,72 @@ impl Parser {
                         self.next_token(); // expr -> )
                     }
                     node.push_node("rparen", self.construct_node());
+                    if self.peek_token_is("over") {
+                        self.next_token(); // ) -> over
+                        let mut over = self.construct_node();
+                        if self.peek_token_is("(") {
+                            self.next_token(); // over -> (
+                            over.push_node("lparen", self.construct_node());
+                            if self.get_token(1).is_identifier() {
+                                self.next_token(); // ( -> identifier
+                                over.push_node("name", self.construct_node());
+                            }
+                            if self.peek_token_is("partition") {
+                                self.next_token(); // ( -> partition, order, frame
+                                let mut partition = self.construct_node();
+                                self.next_token(); // partition -> by
+                                partition.push_node("by", self.construct_node());
+                                self.next_token(); // by -> exprs
+                                partition.push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"]));
+                                over.push_node("partition", partition);
+                            }
+                            if self.peek_token_is("order") {
+                                self.next_token(); // ( -> order, expr -> order
+                                let mut order = self.construct_node();
+                                self.next_token(); // order -> by
+                                order.push_node("by", self.construct_node());
+                                self.next_token(); // by -> exprs
+                                order.push_node_vec("exprs", self.parse_exprs(&vec!["rows", "range"]));
+                                over.push_node("order", order);
+                            }
+                            if self.peek_token_in(&vec!["range", "rows"]) {
+                                self.next_token(); // ( -> rows, expr -> rows
+                                let mut frame = self.construct_node();
+                                if self.peek_token_is("between") {
+                                    // frame between
+                                    self.next_token(); // rows -> between
+                                    frame.push_node("between", self.construct_node());
+                                    self.next_token(); // between -> expr
+                                    let mut start = self.parse_expr(999, &vec!["preceding"]);
+                                    self.next_token(); // expr -> preceding
+                                    start.push_node("preceding", self.construct_node());
+                                    frame.push_node("start", start);
+                                    self.next_token(); // preceding -> and
+                                    frame.push_node("and", self.construct_node());
+                                    self.next_token(); // and -> expr
+                                    let mut end = self.parse_expr(999, &vec![")"]);
+                                    self.next_token(); // expr -> following
+                                    end.push_node("following", self.construct_node());
+                                    frame.push_node("end", end);
+                                } else {
+                                    // frame start
+                                    if !self.peek_token_is(")") {
+                                        self.next_token(); // rows -> expr
+                                        let mut start = self.parse_expr(999, &vec!["preceding"]);
+                                        self.next_token(); // expr -> preceding, row
+                                        start.push_node("preceding", self.construct_node());
+                                        frame.push_node("start", start);
+                                    }
+                                }
+                            }
+                            self.next_token(); // -> )
+                            over.push_node("rparen", self.construct_node());
+                            node.push_node("over", over);
+                        } else {
+                            over.push_node("name", self.construct_node());
+                            node.push_node("over", over);
+                        }
+                    }
                     // TODO window function
                     left = node;
                 }
@@ -460,9 +526,7 @@ impl Parser {
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
-        if self.get_token(1).is_identifier() && !self.is_eof(1)
-            && precedence == 999
-        {
+        if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 {
             self.next_token(); // expr -> alias
             let mut as_ = cst::Node {
                 token: None,
@@ -628,7 +692,6 @@ mod tests {
             select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', from data where 1 in (1, 2);
             select not true or a and b,;
-            select 1 from data where 1 NOT in (1, 2);
             -- head
             select current_date( -- lparen
             -- args
@@ -637,6 +700,9 @@ mod tests {
               case num when 1 then '1' else '0' end,
               case when true then '1' else '0' end,
               case when 1=1 then current_date() else null end,
+            ;
+            select
+              sum() over (),
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -866,34 +932,6 @@ columns:
       self: b
 semicolon:
   self: ;",
-            // window clause
-            "\
-self: select
-columns:
-- self: 1
-from:
-  self: from
-  tables:
-  - self: data
-semicolon:
-  self: ;
-where:
-  self: where
-  expr:
-    self: in
-    left:
-      self: 1
-    not:
-      self: NOT
-    right:
-      self: (
-      exprs:
-      - self: 1
-        comma:
-          self: ,
-      - self: 2
-      rparen:
-        self: )",
             // comment
             "\
 self: select
@@ -973,6 +1011,25 @@ columns:
     self: ,
   end:
     self: end
+semicolon:
+  self: ;",
+            // window clause
+            "\
+self: select
+columns:
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    lparen:
+      self: (
+    rparen:
+      self: )
+  rparen:
+    self: )
 semicolon:
   self: ;",
         ];
