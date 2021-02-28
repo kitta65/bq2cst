@@ -169,13 +169,13 @@ impl Parser {
             self.next_token(); // group -> by
             groupby.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";"]));
+            groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";", "order"]));
             node.push_node("groupby", groupby);
             if self.peek_token_is("HAVING") {
                 self.next_token(); // expr -> having
                 let mut having = self.construct_node();
                 self.next_token(); // by -> expr
-                having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
+                having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";", "order"]));
                 //self.next_token(); // expr -> limit
                 node.push_node("having", having);
             }
@@ -184,8 +184,8 @@ impl Parser {
         if self.peek_token_is("HAVING") {
             self.next_token(); // expr -> having
             let mut having = self.construct_node();
-            self.next_token(); // by -> expr
-            having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";"]));
+            self.next_token(); // having -> expr
+            having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";", "order"]));
             node.push_node("having", having);
             if self.peek_token_is("GROUP") {
                 self.next_token(); // expr -> group
@@ -193,10 +193,20 @@ impl Parser {
                 self.next_token(); // group -> by
                 groupby.push_node("by", self.construct_node());
                 self.next_token(); // by -> expr
-                groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";"]));
+                groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";", "order"]));
                 //self.next_token(); // expr -> limit
                 node.push_node("having", groupby);
             }
+        }
+        // oeder by
+        if self.peek_token_is("order") {
+            self.next_token(); // expr -> order
+            let mut order = self.construct_node();
+            self.next_token(); // order -> by
+            order.push_node("by", self.construct_node());
+            self.next_token(); // by -> expr
+            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ","]));
+            node.push_node("orderby", order);
         }
         // limit
         if self.peek_token_is("LIMIT") {
@@ -557,6 +567,10 @@ impl Parser {
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
+        if self.peek_token_in(&vec!["asc", "desc"]) {
+            self.next_token(); // expr -> asc
+            left.push_node("order", self.construct_node());
+        }
         if self.peek_token_is(",") && precedence == 999 {
             self.next_token(); // expr -> ,
             left.children.insert(
@@ -709,7 +723,7 @@ mod tests {
     #[test]
     fn test_parse_exprs() {
         let input = "\
-            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true limit 100;
+            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true order by abc limit 100;
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
@@ -767,6 +781,12 @@ limit:
   self: limit
   expr:
     self: 100
+orderby:
+  self: order
+  by:
+    self: by
+  exprs:
+  - self: abc
 semicolon:
   self: ;
 where:
