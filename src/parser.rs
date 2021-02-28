@@ -87,10 +87,8 @@ impl Parser {
         self.tokens.len() < idx
     }
     pub fn parse_code(&mut self) -> Vec<cst::Node> {
-        println!("{:?}", "parse_code!");
         let mut code: Vec<cst::Node> = Vec::new();
         while !self.is_eof(0) {
-            println!("{:?}", "parse_statement!");
             let stmt = self.parse_statement();
             code.push(stmt);
         }
@@ -363,7 +361,7 @@ impl Parser {
                 left = self.parse_select_statement();
             }
             "NOT" => {
-                self.next_token(); // - -> boolean
+                self.next_token(); // not -> boolean
                 let right = self.parse_expr(110, until);
                 left.push_node("right", right);
             }
@@ -396,6 +394,7 @@ impl Parser {
             _ => (),
         };
         // infix
+        //println!("next precedence: {} {}, current_precedence: {} {}", self.get_precedence(1), self.get_token(0).literal, precedence, self.get_token(1).literal);
         while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
@@ -437,7 +436,6 @@ impl Parser {
                     left = node;
                 }
                 "NOT" => {
-                    println!("{:?}", "from not");
                     self.next_token(); // expr -> not
                     let not = self.construct_node();
                     self.next_token(); // not -> in, like
@@ -463,8 +461,8 @@ impl Parser {
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec![
-            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else",
-            "then", // TODO list up
+            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else", "not",
+            "and", "or", "then", // TODO list up
         ]) && !self.is_eof(1)
             && precedence == 999
         {
@@ -552,6 +550,8 @@ impl Parser {
                 }
                 110
             }
+            "AND" => 111,
+            "OR" => 112,
             _ => 999,
         }
     }
@@ -630,7 +630,7 @@ mod tests {
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', from data where 1 in (1, 2);
-            select 1,;
+            select not true or a and b,;
             select 1 from data where 1 NOT in (1, 2);
             -- head
             select current_date( -- lparen
@@ -854,9 +854,19 @@ where:
             "\
 self: select
 columns:
-- self: 1
+- self: or
   comma:
     self: ,
+  left:
+    self: not
+    right:
+      self: true
+  right:
+    self: and
+    left:
+      self: a
+    right:
+      self: b
 semicolon:
   self: ;",
             // window clause
