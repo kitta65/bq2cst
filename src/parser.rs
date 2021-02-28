@@ -369,18 +369,18 @@ impl Parser {
             "CASE" => {
                 self.next_token(); // case -> expr, case -> when
                 if !self.cur_token_is("WHEN") {
-                    left.push_node("expr", self.construct_node());
+                    left.push_node("expr", self.parse_expr(999, &vec!["WHEN"]));
                     self.next_token(); // expr -> when
                 }
                 let mut arms = Vec::new();
                 while !self.cur_token_is("ELSE") {
                     let mut arm = self.construct_node();
                     self.next_token(); // when -> expr
-                    arm.push_node("expr", self.construct_node());
+                    arm.push_node("expr", self.parse_expr(999, &vec!["then"]));
                     self.next_token(); // expr -> then
                     arm.push_node("then", self.construct_node());
                     self.next_token(); // then -> result_expr
-                    arm.push_node("result", self.construct_node());
+                    arm.push_node("result", self.parse_expr(999, &vec!["else", "when"]));
                     self.next_token(); // result_expr -> else, result_expr -> when
                     arms.push(arm)
                 }
@@ -409,6 +409,15 @@ impl Parser {
                 }
                 "*" => {
                     self.next_token(); // expr -> +
+                    let precedence = self.get_precedence(0);
+                    let mut node = self.construct_node();
+                    self.next_token(); // + -> expr
+                    node.push_node("left", left);
+                    node.push_node("right", self.parse_expr(precedence, until));
+                    left = node;
+                }
+                "=" => {
+                    self.next_token(); // expr -> =
                     let precedence = self.get_precedence(0);
                     let mut node = self.construct_node();
                     self.next_token(); // + -> expr
@@ -457,7 +466,7 @@ impl Parser {
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec![
-            "from", "where", "group", "having", "limit", ";", ",", ")",
+            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else", "then", // TODO list up
         ]) && !self.is_eof(1)
             && precedence == 999
         {
@@ -523,6 +532,7 @@ impl Parser {
             "/" => 103,
             "||" => 103,
             "IN" => 109,
+            "=" => 109,
             "NOT" => {
                 match self.get_token(offset + 1).literal.to_uppercase().as_str() {
                     "IN" => {
@@ -621,6 +631,7 @@ mod tests {
             select
               case num when 1 then '1' else '0' end,
               case when true then '1' else '0' end,
+              case when 1=1 then current_date() else null end,
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -899,6 +910,30 @@ columns:
   - self: else
     result:
       self: '0'
+  comma:
+    self: ,
+  end:
+    self: end
+- self: case
+  arms:
+  - self: when
+    expr:
+      self: =
+      left:
+        self: 1
+      right:
+        self: 1
+    result:
+      self: (
+      func:
+        self: current_date
+      rparen:
+        self: )
+    then:
+      self: then
+  - self: else
+    result:
+      self: null
   comma:
     self: ,
   end:
