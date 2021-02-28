@@ -457,7 +457,7 @@ impl Parser {
                                 self.next_token(); // order -> by
                                 order.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
-                                order.push_node_vec("exprs", self.parse_exprs(&vec!["rows", "range"]));
+                                order.push_node_vec("exprs", self.parse_exprs(&vec!["rows", "range", ")"]));
                                 window.push_node("order", order);
                             }
                             if self.peek_token_in(&vec!["range", "rows"]) {
@@ -708,6 +708,7 @@ mod tests {
               sum() over named_clause,
               sum() over (named_clause),
               sum() over (partition by a),
+              sum() over (order by a),
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -1072,6 +1073,25 @@ columns:
       self: (
       partition:
         self: partition
+        by:
+          self: by
+        exprs:
+        - self: a
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      order:
+        self: order
         by:
           self: by
         exprs:
