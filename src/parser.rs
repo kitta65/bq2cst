@@ -713,7 +713,7 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', 10 between 1 and 2,
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', 10 between 1 and 2 and true,
             from data where 1 in (1, 2)
             ;
             select not true or a and b,;
@@ -924,16 +924,20 @@ columns:
     self: not
   right:
     self: '%a'
-- self: between
-  and:
-    self: and
+- self: and
   comma:
     self: ,
   left:
-    self: 10
+    self: between
+    and:
+      self: and
+    left:
+      self: 10
+    right:
+    - self: 1
+    - self: 2
   right:
-  - self: 1
-  - self: 2
+    self: true
 from:
   self: from
   tables:
