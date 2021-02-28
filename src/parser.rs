@@ -460,10 +460,7 @@ impl Parser {
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
-        if !self.peek_token_in(&vec![
-            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else", "not",
-            "and", "or", "then", // TODO list up
-        ]) && !self.is_eof(1)
+        if self.get_token(1).is_identifier() && !self.is_eof(1)
             && precedence == 999
         {
             self.next_token(); // expr -> alias
