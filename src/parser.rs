@@ -363,8 +363,9 @@ impl Parser {
                 left = self.parse_select_statement();
             }
             "NOT" => {
-                // not in, not like
-                left = self.parse_select_statement();
+                self.next_token(); // - -> boolean
+                let right = self.parse_expr(110, until);
+                left.push_node("right", right);
             }
             "CASE" => {
                 self.next_token(); // case -> expr, case -> when
@@ -407,6 +408,14 @@ impl Parser {
                     left = self.parse_binary_operator(left, until);
                 }
                 "=" => {
+                    self.next_token(); // expr -> =
+                    left = self.parse_binary_operator(left, until);
+                }
+                "AND" => {
+                    self.next_token(); // expr -> =
+                    left = self.parse_binary_operator(left, until);
+                }
+                "OR" => {
                     self.next_token(); // expr -> =
                     left = self.parse_binary_operator(left, until);
                 }
@@ -620,8 +629,8 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
-            select 'a' not like '%a',;
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', from data where 1 in (1, 2);
+            select 1,;
             select 1 from data where 1 NOT in (1, 2);
             -- head
             select current_date( -- lparen
@@ -799,6 +808,8 @@ columns:
   rparen:
     self: )
 - self: (
+  comma:
+    self: ,
   expr:
     self: select
     columns:
@@ -809,6 +820,15 @@ columns:
         self: 1
   rparen:
     self: )
+- self: like
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  not:
+    self: not
+  right:
+    self: '%a'
 from:
   self: from
   tables:
@@ -830,19 +850,13 @@ where:
       - self: 2
       rparen:
         self: )",
-            // parse_expr precedence2
+            // not, and, or
             "\
 self: select
 columns:
-- self: like
+- self: 1
   comma:
     self: ,
-  left:
-    self: 'a'
-  not:
-    self: not
-  right:
-    self: '%a'
 semicolon:
   self: ;",
             // window clause
