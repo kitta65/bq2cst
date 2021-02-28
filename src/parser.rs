@@ -400,30 +400,15 @@ impl Parser {
             match self.get_token(1).literal.to_uppercase().as_str() {
                 "+" => {
                     self.next_token(); // expr -> +
-                    let precedence = self.get_precedence(0);
-                    let mut node = self.construct_node();
-                    self.next_token(); // + -> expr
-                    node.push_node("left", left);
-                    node.push_node("right", self.parse_expr(precedence, until));
-                    left = node;
+                    left = self.parse_binary_operator(left, until);
                 }
                 "*" => {
                     self.next_token(); // expr -> +
-                    let precedence = self.get_precedence(0);
-                    let mut node = self.construct_node();
-                    self.next_token(); // + -> expr
-                    node.push_node("left", left);
-                    node.push_node("right", self.parse_expr(precedence, until));
-                    left = node;
+                    left = self.parse_binary_operator(left, until);
                 }
                 "=" => {
                     self.next_token(); // expr -> =
-                    let precedence = self.get_precedence(0);
-                    let mut node = self.construct_node();
-                    self.next_token(); // + -> expr
-                    node.push_node("left", left);
-                    node.push_node("right", self.parse_expr(precedence, until));
-                    left = node;
+                    left = self.parse_binary_operator(left, until);
                 }
                 "IN" => {
                     self.next_token(); // expr -> in
@@ -451,13 +436,8 @@ impl Parser {
                         left = self.parse_in_operator(left);
                         left.push_node("not", not);
                     } else if self.cur_token_is("like") {
-                        let precedence = self.get_precedence(0);
-                        let mut node = self.construct_node();
-                        self.next_token(); // like -> expr
-                        node.push_node("left", left);
-                        node.push_node("right", self.parse_expr(precedence, until));
-                        node.push_node("not", not);
-                        left = node;
+                        left = self.parse_binary_operator(left, until);
+                        left.push_node("not", not);
                     } else {
                         panic!();
                     }
@@ -496,6 +476,14 @@ impl Parser {
         }
         //self.next_token(); // expr -> from, ',' -> expr
         left
+    }
+    fn parse_binary_operator(&mut self, left: cst::Node, until: &Vec<&str>) -> cst::Node {
+        let precedence = self.get_precedence(0);
+        let mut node = self.construct_node();
+        self.next_token(); // binary_operator -> expr
+        node.push_node("left", left);
+        node.push_node("right", self.parse_expr(precedence, until));
+        node
     }
     fn parse_in_operator(&mut self, mut left: cst::Node) -> cst::Node {
         let mut node = self.construct_node();
@@ -554,7 +542,7 @@ impl Parser {
                     _ => (),
                 }
                 110
-            } // TODO distinguish `not boolean` from `not in`
+            }
             _ => 999,
         }
     }
