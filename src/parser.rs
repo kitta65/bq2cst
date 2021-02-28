@@ -450,6 +450,14 @@ impl Parser {
                     if self.cur_token_is("in") {
                         left = self.parse_in_operator(left);
                         left.push_node("not", not);
+                    } else if self.cur_token_is("like") {
+                        let precedence = self.get_precedence(0);
+                        let mut node = self.construct_node();
+                        self.next_token(); // like -> expr
+                        node.push_node("left", left);
+                        node.push_node("right", self.parse_expr(precedence, until));
+                        node.push_node("not", not);
+                        left = node;
                     } else {
                         panic!();
                     }
@@ -466,7 +474,8 @@ impl Parser {
             left.push_node("as", as_);
         }
         if !self.peek_token_in(&vec![
-            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else", "then", // TODO list up
+            "from", "where", "group", "having", "limit", ";", ",", ")", "when", "else",
+            "then", // TODO list up
         ]) && !self.is_eof(1)
             && precedence == 999
         {
@@ -532,6 +541,7 @@ impl Parser {
             "/" => 103,
             "||" => 103,
             "IN" => 109,
+            "LIKE" => 109,
             "=" => 109,
             "NOT" => {
                 match self.get_token(offset + 1).literal.to_uppercase().as_str() {
@@ -623,6 +633,7 @@ mod tests {
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1) from data where 1 in (1, 2);
+            select 'a' not like '%a',;
             select 1 from data where 1 NOT in (1, 2);
             -- head
             select current_date( -- lparen
@@ -724,7 +735,7 @@ from:
         self: inner
 semicolon:
   self: ;",
-            // parse_expr precedence
+            // parse_expr precedence1
             "\
 self: select
 columns:
@@ -831,7 +842,22 @@ where:
       - self: 2
       rparen:
         self: )",
-            // window clause, not in
+            // parse_expr precedence2
+            "\
+self: select
+columns:
+- self: like
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  not:
+    self: not
+  right:
+    self: '%a'
+semicolon:
+  self: ;",
+            // window clause
             "\
 self: select
 columns:
@@ -876,8 +902,8 @@ leading_comments:
 - self: -- head
 semicolon:
   self: ;",
-  // case when
-  "\
+            // case when
+            "\
 self: select
 columns:
 - self: case
