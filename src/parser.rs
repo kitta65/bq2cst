@@ -707,6 +707,7 @@ mod tests {
               sum() over (),
               sum() over named_clause,
               sum() over (named_clause),
+              sum() over (partition by a),
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -1056,6 +1057,25 @@ columns:
       self: (
       name:
         self: named_clause
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      partition:
+        self: partition
+        by:
+          self: by
+        exprs:
+        - self: a
       rparen:
         self: )
   rparen:
