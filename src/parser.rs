@@ -466,14 +466,15 @@ impl Parser {
                                 if self.peek_token_is("between") {
                                     // frame between
                                     self.next_token(); // rows -> between
-                                    frame.push_node("between", self.construct_node());
+                                    let mut between = self.construct_node();
                                     self.next_token(); // between -> expr
                                     let mut start = self.parse_expr(999, &vec!["preceding"]);
                                     self.next_token(); // expr -> preceding
                                     start.push_node("preceding", self.construct_node());
                                     frame.push_node("start", start);
                                     self.next_token(); // preceding -> and
-                                    frame.push_node("and", self.construct_node());
+                                    between.push_node("and", self.construct_node());
+                                    frame.push_node("between", between);
                                     self.next_token(); // and -> expr
                                     let mut end = self.parse_expr(999, &vec![")"]);
                                     self.next_token(); // expr -> following
@@ -709,6 +710,9 @@ mod tests {
               sum() over (named_clause),
               sum() over (partition by a),
               sum() over (order by a),
+              sum() over (partition by a order by b, c),
+              sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
+              sum() over (rows 1 + 1 preceding),
             ;"
             .to_string();
         let l = lexer::Lexer::new(input);
@@ -1096,6 +1100,99 @@ columns:
           self: by
         exprs:
         - self: a
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      order:
+        self: order
+        by:
+          self: by
+        exprs:
+        - self: b
+          comma:
+            self: ,
+        - self: c
+      partition:
+        self: partition
+        by:
+          self: by
+        exprs:
+        - self: a
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      frame:
+        self: rows
+        between:
+          self: between
+          and:
+            self: and
+        end:
+          self: unbounded
+          following:
+            self: following
+        start:
+          self: unbounded
+          preceding:
+            self: preceding
+      order:
+        self: order
+        by:
+          self: by
+        exprs:
+        - self: b
+          comma:
+            self: ,
+        - self: c
+      partition:
+        self: partition
+        by:
+          self: by
+        exprs:
+        - self: a
+      rparen:
+        self: )
+  rparen:
+    self: )
+- self: (
+  comma:
+    self: ,
+  func:
+    self: sum
+  over:
+    self: over
+    window:
+      self: (
+      frame:
+        self: rows
+        start:
+          self: +
+          left:
+            self: 1
+          preceding:
+            self: preceding
+          right:
+            self: 1
       rparen:
         self: )
   rparen:
