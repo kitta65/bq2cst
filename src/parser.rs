@@ -366,6 +366,32 @@ impl Parser {
                 // not in, not like
                 left = self.parse_select_statement();
             }
+            "CASE" => {
+                self.next_token(); // case -> expr, case -> when
+                if !self.cur_token_is("WHEN") {
+                    left.push_node("expr", self.construct_node());
+                    self.next_token(); // expr -> when
+                }
+                let mut arms = Vec::new();
+                while !self.cur_token_is("ELSE") {
+                    let mut arm = self.construct_node();
+                    self.next_token(); // when -> expr
+                    arm.push_node("expr", self.construct_node());
+                    self.next_token(); // expr -> then
+                    arm.push_node("then", self.construct_node());
+                    self.next_token(); // then -> result_expr
+                    arm.push_node("result", self.construct_node());
+                    self.next_token(); // result_expr -> else, result_expr -> when
+                    arms.push(arm)
+                }
+                let mut arm = self.construct_node();
+                self.next_token(); // else -> result_expr
+                arm.push_node("result", self.construct_node());
+                arms.push(arm);
+                left.push_node_vec("arms", arms);
+                self.next_token(); // result_expr -> end
+                left.push_node("end", self.construct_node());
+            }
             _ => (),
         };
         // infix
@@ -591,7 +617,11 @@ mod tests {
             -- head
             select current_date( -- lparen
             -- args
-            );"
+            );
+            select
+              case num when 1 then '1' else '0' end,
+              case when true then '1' else '0' end,
+            ;"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -833,6 +863,46 @@ columns:
     - self: -- args
 leading_comments:
 - self: -- head
+semicolon:
+  self: ;",
+  // case when
+  "\
+self: select
+columns:
+- self: case
+  arms:
+  - self: when
+    expr:
+      self: 1
+    result:
+      self: '1'
+    then:
+      self: then
+  - self: else
+    result:
+      self: '0'
+  comma:
+    self: ,
+  end:
+    self: end
+  expr:
+    self: num
+- self: case
+  arms:
+  - self: when
+    expr:
+      self: true
+    result:
+      self: '1'
+    then:
+      self: then
+  - self: else
+    result:
+      self: '0'
+  comma:
+    self: ,
+  end:
+    self: end
 semicolon:
   self: ;",
         ];
