@@ -398,6 +398,25 @@ impl Parser {
         while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
+                "BETWEEN" => {
+                    self.next_token(); // expr -> between
+                    let precedence = self.get_precedence(0);
+                    let mut between = self.construct_node();
+                    between.push_node("left", left);
+                    left = between;
+                    self.next_token(); // between -> expr1
+                    let mut exprs = Vec::new();
+                    exprs.push(self.parse_expr(precedence, until));
+                    self.next_token(); // expr1 -> and
+                    left.push_node("and", self.construct_node());
+                    self.next_token(); // and -> expr2
+                    exprs.push(self.parse_expr(precedence, until));
+                    left.push_node_vec("right", exprs);
+                }
+                "LIKE" => {
+                    self.next_token(); // expr -> like
+                    left = self.parse_binary_operator(left, until);
+                }
                 "+" => {
                     self.next_token(); // expr -> +
                     left = self.parse_binary_operator(left, until);
@@ -601,6 +620,7 @@ impl Parser {
             "||" => 103,
             "IN" => 109,
             "LIKE" => 109,
+            "BETWEEN" => 109,
             "=" => 109,
             "NOT" => {
                 match self.get_token(offset + 1).literal.to_uppercase().as_str() {
@@ -693,7 +713,9 @@ mod tests {
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
-            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', from data where 1 in (1, 2);
+            select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', 10 between 1 and 2,
+            from data where 1 in (1, 2)
+            ;
             select not true or a and b,;
             -- head
             select current_date( -- lparen
@@ -805,7 +827,7 @@ from:
         self: inner
 semicolon:
   self: ;",
-            // parse_expr precedence1
+            // parse_expr precedence
             "\
 self: select
 columns:
@@ -902,6 +924,16 @@ columns:
     self: not
   right:
     self: '%a'
+- self: between
+  and:
+    self: and
+  comma:
+    self: ,
+  left:
+    self: 10
+  right:
+  - self: 1
+  - self: 2
 from:
   self: from
   tables:
