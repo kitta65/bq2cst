@@ -73,8 +73,8 @@ fn test_parse_exprs() {
             ;
             select not true or a and b,;
             -- head
-            select current_date( -- lparen
-            -- args
+            select/* */current_date( -- lparen
+            /* */-- args
             );
             select
               case num when 1 then '1' else '0' end,
@@ -357,7 +357,10 @@ columns:
   rparen:
     self: )
     leading_comments:
+    - self: /* */
     - self: -- args
+following_comments:
+- self: /* */
 leading_comments:
 - self: -- head
 semicolon:

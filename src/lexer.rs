@@ -249,9 +249,11 @@ impl Lexer {
     }
     fn read_multiline_comment(&mut self) -> String {
         let first_position = self.position;
-        while true {
+        while !(self.ch == Some('*') && self.peek_char(1) ==Some('/')) {
             self.read_char();
         }
+        self.read_char(); // * -> /
+        self.read_char(); // / -> next_char
         self.input[first_position..self.position]
             .into_iter()
             .collect()
@@ -294,7 +296,12 @@ mod tests {
         let input = "#standardSQL
 SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour)
 From `data`; -- comment
--- "
+-- 
+/*
+e
+o
+f
+*/"
         .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<token::Token> = vec![
@@ -517,6 +524,16 @@ From `data`; -- comment
                 column: 0,
                 literal: "-- ".to_string(),
             },
+            // line4
+            token::Token {
+                line: 4,
+                column: 0,
+                literal: "/*
+e
+o
+f
+*/".to_string(),
+            }
         ];
         for t in expected_tokens {
             assert_eq!(l.next_token().unwrap(), t);

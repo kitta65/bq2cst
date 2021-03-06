@@ -153,7 +153,7 @@ impl Token {
                 return false;
             }
         };
-        if first_char == '-' || second_char == '-' {
+        if first_char == '-' && second_char == '-' || first_char == '/' && second_char == '*' {
             true
         } else {
             false
