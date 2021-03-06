@@ -269,7 +269,7 @@ fn is_letter_or_digit(ch: &Option<char>) -> bool {
 
 fn is_digit_or_period(ch: &Option<char>) -> bool {
     match ch {
-        Some(ch) => ch.is_digit(10) || ch == &'.',
+        Some(ch) => ch.is_digit(10) || ch == &'.' || ch == &'E' || ch == &'e',
         None => false,
     }
 }
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour)
+SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4
 From `data`; -- comment
 -- 
 /*
@@ -496,6 +496,16 @@ f
                 line: 1,
                 column: 124,
                 literal: ")".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 125,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 126,
+                literal: ".1E4".to_string(),
             },
             // line2
             token::Token {
