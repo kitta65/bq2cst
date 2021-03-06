@@ -49,6 +49,16 @@ impl Lexer {
             .into_iter()
             .collect()
     }
+    fn read_parameter(&mut self) -> String {
+        let first_position = self.position;
+        while self.ch == Some('@') {
+            self.read_char();
+        }
+        self.read_identifier();
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
+    }
     pub fn next_token(&mut self) -> Option<token::Token> {
         self.skip_whitespace();
         let ch = match self.ch {
@@ -180,6 +190,19 @@ impl Lexer {
                     }
                 }
             }
+            // parameter
+            '?' => token::Token {
+                line: self.line,
+                column: self.column,
+                literal: ch.to_string(),
+            },
+            '@' => {
+                return Some(token::Token {
+                    line: self.line,
+                    column: self.column,
+                    literal: self.read_parameter(),
+                });
+            }
             // other
             _ => {
                 if ch.is_digit(10) {
@@ -249,7 +272,7 @@ impl Lexer {
     }
     fn read_multiline_comment(&mut self) -> String {
         let first_position = self.position;
-        while !(self.ch == Some('*') && self.peek_char(1) ==Some('/')) {
+        while !(self.ch == Some('*') && self.peek_char(1) == Some('/')) {
             self.read_char();
         }
         self.read_char(); // * -> /
@@ -294,7 +317,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4
+SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,
 From `data`; -- comment
 -- 
 /*
@@ -507,6 +530,31 @@ f
                 column: 126,
                 literal: ".1E4".to_string(),
             },
+            token::Token {
+                line: 1,
+                column: 130,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 131,
+                literal: "?".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 132,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 133,
+                literal: "@@param".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 140,
+                literal: ",".to_string(),
+            },
             // line2
             token::Token {
                 line: 2,
@@ -542,8 +590,9 @@ f
 e
 o
 f
-*/".to_string(),
-            }
+*/"
+                .to_string(),
+            },
         ];
         for t in expected_tokens {
             assert_eq!(l.next_token().unwrap(), t);
