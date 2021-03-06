@@ -91,7 +91,8 @@ fn test_parse_exprs() {
               sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
               sum() over (rows 1 + 1 preceding),
             ;
-            select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';"
+            select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
+            select decimal '00', timestamp r'2020-01-01';"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -630,6 +631,22 @@ columns:
   right:
     self: 'abc'
 - self: date
+  right:
+    self: r
+    right:
+      self: '2020-01-01'
+semicolon:
+  self: ;",
+  // date, timestamp, numeric...
+  "\
+self: select
+columns:
+- self: decimal
+  comma:
+    self: ,
+  right:
+    self: '00'
+- self: timestamp
   right:
     self: r
     right:

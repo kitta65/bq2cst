@@ -169,7 +169,10 @@ impl Parser {
             self.next_token(); // group -> by
             groupby.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            groupby.push_node_vec("columns", self.parse_exprs(&vec!["having", "limit", ";", "order"]));
+            groupby.push_node_vec(
+                "columns",
+                self.parse_exprs(&vec!["having", "limit", ";", "order"]),
+            );
             node.push_node("groupby", groupby);
             if self.peek_token_is("HAVING") {
                 self.next_token(); // expr -> having
@@ -185,7 +188,10 @@ impl Parser {
             self.next_token(); // expr -> having
             let mut having = self.construct_node();
             self.next_token(); // having -> expr
-            having.push_node_vec("columns", self.parse_exprs(&vec!["GROUP", "limit", ";", "order"]));
+            having.push_node_vec(
+                "columns",
+                self.parse_exprs(&vec!["GROUP", "limit", ";", "order"]),
+            );
             node.push_node("having", having);
             if self.peek_token_is("GROUP") {
                 self.next_token(); // expr -> group
@@ -347,14 +353,60 @@ impl Parser {
                 left.push_node("right", right);
             }
             "DATE" => {
-                if self.get_token(1).is_string() || self.peek_token_in(&vec!["b", "r", "br", "rb"]) && self.get_token(2).is_string() {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
                     self.next_token(); // date -> 'yyyy-mm-dd'
                     let right = self.parse_expr(001, until);
                     left.push_node("right", right);
                 }
             }
             "TIMESTAMP" => {
-                if self.get_token(1).is_string() {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
+                    self.next_token(); // timestamp -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "NUMERIC" => {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
+                    self.next_token(); // timestamp -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "BIGNUMERIC" => {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
+                    self.next_token(); // timestamp -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "DECIMAL" => {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
+                    self.next_token(); // timestamp -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "BIGDECIMAL" => {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
                     let right = self.parse_expr(001, until);
                     left.push_node("right", right);
@@ -505,7 +557,8 @@ impl Parser {
                                 self.next_token(); // partition -> by
                                 partition.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
-                                partition.push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"]));
+                                partition
+                                    .push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"]));
                                 window.push_node("partition", partition);
                             }
                             if self.peek_token_is("order") {
@@ -514,7 +567,10 @@ impl Parser {
                                 self.next_token(); // order -> by
                                 order.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
-                                order.push_node_vec("exprs", self.parse_exprs(&vec!["rows", "range", ")"]));
+                                order.push_node_vec(
+                                    "exprs",
+                                    self.parse_exprs(&vec!["rows", "range", ")"]),
+                                );
                                 window.push_node("order", order);
                             }
                             if self.peek_token_in(&vec!["range", "rows"]) {
