@@ -88,7 +88,7 @@ impl Lexer {
                 return Some(token::Token {
                     line: self.line,
                     column: self.column,
-                    literal: self.read_comment(),
+                    literal: self.read_multiline_comment(),
                 });
             }
             '(' => token::Token {
