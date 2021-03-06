@@ -88,7 +88,7 @@ impl Lexer {
                 return Some(token::Token {
                     line: self.line,
                     column: self.column,
-                    literal: self.read_multiline_comment(),
+                    literal: self.read_comment(),
                 });
             }
             '(' => token::Token {
@@ -154,7 +154,7 @@ impl Lexer {
                     return Some(token::Token {
                         line: self.line,
                         column: self.column,
-                        literal: self.read_comment(),
+                        literal: self.read_multiline_comment(),
                     });
                 } else {
                     token::Token {
@@ -249,7 +249,7 @@ impl Lexer {
     }
     fn read_multiline_comment(&mut self) -> String {
         let first_position = self.position;
-        while !is_end_of_line(&self.ch) {
+        while true {
             self.read_char();
         }
         self.input[first_position..self.position]
