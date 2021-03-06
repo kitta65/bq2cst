@@ -84,7 +84,7 @@ impl Parser {
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);
-        self.tokens.len() < idx
+        self.tokens.len() <= idx
     }
     pub fn parse_code(&mut self) -> Vec<cst::Node> {
         let mut code: Vec<cst::Node> = Vec::new();
@@ -367,6 +367,34 @@ impl Parser {
                 left.push_node("date_part", self.construct_node());
                 left.push_node("right", right);
             }
+            "R" => {
+                if self.get_token(1).is_string() {
+                    self.next_token(); // R -> 'string'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "B" => {
+                if self.get_token(1).is_string() {
+                    self.next_token(); // R -> 'string'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "BR" => {
+                if self.get_token(1).is_string() {
+                    self.next_token(); // R -> 'string'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
+            "RB" => {
+                if self.get_token(1).is_string() {
+                    self.next_token(); // R -> 'string'
+                    let right = self.parse_expr(001, until);
+                    left.push_node("right", right);
+                }
+            }
             "SELECT" => {
                 left = self.parse_select_statement();
             }
@@ -610,7 +638,7 @@ impl Parser {
     fn get_precedence(&self, offset: usize) -> usize {
         // precedenc
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
-        // 001... date, timestamp (literal)
+        // 001... date, timestamp, r'', b'' (literal)
         // 005... ( (call expression)
         // 101... [], .
         // 102... +, - , ~ (unary operator)
@@ -749,7 +777,8 @@ mod tests {
               sum() over (partition by a order by b, c),
               sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
               sum() over (rows 1 + 1 preceding),
-            ;"
+            ;
+            select r'abc', B'abc', rB'abc', bR'abc'"
             .to_string();
         let l = lexer::Lexer::new(input);
         let mut p = Parser::new(l);
@@ -1260,6 +1289,28 @@ columns:
     self: )
 semicolon:
   self: ;",
+  // raw, bytes
+  "\
+self: select
+columns:
+- self: r
+  comma:
+    self: ,
+  right:
+    self: 'abc'
+- self: B
+  comma:
+    self: ,
+  right:
+    self: 'abc'
+- self: rB
+  comma:
+    self: ,
+  right:
+    self: 'abc'
+- self: bR
+  right:
+    self: 'abc'",
         ];
         for i in 0..tests.len() {
             println!("{}\n", stmt[i].to_string(0, false));
