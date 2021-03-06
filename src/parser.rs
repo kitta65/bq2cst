@@ -347,7 +347,7 @@ impl Parser {
                 left.push_node("right", right);
             }
             "DATE" => {
-                if self.get_token(1).is_string() {
+                if self.get_token(1).is_string() || self.peek_token_in(&vec!["b", "r", "br", "rb"]) && self.get_token(2).is_string() {
                     self.next_token(); // date -> 'yyyy-mm-dd'
                     let right = self.parse_expr(001, until);
                     left.push_node("right", right);
