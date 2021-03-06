@@ -120,18 +120,34 @@ impl Lexer {
                 })
             }
             '"' => {
-                return Some(token::Token {
-                    line: self.line,
-                    column: self.column,
-                    literal: self.read_quoted(self.ch),
-                })
+                if self.peek_char(1) == Some('"') && self.peek_char(2) == Some('"') {
+                    return Some(token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_multiline_string(),
+                    });
+                } else {
+                    return Some(token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_quoted(self.ch),
+                    });
+                }
             }
             '\'' => {
-                return Some(token::Token {
-                    line: self.line,
-                    column: self.column,
-                    literal: self.read_quoted(self.ch),
-                })
+                if self.peek_char(1) == Some('\'') && self.peek_char(2) == Some('\'') {
+                    return Some(token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_multiline_string(),
+                    });
+                } else {
+                    return Some(token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: self.read_quoted(self.ch),
+                    });
+                }
             }
             // binary operator
             '+' => token::Token {
@@ -229,6 +245,18 @@ impl Lexer {
         self.read_char();
         Some(token)
     }
+    fn read_multiline_string(&mut self) -> String {
+        let first_position = self.position;
+        let ch = self.ch;
+        self.read_char(); // first ' -> secont '
+        while !(self.ch == ch && self.peek_char(1) == ch && self.peek_char(2) == ch) {
+            self.read_char();
+        }
+        self.read_char(); // first ' -> secont '
+        self.read_char(); // second ' -> third '
+        self.read_char(); // third ' ->  next_ch
+        self.input[first_position..self.position].into_iter().collect()
+    }
     fn read_quoted(&mut self, quote: Option<char>) -> String {
         let first_position = self.position;
         self.read_char();
@@ -317,7 +345,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,
+SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,'''abc''',
 From `data`; -- comment
 -- 
 /*
@@ -553,6 +581,16 @@ f
             token::Token {
                 line: 1,
                 column: 140,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 141,
+                literal: "'''abc'''".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 150,
                 literal: ",".to_string(),
             },
             // line2
