@@ -762,6 +762,38 @@ impl Parser {
                     type_.push_node("type", self.parse_type());
                     self.next_token(); // type_expr -> >
                     type_.push_node("rparen", self.construct_node());
+                    res.push_node("type_declaration", type_);
+                }
+                res
+            }
+            "STRUCT" => {
+                let mut res = self.construct_node();
+                if self.get_token(1).literal.as_str() == "<" {
+                    self.next_token(); // array -> <
+                    let mut type_ = self.construct_node();
+                    self.next_token(); // < -> type or ident
+                    let mut type_declarations = Vec::new();
+                    while !self.cur_token_is(">") {
+                        let mut type_declaration;
+                        if !self.peek_token_in(&vec![",", ">", "TYPE", "<"]) {
+                            // `is_identifier` is not availabe here,
+                            // because `int64` is valid identifier
+                            type_declaration = self.construct_node();
+                            self.next_token(); // ident -> type
+                        } else {
+                            type_declaration = cst::Node::new_none();
+                        }
+                        type_declaration.push_node("type", self.parse_type());
+                        self.next_token(); // type -> , or next_declaration
+                        if self.cur_token_is(",") {
+                            type_declaration.push_node("comma", self.construct_node());
+                            self.next_token(); // , -> next_declaration
+                        }
+                        type_declarations.push(type_declaration);
+                    }
+                    type_.push_node("rparen", self.construct_node());
+                    type_.push_node_vec("declarations", type_declarations);
+                    res.push_node("type_declaration", type_);
                 }
                 res
             }
