@@ -507,6 +507,18 @@ impl Parser {
                     self.next_token(); // expr -> in
                     left = self.parse_in_operator(left);
                 }
+                "[" => {
+                    print!("in new arm");
+                    self.next_token(); // expr -> [
+                    let mut node = self.construct_node();
+                    node.push_node("left", left);
+                    //let precedence = self.get_precedence(0);
+                    self.next_token(); // [ -> index_expr
+                    node.push_node("right", self.parse_expr(999, &vec!["]"]));
+                    self.next_token(); // index_expr -> ]
+                    node.push_node("rparen", self.construct_node());
+                    left = node;
+                }
                 "(" => {
                     self.next_token(); // expr -> (
                     let mut node = self.construct_node();
@@ -688,6 +700,7 @@ impl Parser {
         match self.get_token(offset).literal.to_uppercase().as_str() {
             "(" => 005,
             "." => 101,
+            "[" => 101,
             "-" => 104,
             "+" => 104,
             "*" => 103,

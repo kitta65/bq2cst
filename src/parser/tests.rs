@@ -93,7 +93,8 @@ fn test_parse_exprs() {
             ;
             select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
             select decimal '00', timestamp r'2020-01-01';
-            select (t.struct_col.num + 1) as result from `dataset`.table as t;"
+            select (t.struct_col.num + 1) as result from `dataset`.table as t;
+            select arr[offset(1)];"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -638,8 +639,8 @@ columns:
       self: '2020-01-01'
 semicolon:
   self: ;",
-  // date, timestamp, numeric...
-  "\
+        // date, timestamp, numeric...
+        "\
 self: select
 columns:
 - self: decimal
@@ -654,8 +655,8 @@ columns:
       self: '2020-01-01'
 semicolon:
   self: ;",
-  // dot operator
-  "\
+        // dot operator
+        "\
 self: select
 columns:
 - self: (
@@ -691,6 +692,24 @@ from:
       self: `dataset`
     right:
       self: table
+semicolon:
+  self: ;", // array
+        "\
+self: select
+columns:
+- self: [
+  left:
+    self: arr
+  right:
+    self: (
+    args:
+    - self: 1
+    func:
+      self: offset
+    rparen:
+      self: )
+  rparen:
+    self: ]
 semicolon:
   self: ;",
     ];
