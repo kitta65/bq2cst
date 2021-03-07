@@ -118,12 +118,25 @@ impl Parser {
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "SELECT" => self.parse_select_statement(),
+            "(" => self.parse_select_statement(),
             _ => self.parse_select_statement(),
         };
         node
     }
     // TODO ignore ()
     fn parse_select_statement(&mut self) -> cst::Node {
+        if self.get_token(0).literal.as_str() == "(" {
+            let mut node = self.construct_node();
+            self.next_token(); // ( -> select
+            node.push_node("stmt", self.parse_select_statement());
+            self.next_token(); // stmt -> )
+            node.push_node("rparen", self.construct_node());
+            if self.peek_token_is(";") {
+                self.next_token(); // expr -> ;
+                node.push_node("semicolon", self.construct_node())
+            }
+            return node;
+        }
         let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
 
@@ -141,7 +154,7 @@ impl Parser {
         // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit"])),
+            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")"])),
         );
         // from
         if self.peek_token_is("FROM") {
