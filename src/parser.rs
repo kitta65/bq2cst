@@ -458,7 +458,16 @@ impl Parser {
                 left.push_node("right", right);
             }
             "STRUCT" => {
-                self.next_token(); // not -> boolean
+                if self.get_token(1).literal.as_str() == "<" {
+                    self.next_token(); // struct -> <
+                    let mut type_ = self.construct_node();
+                    self.next_token(); // < -> type
+                    type_.push_node("type", self.parse_type());
+                    self.next_token(); // type -> >
+                    type_.push_node("rparen", self.construct_node());
+                    left.push_node("type_declaration", type_);
+                }
+                self.next_token(); // struct -> (, > -> (
                 let right = self.parse_expr(110, until);
                 left.push_node("right", right);
             }

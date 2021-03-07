@@ -95,7 +95,7 @@ fn test_parse_exprs() {
             select decimal '00', timestamp r'2020-01-01';
             select (t.struct_col.num + 1) as result from `dataset`.table as t;
             select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],;
-            select (1,2),;"
+            select (1,2),struct(1,2),;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -765,6 +765,18 @@ columns:
   - self: 2
   rparen:
     self: )
+- self: struct
+  comma:
+    self: ,
+  right:
+    self: (
+    exprs:
+    - self: 1
+      comma:
+        self: ,
+    - self: 2
+    rparen:
+      self: )
 semicolon:
   self: ;",
     ];
