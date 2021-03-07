@@ -444,7 +444,6 @@ impl Parser {
                     left.push_node("type_declaration", type_);
                     self.next_token(); // > -> [
                 }
-                self.next_token(); // ARRAY -> < , [
                 let mut right = self.construct_node();
                 self.next_token(); // [ -> exprs
                 right.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
