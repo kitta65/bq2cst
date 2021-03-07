@@ -123,15 +123,14 @@ impl Parser {
         };
         node
     }
-    // TODO ignore ()
     fn parse_select_statement(&mut self, root: bool) -> cst::Node {
         if self.get_token(0).literal.as_str() == "(" {
             let mut node = self.construct_node();
             self.next_token(); // ( -> select
-            node.push_node("stmt", self.parse_select_statement(false));
+            node.push_node("stmt", self.parse_select_statement(true));
             self.next_token(); // stmt -> )
             node.push_node("rparen", self.construct_node());
-            if self.peek_token_in(&vec!["union", "intersect", "except"]) {
+            while self.peek_token_in(&vec!["union", "intersect", "except"]) && root {
                 self.next_token(); // stmt -> union
                 let mut operator = self.construct_node();
                 operator.push_node("left", node);
@@ -226,7 +225,7 @@ impl Parser {
             node.push_node("limit", limit)
         }
         // union
-        if self.peek_token_in(&vec!["union", "intersect", "except"]) {
+        while self.peek_token_in(&vec!["union", "intersect", "except"]) && root {
             self.next_token(); // stmt -> union
             let mut operator = self.construct_node();
             operator.push_node("left", node);
@@ -473,7 +472,7 @@ impl Parser {
                 }
             }
             "SELECT" => {
-                left = self.parse_select_statement(false);
+                left = self.parse_select_statement(true);
             }
             "NOT" => {
                 self.next_token(); // not -> boolean

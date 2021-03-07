@@ -97,7 +97,8 @@ fn test_parse_exprs() {
             select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],array<struct<array<int64>>>[struct([1])];
             select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
             (select 1);
-            select 1 union select 2;(select 1) union select 2;select 1 union (select 2);select 1 union select 2 union select 3;"
+            select 1 union select 2;(select 1) union select 2;select 1 union (select 2);select 1 union select 2 union select 3;
+            select 1 union (select 2 union select 3);(select 1 union select 2) union select 3;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -942,8 +943,69 @@ right:
     columns:
     - self: 2
 semicolon:
-  self: ;","\
-self: aaa"
+  self: ;",
+        "\
+self: union
+left:
+  self: union
+  left:
+    self: select
+    columns:
+    - self: 1
+  right:
+    self: select
+    columns:
+    - self: 2
+right:
+  self: select
+  columns:
+  - self: 3
+semicolon:
+  self: ;",
+        "\
+self: union
+left:
+  self: select
+  columns:
+  - self: 1
+right:
+  self: (
+  rparen:
+    self: )
+  stmt:
+    self: union
+    left:
+      self: select
+      columns:
+      - self: 2
+    right:
+      self: select
+      columns:
+      - self: 3
+semicolon:
+  self: ;",
+        "\
+self: union
+left:
+  self: (
+  rparen:
+    self: )
+  stmt:
+    self: union
+    left:
+      self: select
+      columns:
+      - self: 1
+    right:
+      self: select
+      columns:
+      - self: 2
+right:
+  self: select
+  columns:
+  - self: 3
+semicolon:
+  self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
