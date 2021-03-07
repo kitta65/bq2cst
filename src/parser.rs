@@ -315,7 +315,13 @@ impl Parser {
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 self.next_token(); // ( -> expr
-                left.push_node("expr", self.parse_expr(999, until));
+                let exprs = self.parse_exprs(&vec![")"]);
+                if exprs.len() == 1 {
+                    left.push_node("expr", exprs[0].clone());
+                } else {
+                    left.push_node_vec("exprs", exprs);
+                }
+                //left.push_node("expr", self.parse_expr(999, until));
                 self.next_token(); // expr -> )
                 left.push_node("rparen", self.construct_node());
             }
@@ -449,6 +455,11 @@ impl Parser {
                 right.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
                 self.next_token(); // exprs -> ]
                 right.push_node("rparen", self.construct_node());
+                left.push_node("right", right);
+            }
+            "STRUCT" => {
+                self.next_token(); // not -> boolean
+                let right = self.parse_expr(110, until);
                 left.push_node("right", right);
             }
             "CASE" => {
