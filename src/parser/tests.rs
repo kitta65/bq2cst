@@ -119,8 +119,8 @@ groupby:
   - self: 1
 having:
   self: HAVING
-  columns:
-  - self: true
+  expr:
+    self: true
 limit:
   self: limit
   expr:

@@ -174,35 +174,15 @@ impl Parser {
                 self.parse_exprs(&vec!["having", "limit", ";", "order"]),
             );
             node.push_node("groupby", groupby);
-            if self.peek_token_is("HAVING") {
-                self.next_token(); // expr -> having
-                let mut having = self.construct_node();
-                self.next_token(); // by -> expr
-                having.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";", "order"]));
-                //self.next_token(); // expr -> limit
-                node.push_node("having", having);
-            }
         }
         // having
         if self.peek_token_is("HAVING") {
             self.next_token(); // expr -> having
             let mut having = self.construct_node();
-            self.next_token(); // having -> expr
-            having.push_node_vec(
-                "columns",
-                self.parse_exprs(&vec!["GROUP", "limit", ";", "order"]),
-            );
+            self.next_token(); // by -> expr
+            having.push_node("expr", self.parse_expr(999, &vec!["LIMIT", ";", "order"]));
+            //self.next_token(); // expr -> limit
             node.push_node("having", having);
-            if self.peek_token_is("GROUP") {
-                self.next_token(); // expr -> group
-                let mut groupby = self.construct_node();
-                self.next_token(); // group -> by
-                groupby.push_node("by", self.construct_node());
-                self.next_token(); // by -> expr
-                groupby.push_node_vec("columns", self.parse_exprs(&vec!["LIMIT", ";", "order"]));
-                //self.next_token(); // expr -> limit
-                node.push_node("having", groupby);
-            }
         }
         // oeder by
         if self.peek_token_is("order") {
@@ -689,7 +669,7 @@ impl Parser {
     }
     fn get_precedence(&self, offset: usize) -> usize {
         // precedenc
-        // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+        // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
         // 001... date, timestamp, r'', b'' (literal)
         // 005... ( (call expression)
         // 101... [], .
