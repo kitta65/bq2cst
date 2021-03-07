@@ -101,26 +101,26 @@ impl Lexer {
                     literal: self.read_comment(),
                 });
             }
-            '(' => token::Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
-            ')' => token::Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
-            '[' => token::Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
-            ']' => token::Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
+            //'(' => token::Token {
+            //    literal: ch.to_string(),
+            //    line: self.line,
+            //    column: self.column,
+            //},
+            //')' => token::Token {
+            //    literal: ch.to_string(),
+            //    line: self.line,
+            //    column: self.column,
+            //},
+            //'[' => token::Token {
+            //    literal: ch.to_string(),
+            //    line: self.line,
+            //    column: self.column,
+            //},
+            //']' => token::Token {
+            //    literal: ch.to_string(),
+            //    line: self.line,
+            //    column: self.column,
+            //},
             // quotation
             '`' => {
                 return Some(token::Token {
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = "#standardSQL
-SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,'''abc''',arr[offset(1)],
+SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,'''abc''',arr[offset(1)],ARRAY<INT64>[1],
 From `data`; -- comment
 -- 
 /*
@@ -641,6 +641,46 @@ f
             token::Token {
                 line: 1,
                 column: 165,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 166,
+                literal: "ARRAY".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 171,
+                literal: "<".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 172,
+                literal: "INT64".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 177,
+                literal: ">".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 178,
+                literal: "[".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 179,
+                literal: "1".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 180,
+                literal: "]".to_string(),
+            },
+            token::Token {
+                line: 1,
+                column: 181,
                 literal: ",".to_string(),
             },
             // line2
