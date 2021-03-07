@@ -89,16 +89,9 @@ impl Parser {
     pub fn parse_code(&mut self) -> Vec<cst::Node> {
         let mut code: Vec<cst::Node> = Vec::new();
         while !self.is_eof(0) {
-            let mut stmt = self.parse_statement();
-            if self.peek_token_in(&vec!["union", "intersect", "except"]) {
-                self.next_token(); // stmt -> union
-                let mut node = self.construct_node();
-                self.next_token(); // union -> stmt
-                node.push_node("right", self.parse_statement());
-                node.push_node("left", stmt);
-                stmt = node;
-            }
+            let stmt = self.parse_statement();
             code.push(stmt);
+            self.next_token();
         }
         code
     }
@@ -122,15 +115,14 @@ impl Parser {
         }
         node
     }
-    // TODO ignore ()
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "SELECT" => self.parse_select_statement(),
             _ => self.parse_select_statement(),
         };
-        self.next_token();
         node
     }
+    // TODO ignore ()
     fn parse_select_statement(&mut self) -> cst::Node {
         let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
