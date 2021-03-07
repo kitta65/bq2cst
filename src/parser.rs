@@ -286,21 +286,13 @@ impl Parser {
             cst::Node::new_none()
         };
         // table
-        let mut table = self.construct_node();
-        // TODO '.' operator
+        let mut table = self.parse_expr(999, &vec!["where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross", "inner", "join"]);
         if self.peek_token_is("as") {
             self.next_token(); // `table` -> AS
             let mut as_ = self.construct_node();
             self.next_token(); // as -> alias
             as_.push_node("alias", self.construct_node());
             table.push_node("as", as_);
-        //self.next_token(); // alias -> on, clause
-        } else if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "on"]) {
-            self.next_token(); // `table` -> alias
-            let mut as_ = cst::Node::new_none();
-            as_.push_node("alias", self.construct_node());
-            table.push_node("as", as_);
-            //self.next_token(); // alias -> on, clause
         }
         if join.token != None {
             if self.peek_token_is("on") {
@@ -507,6 +499,10 @@ impl Parser {
                     self.next_token(); // expr -> like
                     left = self.parse_binary_operator(left, until);
                 }
+                "." => {
+                    self.next_token(); // expr -> .
+                    left = self.parse_binary_operator(left, until);
+                }
                 "+" => {
                     self.next_token(); // expr -> +
                     left = self.parse_binary_operator(left, until);
@@ -711,6 +707,7 @@ impl Parser {
         // 999... LOWEST
         match self.get_token(offset).literal.to_uppercase().as_str() {
             "(" => 005,
+            "." => 101,
             "-" => 104,
             "+" => 104,
             "*" => 103,

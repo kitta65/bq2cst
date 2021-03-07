@@ -92,7 +92,8 @@ fn test_parse_exprs() {
               sum() over (rows 1 + 1 preceding),
             ;
             select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
-            select decimal '00', timestamp r'2020-01-01';"
+            select decimal '00', timestamp r'2020-01-01';
+            select (t.struct_col.num + 1) as result from `dataset`.table as t;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -651,6 +652,45 @@ columns:
     self: r
     right:
       self: '2020-01-01'
+semicolon:
+  self: ;",
+  // dot operator
+  "\
+self: select
+columns:
+- self: (
+  as:
+    self: as
+    alias:
+      self: result
+  expr:
+    self: +
+    left:
+      self: .
+      left:
+        self: .
+        left:
+          self: t
+        right:
+          self: struct_col
+      right:
+        self: num
+    right:
+      self: 1
+  rparen:
+    self: )
+from:
+  self: from
+  tables:
+  - self: .
+    as:
+      self: as
+      alias:
+        self: t
+    left:
+      self: `dataset`
+    right:
+      self: table
 semicolon:
   self: ;",
     ];
