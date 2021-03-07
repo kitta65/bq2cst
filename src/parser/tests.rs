@@ -94,7 +94,7 @@ fn test_parse_exprs() {
             select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
             select decimal '00', timestamp r'2020-01-01';
             select (t.struct_col.num + 1) as result from `dataset`.table as t;
-            select arr[offset(1)], [1, 2], ARRAY[1,2],;"
+            select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -734,6 +734,21 @@ columns:
     - self: 2
     rparen:
       self: ]
+- self: array
+  comma:
+    self: ,
+  right:
+    self: [
+    exprs:
+    - self: 1
+    rparen:
+      self: ]
+  type_declaration:
+    self: <
+    rparen:
+      self: >
+    type:
+      self: int64
 semicolon:
   self: ;",
     ];

@@ -434,16 +434,16 @@ impl Parser {
                 left.push_node("right", right);
             }
             "ARRAY" => {
-                self.next_token(); // ARRAY -> < , [
-                if self.get_token(1) .literal.to_uppercase().as_str() == "<" {
+                if self.get_token(1).literal.as_str() == "<" {
+                    self.next_token(); // ARRAY -> <
                     let mut type_ = self.construct_node();
                     self.next_token(); // < -> type
                     type_.push_node("type", self.parse_expr(999, &vec![">"]));
                     self.next_token(); // type -> >
                     type_.push_node("rparen", self.construct_node());
                     left.push_node("type_declaration", type_);
-                    self.next_token(); // > -> [
                 }
+                self.next_token(); // ARRAY -> [, > -> [
                 let mut right = self.construct_node();
                 self.next_token(); // [ -> exprs
                 right.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
