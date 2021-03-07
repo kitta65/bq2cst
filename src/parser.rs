@@ -324,6 +324,12 @@ impl Parser {
                 let right = self.parse_expr(102, until);
                 left.push_node("right", right);
             }
+            "[" => {
+                self.next_token(); // [ -> exprs
+                left.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
+                self.next_token(); // exprs -> ]
+                left.push_node("rparen", self.construct_node());
+            }
             "DATE" => {
                 if self.get_token(1).is_string()
                     || self.peek_token_in(&vec!["b", "r", "br", "rb"])
