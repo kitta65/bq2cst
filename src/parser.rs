@@ -438,7 +438,7 @@ impl Parser {
                     self.next_token(); // ARRAY -> <
                     let mut type_ = self.construct_node();
                     self.next_token(); // < -> type
-                    type_.push_node("type", self.parse_expr(999, &vec![">"]));
+                    type_.push_node("type", self.parse_type());
                     self.next_token(); // type -> >
                     type_.push_node("rparen", self.construct_node());
                     left.push_node("type_declaration", type_);
@@ -702,6 +702,24 @@ impl Parser {
     }
     fn cur_token_is(&self, s: &str) -> bool {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
+    }
+    fn parse_type(&mut self) -> cst::Node {
+        let res = match self.get_token(0).literal.to_uppercase().as_str() {
+            "ARRAY" => {
+                let mut res = self.construct_node();
+                if self.get_token(1).literal.as_str() == "<" {
+                    self.next_token(); // array -> <
+                    let mut type_ = self.construct_node();
+                    self.next_token(); // < -> type_expr
+                    type_.push_node("type", self.parse_type());
+                    self.next_token(); // type_expr -> >
+                    type_.push_node("rparen", self.construct_node());
+                }
+                res
+            },
+            _ => self.construct_node(),
+        };
+        res
     }
     fn get_precedence(&self, offset: usize) -> usize {
         // precedenc
