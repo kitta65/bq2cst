@@ -97,8 +97,8 @@ fn test_parse_exprs() {
             select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],array<struct<array<int64>>>[struct([1])];
             select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
             (select 1);
-            select 1 union select 2;(select 1) union select 2;select 1 union (select 2);select 1 union select 2 union select 3;
-            select 1 union (select 2 union select 3);(select 1 union select 2) union select 3;"
+            select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
+            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -902,6 +902,8 @@ stmt:
         // union
         "\
 self: union
+distinct:
+  self: all
 left:
   self: select
   columns:
@@ -914,6 +916,8 @@ semicolon:
   self: ;",
         "\
 self: union
+distinct:
+  self: all
 left:
   self: (
   rparen:
@@ -930,6 +934,8 @@ semicolon:
   self: ;",
         "\
 self: union
+distinct:
+  self: all
 left:
   self: select
   columns:
@@ -946,8 +952,12 @@ semicolon:
   self: ;",
         "\
 self: union
+distinct:
+  self: all
 left:
   self: union
+  distinct:
+    self: all
   left:
     self: select
     columns:
@@ -964,6 +974,8 @@ semicolon:
   self: ;",
         "\
 self: union
+distinct:
+  self: all
 left:
   self: select
   columns:
@@ -974,6 +986,8 @@ right:
     self: )
   stmt:
     self: union
+    distinct:
+      self: all
     left:
       self: select
       columns:
@@ -986,12 +1000,16 @@ semicolon:
   self: ;",
         "\
 self: union
+distinct:
+  self: all
 left:
   self: (
   rparen:
     self: )
   stmt:
     self: union
+    distinct:
+      self: all
     left:
       self: select
       columns:

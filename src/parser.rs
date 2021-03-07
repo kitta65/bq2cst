@@ -133,8 +133,10 @@ impl Parser {
             while self.peek_token_in(&vec!["union", "intersect", "except"]) && root {
                 self.next_token(); // stmt -> union
                 let mut operator = self.construct_node();
+                self.next_token(); // union -> distinct
+                operator.push_node("distinct", self.construct_node());
                 operator.push_node("left", node);
-                self.next_token(); // union -> stmt
+                self.next_token(); // distinct -> stmt
                 operator.push_node("right", self.parse_select_statement(false));
                 node = operator;
             }
@@ -228,8 +230,10 @@ impl Parser {
         while self.peek_token_in(&vec!["union", "intersect", "except"]) && root {
             self.next_token(); // stmt -> union
             let mut operator = self.construct_node();
+            self.next_token(); // union -> distinct
+            operator.push_node("distinct", self.construct_node());
             operator.push_node("left", node);
-            self.next_token(); // union -> stmt
+            self.next_token(); // distinct -> stmt
             operator.push_node("right", self.parse_select_statement(false));
             node = operator;
             if self.peek_token_is(";") && root {
