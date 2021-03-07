@@ -117,21 +117,29 @@ impl Parser {
     }
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
-            "SELECT" => self.parse_select_statement(),
-            "(" => self.parse_select_statement(),
-            _ => self.parse_select_statement(),
+            "SELECT" => self.parse_select_statement(true),
+            "(" => self.parse_select_statement(true),
+            _ => panic!(),
         };
         node
     }
     // TODO ignore ()
-    fn parse_select_statement(&mut self) -> cst::Node {
+    fn parse_select_statement(&mut self, root: bool) -> cst::Node {
         if self.get_token(0).literal.as_str() == "(" {
             let mut node = self.construct_node();
             self.next_token(); // ( -> select
-            node.push_node("stmt", self.parse_select_statement());
+            node.push_node("stmt", self.parse_select_statement(false));
             self.next_token(); // stmt -> )
             node.push_node("rparen", self.construct_node());
-            if self.peek_token_is(";") {
+            if self.peek_token_in(&vec!["union", "intersect", "except"]) {
+                self.next_token(); // stmt -> union
+                let mut operator = self.construct_node();
+                operator.push_node("left", node);
+                self.next_token(); // union -> stmt
+                operator.push_node("right", self.parse_select_statement(false));
+                node = operator;
+            }
+            if self.peek_token_is(";") && root {
                 self.next_token(); // expr -> ;
                 node.push_node("semicolon", self.construct_node())
             }
@@ -154,7 +162,7 @@ impl Parser {
         // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")"])),
+            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")", "union", "intersect", "except"])),
         );
         // from
         if self.peek_token_is("FROM") {
@@ -217,8 +225,21 @@ impl Parser {
             //self.next_token(); // parse_expr needs next_token()
             node.push_node("limit", limit)
         }
+        // union
+        if self.peek_token_in(&vec!["union", "intersect", "except"]) {
+            self.next_token(); // stmt -> union
+            let mut operator = self.construct_node();
+            operator.push_node("left", node);
+            self.next_token(); // union -> stmt
+            operator.push_node("right", self.parse_select_statement(false));
+            node = operator;
+            if self.peek_token_is(";") && root {
+                self.next_token(); // expr -> ;
+                node.push_node("semicolon", self.construct_node())
+            }
+        }
         // ;
-        if self.peek_token_is(";") {
+        if self.peek_token_is(";") && root {
             self.next_token(); // expr -> ;
             node.push_node("semicolon", self.construct_node())
         }
@@ -452,7 +473,7 @@ impl Parser {
                 }
             }
             "SELECT" => {
-                left = self.parse_select_statement();
+                left = self.parse_select_statement(false);
             }
             "NOT" => {
                 self.next_token(); // not -> boolean

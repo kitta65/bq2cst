@@ -96,7 +96,8 @@ fn test_parse_exprs() {
             select (t.struct_col.num + 1) as result from `dataset`.table as t;
             select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],array<struct<array<int64>>>[struct([1])];
             select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
-            (select 1);"
+            (select 1);
+            select 1 union select 2;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -897,6 +898,19 @@ stmt:
   self: select
   columns:
   - self: 1",
+  // union
+  "\
+self: union
+left:
+  self: select
+  columns:
+  - self: 1
+right:
+  self: select
+  columns:
+  - self: 2
+semicolon:
+  self: ;"
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
