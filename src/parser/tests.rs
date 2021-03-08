@@ -64,7 +64,7 @@ fn test_next_token() {
 #[test]
 fn test_parse_exprs() {
     let input = "\
-            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true order by abc DESC, def limit 100;
+            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
             select 1 as num from data;
             select 2 two;
             select * from data1 as one inner join data2 two ON true;
@@ -132,6 +132,9 @@ limit:
   self: limit
   expr:
     self: 100
+  offset:
+    self: offset
+    expr: 10
 orderby:
   self: order
   by:

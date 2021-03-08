@@ -120,7 +120,10 @@ impl Parser {
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
             "(" => self.parse_select_statement(true),
-            _ => panic!(),
+            _ => {
+                println!("{:?}", self.get_token(0));
+                panic!();
+            },
         };
         node
     }
@@ -248,9 +251,15 @@ impl Parser {
             self.next_token(); // expr -> limit
             let mut limit = self.construct_node();
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr(999, &vec![";", ","]));
-            //self.next_token(); // parse_expr needs next_token()
-            node.push_node("limit", limit)
+            limit.push_node("expr", self.parse_expr(999, &vec![";", ",", "offset"]));
+            if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
+                self.next_token(); // expr -> offset
+                let mut offset = self.construct_node();
+                self.next_token(); // offset -> expr
+                offset.push_node("expr", self.parse_expr(999, &vec!["union", "intersect", "except", ";"]));
+                limit.push_node("offset", offset);
+            }
+            node.push_node("limit", limit);
         }
         // union
         while self.peek_token_in(&vec!["union", "intersect", "except"]) && root {
