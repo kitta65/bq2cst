@@ -1025,7 +1025,26 @@ right:
   - self: 3
 semicolon:
   self: ;", // with
-
+  "\
+self: select
+columns:
+- self: 2
+semicolon:
+  self: ;
+with:
+  self: with
+  queries:
+  - self: a
+    as:
+      self: as
+    stmt:
+      self: (
+      rparen:
+        self: )
+      stmt:
+        self: select
+        columns:
+        - self: 1",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

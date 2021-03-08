@@ -160,6 +160,10 @@ impl Parser {
                 queries.push(query);
             }
             with.push_node_vec("queries", queries);
+            self.next_token(); // ) -> select
+            let mut node = self.parse_select_statement(true);
+            node.push_node("with", with);
+            return node;
         }
         let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
