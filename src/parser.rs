@@ -170,6 +170,8 @@ impl Parser {
             return node;
         }
         let mut node = self.construct_node(); // select
+
+        // as struct, as value
         if self.get_token(1).literal.to_uppercase().as_str() == "AS" {
             self.next_token(); // select -> as
             let mut as_ = self.construct_node();
@@ -177,19 +179,13 @@ impl Parser {
             as_.push_node("struct_value", self.construct_node());
             node.push_node("as", as_);
         }
-        self.next_token(); // select -> [distinct]
 
         // distinct
-        match self.get_token(0).literal.to_uppercase().as_str() {
-            "DISTINCT" => {
-                node.children.insert(
-                    "DISTINCT".to_string(),
-                    cst::Children::Node(self.construct_node()),
-                );
-                self.next_token(); // distinct -> columns
-            }
-            _ => (),
-        };
+        if self.peek_token_in(&vec!["all", "distinct"]) {
+            self.next_token(); // select -> all, distinct
+            node.push_node("distinct", self.construct_node());
+        }
+        self.next_token(); // -> expr
         // columns
         node.children.insert(
             "columns".to_string(),

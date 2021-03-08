@@ -100,7 +100,7 @@ fn test_parse_exprs() {
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
             select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
             with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
-            select as struct 1;"
+            select as struct 1;select distinct 1;select all 1;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1088,6 +1088,22 @@ as:
     self: struct
 columns:
 - self: 1
+semicolon:
+  self: ;",
+        "\
+self: select
+columns:
+- self: 1
+distinct:
+  self: distinct
+semicolon:
+  self: ;",
+        "\
+self: select
+columns:
+- self: 1
+distinct:
+  self: all
 semicolon:
   self: ;",
     ];
