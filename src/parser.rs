@@ -376,6 +376,29 @@ impl Parser {
         // prefix or literal
         let mut left = self.construct_node();
         match self.get_token(0).literal.to_uppercase().as_str() {
+            "*" => {
+                match self.get_token(1).literal.to_uppercase().as_str() {
+                    "REPLACE" => {
+                        self.next_token(); // * -> replace
+                        let mut replace = self.construct_node();
+                        self.next_token(); // replace -> (
+                        let mut group = self.construct_node();
+                        self.next_token(); // ( -> exprs
+                    },
+                    "EXCEPT" => {
+                        self.next_token(); // * -> except
+                        let mut except = self.construct_node();
+                        self.next_token(); // except -> (
+                        let mut group = self.construct_node();
+                        self.next_token(); // ( -> exprs
+                        group.push_node_vec("columns", self.parse_exprs(&vec![")"]));
+                        self.next_token(); // exprs -> )
+                        group.push_node("rparen", self.construct_node());
+                        except.push_node("group", group);
+                    },
+                    _ => (),
+                }
+            }
             "(" => {
                 self.next_token(); // ( -> expr
                 let exprs = self.parse_exprs(&vec![")"]);
