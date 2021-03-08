@@ -383,7 +383,17 @@ impl Parser {
                         let mut replace = self.construct_node();
                         self.next_token(); // replace -> (
                         let mut group = self.construct_node();
-                        self.next_token(); // ( -> exprs
+                        let mut exprs = Vec::new();
+                        while self.get_token(1).literal.as_str() != ")" {
+                            self.next_token(); // ( -> expr, ident -> expr
+                            let expr = self.parse_expr(999, &vec![")"]);
+                            exprs.push(expr);
+                        }
+                        self.next_token(); // ident -> )
+                        group.push_node("rparen", self.construct_node());
+                        group.push_node_vec("exprs", exprs);
+                        replace.push_node("group", group);
+                        left.push_node("replace", replace);
                     },
                     "EXCEPT" => {
                         self.next_token(); // * -> except
