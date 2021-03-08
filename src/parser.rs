@@ -157,6 +157,10 @@ impl Parser {
                 query.push_node("as", self.construct_node());
                 self.next_token(); // as -> (
                 query.push_node("stmt", self.parse_select_statement(true));
+                if self.get_token(1).literal.as_str() == "," {
+                    self.next_token(); // ) -> ,
+                    query.push_node("comma", self.construct_node());
+                }
                 queries.push(query);
             }
             with.push_node_vec("queries", queries);
