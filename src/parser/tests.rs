@@ -134,7 +134,8 @@ limit:
     self: 100
   offset:
     self: offset
-    expr: 10
+    expr:
+      self: 10
 orderby:
   self: order
   by:

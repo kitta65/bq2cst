@@ -192,7 +192,7 @@ impl Parser {
         // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")", "union", "intersect", "except"])),
+            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")", "union", "intersect", "except"], true)),
         );
         // from
         if self.peek_token_is("FROM") {
@@ -209,7 +209,7 @@ impl Parser {
             self.next_token(); // limit -> expr
             where_.push_node(
                 "expr",
-                self.parse_expr(999, &vec!["group", "having", ";", ","]),
+                self.parse_expr(999, &vec!["group", "having", ";", ","], false),
             );
             //self.next_token(); // parse_expr needs next_token()
             node.push_node("where", where_);
@@ -223,7 +223,7 @@ impl Parser {
             self.next_token(); // by -> expr
             groupby.push_node_vec(
                 "columns",
-                self.parse_exprs(&vec!["having", "limit", ";", "order"]),
+                self.parse_exprs(&vec!["having", "limit", ";", "order"], false),
             );
             node.push_node("groupby", groupby);
         }
@@ -232,7 +232,7 @@ impl Parser {
             self.next_token(); // expr -> having
             let mut having = self.construct_node();
             self.next_token(); // by -> expr
-            having.push_node("expr", self.parse_expr(999, &vec!["LIMIT", ";", "order"]));
+            having.push_node("expr", self.parse_expr(999, &vec!["LIMIT", ";", "order"], false));
             //self.next_token(); // expr -> limit
             node.push_node("having", having);
         }
@@ -243,7 +243,7 @@ impl Parser {
             self.next_token(); // order -> by
             order.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ","]));
+            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ","], false));
             node.push_node("orderby", order);
         }
         // limit
@@ -251,12 +251,12 @@ impl Parser {
             self.next_token(); // expr -> limit
             let mut limit = self.construct_node();
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr(999, &vec![";", ",", "offset"]));
+            limit.push_node("expr", self.parse_expr(999, &vec![";", ",", "offset"], false));
             if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
                 self.next_token(); // expr -> offset
                 let mut offset = self.construct_node();
                 self.next_token(); // offset -> expr
-                offset.push_node("expr", self.parse_expr(999, &vec!["union", "intersect", "except", ";"]));
+                offset.push_node("expr", self.parse_expr(999, &vec!["union", "intersect", "except", ";"], false));
                 limit.push_node("offset", offset);
             }
             node.push_node("limit", limit);
@@ -344,7 +344,7 @@ impl Parser {
             &vec![
                 "where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross",
                 "inner", "join",
-            ],
+            ], true
         );
         if join.token != None {
             if self.peek_token_is("on") {
@@ -358,7 +358,7 @@ impl Parser {
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
                             "group", "having", ";",
-                        ],
+                        ], false
                     ),
                 );
                 //self.next_token(); // parse_expr needs next_token()
@@ -369,10 +369,10 @@ impl Parser {
         // TODO... using()
         table
     }
-    fn parse_exprs(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
+    fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<cst::Node> {
         let mut exprs: Vec<cst::Node> = Vec::new();
         while !self.cur_token_in(until) && !self.is_eof(0) {
-            exprs.push(self.parse_expr(999, until));
+            exprs.push(self.parse_expr(999, until, alias));
             if !self.peek_token_in(until) && !self.is_eof(1) {
                 self.next_token();
             } else {
@@ -381,7 +381,7 @@ impl Parser {
         }
         exprs // maybe not needed
     }
-    fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>) -> cst::Node {
+    fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>, alias: bool) -> cst::Node {
         // prefix or literal
         let mut left = self.construct_node();
         match self.get_token(0).literal.to_uppercase().as_str() {
@@ -395,7 +395,7 @@ impl Parser {
                         let mut exprs = Vec::new();
                         while self.get_token(1).literal.as_str() != ")" {
                             self.next_token(); // ( -> expr, ident -> expr
-                            let expr = self.parse_expr(999, &vec![")"]);
+                            let expr = self.parse_expr(999, &vec![")"], true);
                             exprs.push(expr);
                         }
                         self.next_token(); // ident -> )
@@ -410,7 +410,7 @@ impl Parser {
                         self.next_token(); // except -> (
                         let mut group = self.construct_node();
                         self.next_token(); // ( -> exprs
-                        group.push_node_vec("columns", self.parse_exprs(&vec![")"]));
+                        group.push_node_vec("columns", self.parse_exprs(&vec![")"], false));
                         self.next_token(); // exprs -> )
                         group.push_node("rparen", self.construct_node());
                         except.push_node("group", group);
@@ -421,7 +421,7 @@ impl Parser {
             }
             "(" => {
                 self.next_token(); // ( -> expr
-                let exprs = self.parse_exprs(&vec![")"]);
+                let exprs = self.parse_exprs(&vec![")"], false);
                 if exprs.len() == 1 {
                     left.push_node("expr", exprs[0].clone());
                 } else {
@@ -433,12 +433,12 @@ impl Parser {
             }
             "-" => {
                 self.next_token(); // - -> expr
-                let right = self.parse_expr(102, until);
+                let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
             }
             "[" => {
                 self.next_token(); // [ -> exprs
-                left.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
+                left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
                 self.next_token(); // exprs -> ]
                 left.push_node("rparen", self.construct_node());
             }
@@ -448,7 +448,7 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // date -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -458,7 +458,7 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -468,7 +468,7 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -478,7 +478,7 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -488,7 +488,7 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -498,13 +498,13 @@ impl Parser {
                         && self.get_token(2).is_string()
                 {
                     self.next_token(); // timestamp -> 'yyyy-mm-dd'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
             "INTERVAL" => {
                 self.next_token(); // interval -> expr
-                let right = self.parse_expr(001, &vec!["hour", "month", "year"]);
+                let right = self.parse_expr(001, &vec!["hour", "month", "year"], false);
                 self.next_token(); // expr -> hour
                 left.push_node("date_part", self.construct_node());
                 left.push_node("right", right);
@@ -512,28 +512,28 @@ impl Parser {
             "R" => {
                 if self.get_token(1).is_string() {
                     self.next_token(); // R -> 'string'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
             "B" => {
                 if self.get_token(1).is_string() {
                     self.next_token(); // R -> 'string'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
             "BR" => {
                 if self.get_token(1).is_string() {
                     self.next_token(); // R -> 'string'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
             "RB" => {
                 if self.get_token(1).is_string() {
                     self.next_token(); // R -> 'string'
-                    let right = self.parse_expr(001, until);
+                    let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
             }
@@ -542,7 +542,7 @@ impl Parser {
             }
             "NOT" => {
                 self.next_token(); // not -> boolean
-                let right = self.parse_expr(110, until);
+                let right = self.parse_expr(110, until, false);
                 left.push_node("right", right);
             }
             "ARRAY" => {
@@ -558,7 +558,7 @@ impl Parser {
                 self.next_token(); // ARRAY -> [, > -> [
                 let mut right = self.construct_node();
                 self.next_token(); // [ -> exprs
-                right.push_node_vec("exprs", self.parse_exprs(&vec!["]"]));
+                right.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
                 self.next_token(); // exprs -> ]
                 right.push_node("rparen", self.construct_node());
                 left.push_node("right", right);
@@ -594,7 +594,7 @@ impl Parser {
                 self.next_token(); // struct -> (, > -> (
                 let mut right = self.construct_node();
                 self.next_token(); // ( -> exprs
-                right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
+                right.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
                 self.next_token(); // exprs -> )
                 right.push_node("rparen", self.construct_node());
                 left.push_node("right", right);
@@ -602,18 +602,18 @@ impl Parser {
             "CASE" => {
                 self.next_token(); // case -> expr, case -> when
                 if !self.cur_token_is("WHEN") {
-                    left.push_node("expr", self.parse_expr(999, &vec!["WHEN"]));
+                    left.push_node("expr", self.parse_expr(999, &vec!["WHEN"], false));
                     self.next_token(); // expr -> when
                 }
                 let mut arms = Vec::new();
                 while !self.cur_token_is("ELSE") {
                     let mut arm = self.construct_node();
                     self.next_token(); // when -> expr
-                    arm.push_node("expr", self.parse_expr(999, &vec!["then"]));
+                    arm.push_node("expr", self.parse_expr(999, &vec!["then"], false));
                     self.next_token(); // expr -> then
                     arm.push_node("then", self.construct_node());
                     self.next_token(); // then -> result_expr
-                    arm.push_node("result", self.parse_expr(999, &vec!["else", "when"]));
+                    arm.push_node("result", self.parse_expr(999, &vec!["else", "when"], false));
                     self.next_token(); // result_expr -> else, result_expr -> when
                     arms.push(arm)
                 }
@@ -640,11 +640,11 @@ impl Parser {
                     left = between;
                     self.next_token(); // between -> expr1
                     let mut exprs = Vec::new();
-                    exprs.push(self.parse_expr(precedence, until));
+                    exprs.push(self.parse_expr(precedence, until, false));
                     self.next_token(); // expr1 -> and
                     left.push_node("and", self.construct_node());
                     self.next_token(); // and -> expr2
-                    exprs.push(self.parse_expr(precedence, until));
+                    exprs.push(self.parse_expr(precedence, until, false));
                     left.push_node_vec("right", exprs);
                 }
                 "LIKE" => {
@@ -686,7 +686,7 @@ impl Parser {
                     node.push_node("left", left);
                     //let precedence = self.get_precedence(0);
                     self.next_token(); // [ -> index_expr
-                    node.push_node("right", self.parse_expr(999, &vec!["]"]));
+                    node.push_node("right", self.parse_expr(999, &vec!["]"], false));
                     self.next_token(); // index_expr -> ]
                     node.push_node("rparen", self.construct_node());
                     left = node;
@@ -697,7 +697,7 @@ impl Parser {
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
                     if !self.cur_token_is(")") {
-                        node.push_node_vec("args", self.parse_exprs(&vec![")"]));
+                        node.push_node_vec("args", self.parse_exprs(&vec![")"], false));
                         self.next_token(); // expr -> )
                     }
                     node.push_node("rparen", self.construct_node());
@@ -718,7 +718,7 @@ impl Parser {
                                 partition.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
                                 partition
-                                    .push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"]));
+                                    .push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"], false));
                                 window.push_node("partition", partition);
                             }
                             if self.peek_token_is("order") {
@@ -729,7 +729,7 @@ impl Parser {
                                 self.next_token(); // by -> exprs
                                 order.push_node_vec(
                                     "exprs",
-                                    self.parse_exprs(&vec!["rows", "range", ")"]),
+                                    self.parse_exprs(&vec!["rows", "range", ")"], false),
                                 );
                                 window.push_node("order", order);
                             }
@@ -741,7 +741,7 @@ impl Parser {
                                     self.next_token(); // rows -> between
                                     let mut between = self.construct_node();
                                     self.next_token(); // between -> expr
-                                    let mut start = self.parse_expr(999, &vec!["preceding"]);
+                                    let mut start = self.parse_expr(999, &vec!["preceding"], false);
                                     self.next_token(); // expr -> preceding
                                     start.push_node("preceding", self.construct_node());
                                     frame.push_node("start", start);
@@ -749,7 +749,7 @@ impl Parser {
                                     between.push_node("and", self.construct_node());
                                     frame.push_node("between", between);
                                     self.next_token(); // and -> expr
-                                    let mut end = self.parse_expr(999, &vec![")"]);
+                                    let mut end = self.parse_expr(999, &vec![")"], false);
                                     self.next_token(); // expr -> following
                                     end.push_node("following", self.construct_node());
                                     frame.push_node("end", end);
@@ -757,7 +757,7 @@ impl Parser {
                                     // frame start
                                     if !self.peek_token_is(")") {
                                         self.next_token(); // rows -> expr
-                                        let mut start = self.parse_expr(999, &vec!["preceding"]);
+                                        let mut start = self.parse_expr(999, &vec!["preceding"], false);
                                         self.next_token(); // expr -> preceding, row
                                         start.push_node("preceding", self.construct_node());
                                         frame.push_node("start", start);
@@ -802,7 +802,7 @@ impl Parser {
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
-        if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 {
+        if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 && alias {
             self.next_token(); // expr -> alias
             let mut as_ = cst::Node {
                 token: None,
@@ -830,7 +830,7 @@ impl Parser {
         let mut node = self.construct_node();
         self.next_token(); // binary_operator -> expr
         node.push_node("left", left);
-        node.push_node("right", self.parse_expr(precedence, until));
+        node.push_node("right", self.parse_expr(precedence, until, false));
         node
     }
     fn parse_in_operator(&mut self, mut left: cst::Node) -> cst::Node {
@@ -839,7 +839,7 @@ impl Parser {
         node.push_node("left", left);
         let mut right = self.construct_node();
         self.next_token(); // ( -> expr
-        right.push_node_vec("exprs", self.parse_exprs(&vec![")"]));
+        right.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
         self.next_token(); // expr -> )
         right.push_node("rparen", self.construct_node());
         node.push_node("right", right);
