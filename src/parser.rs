@@ -395,6 +395,7 @@ impl Parser {
                         self.next_token(); // exprs -> )
                         group.push_node("rparen", self.construct_node());
                         except.push_node("group", group);
+                        left.push_node("except", except);
                     },
                     _ => (),
                 }
