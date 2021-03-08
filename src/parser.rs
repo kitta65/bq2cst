@@ -835,6 +835,12 @@ impl Parser {
                 }
                 res
             }
+            "ANY" => {
+                let mut res = self.construct_node();
+                self.next_token(); // ANY -> TYPE
+                res.push_node("type", self.construct_node());
+                res
+            }
             _ => self.construct_node(),
         };
         res
