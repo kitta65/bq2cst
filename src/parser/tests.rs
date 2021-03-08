@@ -98,7 +98,8 @@ fn test_parse_exprs() {
             select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
             (select 1);
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
-            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;"
+            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
+            with a as (select 1) select 2;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1023,7 +1024,8 @@ right:
   columns:
   - self: 3
 semicolon:
-  self: ;",
+  self: ;", // with
+
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

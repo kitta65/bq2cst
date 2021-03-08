@@ -117,6 +117,7 @@ impl Parser {
     }
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
+            "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
             "(" => self.parse_select_statement(true),
             _ => panic!(),
@@ -145,6 +146,20 @@ impl Parser {
                 node.push_node("semicolon", self.construct_node())
             }
             return node;
+        }
+        if self.get_token(0).literal.to_uppercase().as_str() == "WITH" {
+            let mut with = self.construct_node();
+            let mut queries = Vec::new();
+            while self.get_token(1).literal.to_uppercase().as_str() != "SELECT" {
+                self.next_token(); // with -> ident, ) -> ident
+                let mut query = self.construct_node();
+                self.next_token(); // ident -> as
+                query.push_node("as", self.construct_node());
+                self.next_token(); // as -> (
+                query.push_node("stmt", self.parse_select_statement(true));
+                queries.push(query);
+            }
+            with.push_node_vec("queries", queries);
         }
         let mut node = self.construct_node();
         self.next_token(); // select -> [distinct]
