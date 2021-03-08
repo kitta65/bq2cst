@@ -169,7 +169,14 @@ impl Parser {
             node.push_node("with", with);
             return node;
         }
-        let mut node = self.construct_node();
+        let mut node = self.construct_node(); // select
+        if self.get_token(1).literal.to_uppercase().as_str() == "AS" {
+            self.next_token(); // select -> as
+            let mut as_ = self.construct_node();
+            self.next_token(); // as -> struct, value
+            as_.push_node("struct_value", self.construct_node());
+            node.push_node("as", as_);
+        }
         self.next_token(); // select -> [distinct]
 
         // distinct
@@ -334,13 +341,6 @@ impl Parser {
                 "inner", "join",
             ],
         );
-        if self.peek_token_is("as") {
-            self.next_token(); // `table` -> AS
-            let mut as_ = self.construct_node();
-            self.next_token(); // as -> alias
-            as_.push_node("alias", self.construct_node());
-            table.push_node("as", as_);
-        }
         if join.token != None {
             if self.peek_token_is("on") {
                 self.next_token(); // `table` -> on

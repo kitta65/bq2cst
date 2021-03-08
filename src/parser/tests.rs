@@ -99,7 +99,8 @@ fn test_parse_exprs() {
             (select 1);
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
             select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
-            with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;"
+            with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
+            select as struct 1;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1078,6 +1079,17 @@ with:
         self: select
         columns:
         - self: 2",
+        // optional keyword
+        "\
+self: select
+as:
+  self: as
+  struct_value:
+    self: struct
+columns:
+- self: 1
+semicolon:
+  self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
