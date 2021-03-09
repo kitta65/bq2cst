@@ -100,7 +100,8 @@ fn test_parse_exprs() {
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
             select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
             with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
-            select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;"
+            select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
+            select * from unnest([1,2,3]);"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1165,6 +1166,33 @@ from:
   self: from
   tables:
   - self: t
+semicolon:
+  self: ;",
+        // unnest
+        "\
+self: select
+columns:
+- self: *
+from:
+  self: from
+  tables:
+  - self: (
+    args:
+    - self: [
+      exprs:
+      - self: 1
+        comma:
+          self: ,
+      - self: 2
+        comma:
+          self: ,
+      - self: 3
+      rparen:
+        self: ]
+    func:
+      self: unnest
+    rparen:
+      self: )
 semicolon:
   self: ;",
     ];
