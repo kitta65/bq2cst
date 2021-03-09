@@ -123,7 +123,7 @@ impl Parser {
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
-            },
+            }
         };
         node
     }
@@ -189,10 +189,13 @@ impl Parser {
             node.push_node("distinct", self.construct_node());
         }
         self.next_token(); // -> expr
-        // columns
+                           // columns
         node.children.insert(
             "columns".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(&vec!["from", ";", "limit", ")", "union", "intersect", "except"], true)),
+            cst::Children::NodeVec(self.parse_exprs(
+                &vec!["from", ";", "limit", ")", "union", "intersect", "except"],
+                true,
+            )),
         );
         // from
         if self.peek_token_is("FROM") {
@@ -232,7 +235,10 @@ impl Parser {
             self.next_token(); // expr -> having
             let mut having = self.construct_node();
             self.next_token(); // by -> expr
-            having.push_node("expr", self.parse_expr(999, &vec!["LIMIT", ";", "order"], false));
+            having.push_node(
+                "expr",
+                self.parse_expr(999, &vec!["LIMIT", ";", "order"], false),
+            );
             //self.next_token(); // expr -> limit
             node.push_node("having", having);
         }
@@ -251,12 +257,18 @@ impl Parser {
             self.next_token(); // expr -> limit
             let mut limit = self.construct_node();
             self.next_token(); // limit -> expr
-            limit.push_node("expr", self.parse_expr(999, &vec![";", ",", "offset"], false));
+            limit.push_node(
+                "expr",
+                self.parse_expr(999, &vec![";", ",", "offset"], false),
+            );
             if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
                 self.next_token(); // expr -> offset
                 let mut offset = self.construct_node();
                 self.next_token(); // offset -> expr
-                offset.push_node("expr", self.parse_expr(999, &vec!["union", "intersect", "except", ";"], false));
+                offset.push_node(
+                    "expr",
+                    self.parse_expr(999, &vec!["union", "intersect", "except", ";"], false),
+                );
                 limit.push_node("offset", offset);
             }
             node.push_node("limit", limit);
@@ -344,8 +356,26 @@ impl Parser {
             &vec![
                 "where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross",
                 "inner", "join",
-            ], true
+            ],
+            true,
         );
+        if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
+            self.next_token(); // unnest() -> with
+            let mut with = self.construct_node();
+            self.next_token(); // with -> offset
+            with.push_node(
+                "offset",
+                self.parse_expr(
+                    999,
+                    &vec![
+                        "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
+                        "group", "having", ";",
+                    ],
+                    true,
+                ),
+            );
+            table.push_node("with", with);
+        }
         if join.token != None {
             if self.peek_token_is("on") {
                 self.next_token(); // `table` -> on
@@ -358,7 +388,8 @@ impl Parser {
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
                             "group", "having", ";",
-                        ], false
+                        ],
+                        false,
                     ),
                 );
                 //self.next_token(); // parse_expr needs next_token()
@@ -403,7 +434,7 @@ impl Parser {
                         group.push_node_vec("exprs", exprs);
                         replace.push_node("group", group);
                         left.push_node("replace", replace);
-                    },
+                    }
                     "EXCEPT" => {
                         self.next_token(); // * -> except
                         let mut except = self.construct_node();
@@ -415,7 +446,7 @@ impl Parser {
                         group.push_node("rparen", self.construct_node());
                         except.push_node("group", group);
                         left.push_node("except", except);
-                    },
+                    }
                     _ => (),
                 }
             }
@@ -717,8 +748,10 @@ impl Parser {
                                 self.next_token(); // partition -> by
                                 partition.push_node("by", self.construct_node());
                                 self.next_token(); // by -> exprs
-                                partition
-                                    .push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"], false));
+                                partition.push_node_vec(
+                                    "exprs",
+                                    self.parse_exprs(&vec!["order", ")"], false),
+                                );
                                 window.push_node("partition", partition);
                             }
                             if self.peek_token_is("order") {
@@ -757,7 +790,8 @@ impl Parser {
                                     // frame start
                                     if !self.peek_token_is(")") {
                                         self.next_token(); // rows -> expr
-                                        let mut start = self.parse_expr(999, &vec!["preceding"], false);
+                                        let mut start =
+                                            self.parse_expr(999, &vec!["preceding"], false);
                                         self.next_token(); // expr -> preceding, row
                                         start.push_node("preceding", self.construct_node());
                                         frame.push_node("start", start);
