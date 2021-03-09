@@ -249,7 +249,7 @@ impl Parser {
             self.next_token(); // order -> by
             order.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ","], false));
+            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ",", ";"], false));
             node.push_node("orderby", order);
         }
         // limit
@@ -313,10 +313,10 @@ impl Parser {
     }
     fn parse_tables(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
         let mut tables: Vec<cst::Node> = Vec::new();
-        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";"]) && !self.is_eof(0)
+        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "order"]) && !self.is_eof(0)
         {
             tables.push(self.parse_table());
-            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";"])
+            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "order"])
                 && !self.is_eof(1)
             {
                 self.next_token();
@@ -847,7 +847,15 @@ impl Parser {
         }
         if self.peek_token_in(&vec!["asc", "desc"]) {
             self.next_token(); // expr -> asc
-            left.push_node("order", self.construct_node());
+            let order = self.construct_node();
+            left.push_node("order", order);
+        }
+        if self.peek_token_in(&vec!["nulls"]) {
+            self.next_token(); // asc -> nulls, expr -> nulls
+            let mut nulls = self.construct_node();
+            self.next_token(); // nulls -> first, last
+            nulls.push_node("first", self.construct_node());
+            left.push_node("nulls", nulls);
         }
         if self.peek_token_is(",") && precedence == 999 {
             self.next_token(); // expr -> ,
