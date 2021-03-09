@@ -102,7 +102,7 @@ fn test_parse_exprs() {
             with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
-            select * from (select 1,2);"
+            select * from (select 1,2);select * from main as m where not exists(select 1 from sub as s where s.x = m.x);"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1272,6 +1272,58 @@ from:
       self: )
 semicolon:
   self: ;",
+        "\
+self: select
+columns:
+- self: *
+from:
+  self: from
+  tables:
+  - self: main
+    as:
+      self: as
+      alias:
+        self: m
+semicolon:
+  self: ;
+where:
+  self: where
+  expr:
+    self: not
+    right:
+      self: (
+      args:
+      - self: select
+        columns:
+        - self: 1
+        from:
+          self: from
+          tables:
+          - self: sub
+            as:
+              self: as
+              alias:
+                self: s
+        where:
+          self: where
+          expr:
+            self: =
+            left:
+              self: .
+              left:
+                self: s
+              right:
+                self: x
+            right:
+              self: .
+              left:
+                self: m
+              right:
+                self: x
+      func:
+        self: exists
+      rparen:
+        self: )",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
