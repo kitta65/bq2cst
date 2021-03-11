@@ -67,7 +67,6 @@ fn test_parse_exprs() {
             SELECT 'aaa', 123 FROM data where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
             select 1 as num from data;
             select 2 two;
-            select * from data1 as one inner join data2 two ON true;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', 10 between 1 and 2 and true,
             from data where 1 in (1, 2)
             ;
@@ -103,7 +102,8 @@ fn test_parse_exprs() {
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
             select * from (select 1,2);select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
-            select * from t order by col1 asc nulls last, col2 nulls first;"
+            select * from t order by col1 asc nulls last, col2 nulls first;
+            select * from data1 as one inner join data2 two ON true;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -119,8 +119,8 @@ columns:
 - self: 123
 from:
   self: FROM
-  tables:
-  - self: data
+  expr:
+    self: data
 groupby:
   self: group
   by:
@@ -167,8 +167,8 @@ columns:
       self: num
 from:
   self: from
-  tables:
-  - self: data
+  expr:
+    self: data
 semicolon:
   self: ;",
         // implicit alias
@@ -180,34 +180,6 @@ columns:
     self: None
     alias:
       self: two
-semicolon:
-  self: ;",
-        // join
-        "\
-self: select
-columns:
-- self: *
-from:
-  self: from
-  tables:
-  - self: data1
-    as:
-      self: as
-      alias:
-        self: one
-  - self: data2
-    as:
-      self: None
-      alias:
-        self: two
-    join:
-      self: join
-      on:
-        self: ON
-        expr:
-          self: true
-      type:
-        self: inner
 semicolon:
   self: ;",
         // parse_expr precedence
@@ -323,8 +295,8 @@ columns:
     self: true
 from:
   self: from
-  tables:
-  - self: data
+  expr:
+    self: data
 semicolon:
   self: ;
 where:
@@ -695,8 +667,8 @@ columns:
     self: )
 from:
   self: from
-  tables:
-  - self: .
+  expr:
+    self: .
     as:
       self: as
       alias:
@@ -1166,8 +1138,8 @@ columns:
         self: )
 from:
   self: from
-  tables:
-  - self: t
+  expr:
+    self: t
 semicolon:
   self: ;",
         // unnest
@@ -1177,8 +1149,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: (
+  expr:
+    self: (
     args:
     - self: [
       exprs:
@@ -1203,8 +1175,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: (
+  expr:
+    self: (
     args:
     - self: [
       exprs:
@@ -1227,8 +1199,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: (
+  expr:
+    self: (
     args:
     - self: [
       exprs:
@@ -1260,8 +1232,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: (
+  expr:
+    self: (
     expr:
       self: select
       columns:
@@ -1279,8 +1251,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: main
+  expr:
+    self: main
     as:
       self: as
       alias:
@@ -1299,8 +1271,8 @@ where:
         - self: 1
         from:
           self: from
-          tables:
-          - self: sub
+          expr:
+            self: sub
             as:
               self: as
               alias:
@@ -1331,8 +1303,8 @@ columns:
 - self: *
 from:
   self: from
-  tables:
-  - self: t
+  expr:
+    self: t
 orderby:
   self: order
   by:
@@ -1352,6 +1324,35 @@ orderby:
       self: nulls
       first:
         self: first
+semicolon:
+  self: ;",
+        // join
+        "\
+self: select
+columns:
+- self: *
+from:
+  self: from
+  expr:
+    self: join
+    left:
+      self: data1
+      as:
+        self: as
+        alias:
+          self: one
+    on:
+      self: ON
+      expr:
+        self: true
+    right:
+      self: data2
+      as:
+        self: None
+        alias:
+          self: two
+    type:
+      self: inner
 semicolon:
   self: ;",
     ];

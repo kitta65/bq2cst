@@ -90,6 +90,7 @@ impl Parser {
         let mut code: Vec<cst::Node> = Vec::new();
         while !self.is_eof(0) {
             let stmt = self.parse_statement();
+            //println!("{}\n", stmt.to_string(0, false));
             code.push(stmt);
             self.next_token();
         }
@@ -121,7 +122,6 @@ impl Parser {
             "SELECT" => self.parse_select_statement(true),
             "(" => self.parse_select_statement(true),
             _ => {
-                println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
@@ -202,7 +202,7 @@ impl Parser {
             self.next_token(); // expr -> from
             let mut from = self.construct_node();
             self.next_token(); // from -> table
-            from.push_node_vec("tables", self.parse_tables(&vec![]));
+            from.push_node("expr", self.parse_table2(true));
             node.push_node("from", from);
         }
         // where
@@ -315,7 +315,7 @@ impl Parser {
         let mut tables: Vec<cst::Node> = Vec::new();
         while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "order"]) && !self.is_eof(0)
         {
-            tables.push(self.parse_table(true));
+            tables.push(self.parse_table2(true));
             if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "order"])
                 && !self.is_eof(1)
             {
@@ -397,6 +397,84 @@ impl Parser {
             table.push_node("join", join);
         }
         table
+    }
+    fn parse_table2(&mut self, root: bool) -> cst::Node {
+        match self.get_token(0).literal.to_uppercase().as_str() {
+            "(" => {
+                let mut group = self.construct_node();
+                self.next_token(); // ( -> table
+                group.push_node("expr", self.parse_table2(true));
+                self.next_token(); // table -> )
+                group.push_node("rparen", self.construct_node());
+                return group;
+            },
+            _ => (),
+        }
+        let mut left = self.parse_expr(
+            999,
+            &vec![
+                "where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross",
+                "inner", "join",
+            ],
+            true,
+        );
+        if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
+            self.next_token(); // unnest() -> with
+            let mut with = self.construct_node();
+            self.next_token(); // with -> offset
+            with.push_node(
+                "offset",
+                self.parse_expr(
+                    999,
+                    &vec![
+                        "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
+                        "group", "having", ";",
+                    ],
+                    true,
+                ),
+            );
+            left.push_node("with", with);
+        }
+        while self.peek_token_in(&vec!["left", "right", "cross", "inner", "full", "join", ","]) && root {
+            self.next_token(); // table -> left, right, inner, cross, full, join, ","
+            let mut join = if self.cur_token_in(&vec!["join", ","]) {
+                let join = self.construct_node();
+                join
+            } else {
+                let mut type_ = self.construct_node();
+                self.next_token(); // type -> outer, type -> join
+                if self.cur_token_is("outer") {
+                    type_.push_node("outer", self.construct_node());
+                    self.next_token(); // outer -> join
+                }
+                let mut join = self.construct_node();
+                join.push_node("type", type_);
+                join
+            };
+            self.next_token(); // -> table
+            let right = self.parse_table2(false);
+            if self.peek_token_is("on") {
+                self.next_token(); // `table` -> on
+                let mut on = self.construct_node();
+                self.next_token(); // on -> expr
+                on.push_node(
+                    "expr",
+                    self.parse_expr(
+                        999,
+                        &vec![
+                            "left", "right", "cross", "inner", ",", "full", "join", "where",
+                            "group", "having", ";",
+                        ],
+                        false,
+                    ),
+                );
+                join.push_node("on", on);
+            }
+            join.push_node("left", left);
+            join.push_node("right", right);
+            left = join;
+        }
+        left
     }
     fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<cst::Node> {
         let mut exprs: Vec<cst::Node> = Vec::new();
@@ -666,7 +744,6 @@ impl Parser {
             _ => (),
         };
         // infix
-        //println!("next precedence: {} {}, current_precedence: {} {}", self.get_precedence(1), self.get_token(0).literal, precedence, self.get_token(1).literal);
         while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
@@ -718,7 +795,6 @@ impl Parser {
                     left = self.parse_in_operator(left);
                 }
                 "[" => {
-                    print!("in new arm");
                     self.next_token(); // expr -> [
                     let mut node = self.construct_node();
                     node.push_node("left", left);
@@ -864,7 +940,6 @@ impl Parser {
             nulls.push_node("first", self.construct_node());
             left.push_node("nulls", nulls);
         }
-        //self.next_token(); // expr -> from, ',' -> expr
         left
     }
     fn parse_binary_operator(&mut self, left: cst::Node, until: &Vec<&str>) -> cst::Node {
