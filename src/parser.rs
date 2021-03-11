@@ -402,13 +402,22 @@ impl Parser {
     }
     fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<cst::Node> {
         let mut exprs: Vec<cst::Node> = Vec::new();
-        while !self.cur_token_in(until) && !self.is_eof(0) {
-            exprs.push(self.parse_expr(999, until, alias));
-            if !self.peek_token_in(until) && !self.is_eof(1) {
-                self.next_token();
-            } else {
-                return exprs;
+        // first expr
+        let mut expr = self.parse_expr(999, until, alias);
+        if self.peek_token_is(",") {
+            self.next_token(); // expr -> ,
+            expr.push_node("comma", self.construct_node());
+        }
+        exprs.push(expr);
+        // second expr and later
+        while !self.peek_token_in(until) && !self.is_eof(1) {
+            self.next_token();
+            let mut expr = self.parse_expr(999, until, alias);
+            if self.peek_token_is(",") {
+                self.next_token(); // expr -> ,
+                expr.push_node("comma", self.construct_node());
             }
+            exprs.push(expr);
         }
         exprs // maybe not needed
     }
@@ -856,13 +865,6 @@ impl Parser {
             self.next_token(); // nulls -> first, last
             nulls.push_node("first", self.construct_node());
             left.push_node("nulls", nulls);
-        }
-        if self.peek_token_is(",") && precedence == 999 {
-            self.next_token(); // expr -> ,
-            left.children.insert(
-                "comma".to_string(),
-                cst::Children::Node(self.construct_node()),
-            );
         }
         //self.next_token(); // expr -> from, ',' -> expr
         left
