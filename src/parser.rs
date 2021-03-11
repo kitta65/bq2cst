@@ -202,7 +202,7 @@ impl Parser {
             self.next_token(); // expr -> from
             let mut from = self.construct_node();
             self.next_token(); // from -> table
-            from.push_node("expr", self.parse_table2(true));
+            from.push_node("expr", self.parse_table(true));
             node.push_node("from", from);
         }
         // where
@@ -311,103 +311,16 @@ impl Parser {
         }
         false
     }
-    fn parse_tables(&mut self, until: &Vec<&str>) -> Vec<cst::Node> {
-        let mut tables: Vec<cst::Node> = Vec::new();
-        while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "order"]) && !self.is_eof(0)
-        {
-            tables.push(self.parse_table2(true));
-            if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "order"])
-                && !self.is_eof(1)
-            {
-                self.next_token();
-            } else {
-                return tables;
-            }
-        }
-        tables // maybe not needed
-    }
     fn parse_table(&mut self, root: bool) -> cst::Node {
-        // join
-        let mut join = if self.cur_token_in(&vec![
-            "left", "right", "cross", "inner", ",", "full", "join",
-        ]) {
-            if self.cur_token_in(&vec!["join", ","]) {
-                let join = self.construct_node();
-                self.next_token(); // join -> table
-                join
-            } else {
-                let mut type_ = self.construct_node();
-                self.next_token(); // type -> outer, type -> join
-                if self.cur_token_is("outer") {
-                    type_.push_node("outer", self.construct_node());
-                    self.next_token(); // outer -> join
-                }
-                let mut join = self.construct_node();
-                join.push_node("type", type_);
-                self.next_token(); // join -> table,
-                join
-            }
-        } else {
-            cst::Node::new_none()
-        };
-        // table
-        let mut table = self.parse_expr(
-            999,
-            &vec![
-                "where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross",
-                "inner", "join",
-            ],
-            true,
-        );
-        if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
-            self.next_token(); // unnest() -> with
-            let mut with = self.construct_node();
-            self.next_token(); // with -> offset
-            with.push_node(
-                "offset",
-                self.parse_expr(
-                    999,
-                    &vec![
-                        "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";",
-                    ],
-                    true,
-                ),
-            );
-            table.push_node("with", with);
-        }
-        if join.token != None {
-            if self.peek_token_is("on") {
-                self.next_token(); // `table` -> on
-                let mut on = self.construct_node();
-                self.next_token(); // on -> expr
-                on.push_node(
-                    "expr",
-                    self.parse_expr(
-                        999,
-                        &vec![
-                            "left", "right", "cross", "inner", ",", "full", "join", "where",
-                            "group", "having", ";",
-                        ],
-                        false,
-                    ),
-                );
-                join.push_node("on", on);
-            }
-            table.push_node("join", join);
-        }
-        table
-    }
-    fn parse_table2(&mut self, root: bool) -> cst::Node {
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 let mut group = self.construct_node();
                 self.next_token(); // ( -> table
-                group.push_node("expr", self.parse_table2(true));
+                group.push_node("expr", self.parse_table(true));
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node());
                 return group;
-            },
+            }
             _ => (),
         }
         let mut left = self.parse_expr(
@@ -418,6 +331,29 @@ impl Parser {
             ],
             true,
         );
+        if self.get_token(1).literal.to_uppercase().as_str() == "FOR" {
+            self.next_token(); // table -> for
+            let mut for_ = self.construct_node();
+            self.next_token(); // for -> system_time
+            for_.push_node("system_time", self.construct_node());
+            self.next_token(); // system_time -> as
+            for_.push_node("as", self.construct_node());
+            self.next_token(); // as -> of
+            for_.push_node("of", self.construct_node());
+            self.next_token(); // of -> timestamp
+            for_.push_node(
+                "expr",
+                self.parse_expr(
+                    999,
+                    &vec![
+                        "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
+                        "group", "having", ";",
+                    ],
+                    false,
+                ),
+            );
+            left.push_node("timestamp_expr", for_);
+        }
         if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
             self.next_token(); // unnest() -> with
             let mut with = self.construct_node();
@@ -435,7 +371,10 @@ impl Parser {
             );
             left.push_node("with", with);
         }
-        while self.peek_token_in(&vec!["left", "right", "cross", "inner", "full", "join", ","]) && root {
+        while self.peek_token_in(&vec![
+            "left", "right", "cross", "inner", "full", "join", ",",
+        ]) && root
+        {
             self.next_token(); // table -> left, right, inner, cross, full, join, ","
             let mut join = if self.cur_token_in(&vec!["join", ","]) {
                 let join = self.construct_node();
@@ -452,7 +391,7 @@ impl Parser {
                 join
             };
             self.next_token(); // -> table
-            let right = self.parse_table2(false);
+            let right = self.parse_table(false);
             if self.peek_token_is("on") {
                 self.next_token(); // `table` -> on
                 let mut on = self.construct_node();
@@ -495,7 +434,7 @@ impl Parser {
             }
             exprs.push(expr);
         }
-        exprs // maybe not needed
+        exprs
     }
     fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>, alias: bool) -> cst::Node {
         // prefix or literal

@@ -64,7 +64,7 @@ fn test_next_token() {
 #[test]
 fn test_parse_exprs() {
     let input = "\
-            SELECT 'aaa', 123 FROM data where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
+            SELECT 'aaa', 123 FROM data for system_time as of current_timestamp() where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
             select 1 as num from data;
             select 2 two;
             select -1, 1+1+1, date '2020-02-24', TIMESTAMP '2020-01-01', interval 9 year, if(true, 'true'), (1+1)*1, ((2)), (select info limit 1), 'a' not like '%a', 10 between 1 and 2 and true,
@@ -122,6 +122,20 @@ from:
   self: FROM
   expr:
     self: data
+    timestamp_expr:
+      self: for
+      as:
+        self: as
+      expr:
+        self: (
+        func:
+          self: current_timestamp
+        rparen:
+          self: )
+      of:
+        self: of
+      system_time:
+        self: system_time
 groupby:
   self: group
   by:
