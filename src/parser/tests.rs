@@ -103,7 +103,8 @@ fn test_parse_exprs() {
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
             select * from (select 1,2);select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
             select * from t order by col1 asc nulls last, col2 nulls first;
-            select * from data1 as one inner join data2 two ON true;"
+            select * from data1 as one inner join data2 two ON true;
+            select * from data1 as one , data2 two join (data3 full join data4 on col1=col2) on true;"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1353,6 +1354,54 @@ from:
           self: two
     type:
       self: inner
+semicolon:
+  self: ;",
+        "\
+self: select
+columns:
+- self: *
+from:
+  self: from
+  expr:
+    self: join
+    left:
+      self: ,
+      left:
+        self: data1
+        as:
+          self: as
+          alias:
+            self: one
+      right:
+        self: data2
+        as:
+          self: None
+          alias:
+            self: two
+    on:
+      self: on
+      expr:
+        self: true
+    right:
+      self: (
+      expr:
+        self: join
+        left:
+          self: data3
+        on:
+          self: on
+          expr:
+            self: =
+            left:
+              self: col1
+            right:
+              self: col2
+        right:
+          self: data4
+        type:
+          self: full
+      rparen:
+        self: )
 semicolon:
   self: ;",
     ];
