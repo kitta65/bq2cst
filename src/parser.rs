@@ -315,7 +315,7 @@ impl Parser {
         let mut tables: Vec<cst::Node> = Vec::new();
         while !self.cur_token_in(&vec!["where", "group", "having", "limit", ";", "order"]) && !self.is_eof(0)
         {
-            tables.push(self.parse_table());
+            tables.push(self.parse_table(true));
             if !self.peek_token_in(&vec!["where", "group", "having", "limit", ";", "order"])
                 && !self.is_eof(1)
             {
@@ -326,7 +326,7 @@ impl Parser {
         }
         tables // maybe not needed
     }
-    fn parse_table(&mut self) -> cst::Node {
+    fn parse_table(&mut self, root: bool) -> cst::Node {
         // join
         let mut join = if self.cur_token_in(&vec![
             "left", "right", "cross", "inner", ",", "full", "join",
@@ -392,12 +392,10 @@ impl Parser {
                         false,
                     ),
                 );
-                //self.next_token(); // parse_expr needs next_token()
                 join.push_node("on", on);
-            } //else self.cur_token_is("using") {}
+            }
             table.push_node("join", join);
         }
-        // TODO... using()
         table
     }
     fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<cst::Node> {
