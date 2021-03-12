@@ -120,12 +120,106 @@ impl Parser {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
+            "CREATE" => {
+                let mut target = self.get_token(1).literal.to_uppercase();
+                if target == "OR" {
+                    target = self.get_token(3).literal.to_uppercase();
+                }
+                match target.as_str() {
+                    "FUNCTION" => self.parse_create_function_statement(),
+                    "TEMP" => self.parse_create_function_statement(),
+                    "TEMPORARY" => self.parse_create_function_statement(),
+                    "TABLE" => panic!(),
+                    _ => panic!(),
+                }
+            },
             "(" => self.parse_select_statement(true),
             _ => {
                 panic!();
             }
         };
         node
+    }
+    fn parse_create_function_statement(&mut self) -> cst::Node {
+        let mut node = self.construct_node();
+        if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
+            let mut or_replace = Vec::new();
+            self.get_token(1); // create -> or
+            or_replace.push(self.construct_node());
+            self.next_token(); // or -> replace
+            or_replace.push(self.construct_node());
+            node.push_node_vec("or_replace", or_replace);
+        }
+        if self.peek_token_in(&vec!["temporary", "temp"]) {
+            self.next_token(); // -> temp
+            node.push_node("temp", self.construct_node());
+        }
+        self.next_token(); // -> function
+        node.push_node("what", self.construct_node());
+        if self.peek_token_in(&vec!["if"]) {
+            let mut if_not_exists = Vec::new();
+            self.next_token(); // function -> if
+            if_not_exists.push(self.construct_node());
+            self.next_token(); // if -> not
+            if_not_exists.push(self.construct_node());
+            self.next_token(); // not -> exists
+            if_not_exists.push(self.construct_node());
+        }
+        self.next_token(); // -> ident
+        node.push_node("ident", self.parse_identifier());
+        self.next_token(); // ident -> (
+        let mut group = self.construct_node();
+        let mut args = Vec::new();
+        while !self.peek_token_is(")") {
+            self.next_token(); // ( -> arg, ',' -> arg
+            let mut arg = self.construct_node();
+            self.next_token(); // arg -> type
+            arg.push_node("type", self.parse_type());
+            if self.peek_token_is(",") {
+                self.next_token(); // type -> ,
+                arg.push_node("comma", self.construct_node());
+            }
+            args.push(arg);
+        }
+        group.push_node_vec("args", args);
+        self.next_token(); // type -> )
+        group.push_node("rparen", self.construct_node());
+        node.push_node("group", group);
+        if self.peek_token_is("return") {
+            self.next_token(); // ) -> return
+            let mut return_ = self.construct_node();
+            self.next_token(); // return -> type
+            return_.push_node("type", self.parse_type());
+        }
+        if self.peek_token_is("as") {
+            self.next_token(); // -> as
+            let mut as_ = self.construct_node();
+            self.next_token(); // as -> (
+            let mut group = self.construct_node();
+            self.next_token(); // ( -> expr
+            group.push_node("expr", self.parse_expr(999, &vec![")"], false));
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            as_.push_node("group", group);
+            node.push_node("as", as_);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // ) -> ;
+            node.push_node("semicolon", self.construct_node());
+        }
+        node
+    }
+    fn parse_identifier(&mut self) -> cst::Node {
+        let mut left = self.construct_node();
+        while self.peek_token_is(".") {
+            self.next_token(); // ident -> .
+            let mut operator = self.construct_node();
+            operator.push_node("left", left);
+            self.construct_node(); // . -> ident
+            operator.push_node("right", self.construct_node());
+            left = operator;
+        }
+        left
     }
     fn parse_select_statement(&mut self, root: bool) -> cst::Node {
         if self.get_token(0).literal.as_str() == "(" {
