@@ -101,14 +101,15 @@ fn test_parse_exprs() {
             with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
-            select * from (select 1,2);select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
+            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full join data4 on col1=col2) on true;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) return int64 as (x+y);create or replace function abc() as(1);
             create function abc() return int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() return int64 language js options() as '''return 1''';
-            create function abc() return int64 not deterministic language js as '''return 1''';"
+            create function abc() return int64 not deterministic language js as '''return 1''';
+"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1251,6 +1252,33 @@ from:
   self: from
   expr:
     self: (
+    expr:
+      self: select
+      exprs:
+      - self: 1
+        comma:
+          self: ,
+      - self: 2
+    rparen:
+      self: )
+semicolon:
+  self: ;",
+        "\
+self: select
+exprs:
+- self: .
+  left:
+    self: sub
+  right:
+    self: *
+from:
+  self: from
+  expr:
+    self: (
+    as:
+      self: as
+      alias:
+        self: sub
     expr:
       self: select
       exprs:

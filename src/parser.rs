@@ -135,6 +135,7 @@ impl Parser {
             }
             "(" => self.parse_select_statement(true),
             _ => {
+                println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
@@ -453,6 +454,7 @@ impl Parser {
                 group.push_node("expr", self.parse_table(true));
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node());
+                group = self.parse_alias(group);
                 return group;
             }
             _ => (),
@@ -1015,6 +1017,25 @@ impl Parser {
             left.push_node("nulls", nulls);
         }
         left
+    }
+    fn parse_alias(&mut self, node: cst::Node) -> cst::Node {
+        let mut node = node.clone();
+        if self.peek_token_is("as") {
+            self.next_token(); // expr -> as
+            let mut as_ = self.construct_node();
+            self.next_token(); // as -> alias
+            as_.push_node("alias", self.construct_node());
+            node.push_node("as", as_);
+        } else if self.get_token(1).is_identifier() && !self.is_eof(1) {
+            self.next_token(); // expr -> alias
+            let mut as_ = cst::Node {
+                token: None,
+                children: HashMap::new(),
+            };
+            as_.push_node("alias", self.construct_node());
+            node.push_node("as", as_);
+        }
+        node
     }
     fn parse_binary_operator(&mut self, left: cst::Node, until: &Vec<&str>) -> cst::Node {
         let precedence = self.get_precedence(0);
