@@ -226,8 +226,8 @@ impl Parser {
                 let mut options = self.construct_node();
                 self.next_token(); // options -> (
                 let mut group = self.construct_node();
-                self.next_token(); // ( -> expr
                 if !self.peek_token_is(")") {
+                    self.next_token(); // ( -> expr
                     group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
                 }
                 self.next_token(); // expr -> )

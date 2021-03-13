@@ -106,7 +106,9 @@ fn test_parse_exprs() {
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full join data4 on col1=col2) on true;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) return int64 as (x+y);create or replace function abc() as(1);
-            create function abc() return int64 deterministic language js options(library=['dummy']) as '''return 1''';"
+            create function abc() return int64 deterministic language js options(library=['dummy']) as '''return 1''';
+            create function abc() return int64 language js options() as '''return 1''';
+            create function abc() return int64 not deterministic language js as '''return 1''';"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1551,6 +1553,64 @@ options:
           self: ]
     rparen:
       self: )
+return:
+  self: return
+  type:
+    self: int64
+semicolon:
+  self: ;
+what:
+  self: function",
+        "\
+self: create
+as:
+  self: as
+  expr:
+    self: '''return 1'''
+group:
+  self: (
+  rparen:
+    self: )
+ident:
+  self: abc
+language:
+  self: language
+  language:
+    self: js
+options:
+  self: options
+  group:
+    self: (
+    rparen:
+      self: )
+return:
+  self: return
+  type:
+    self: int64
+semicolon:
+  self: ;
+what:
+  self: function",
+        "\
+self: create
+as:
+  self: as
+  expr:
+    self: '''return 1'''
+determinism:
+  self: not
+  right:
+    self: deterministic
+group:
+  self: (
+  rparen:
+    self: )
+ident:
+  self: abc
+language:
+  self: language
+  language:
+    self: js
 return:
   self: return
   type:
