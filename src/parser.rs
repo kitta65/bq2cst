@@ -164,6 +164,7 @@ impl Parser {
             if_not_exists.push(self.construct_node());
             self.next_token(); // not -> exists
             if_not_exists.push(self.construct_node());
+            node.push_node_vec("if_not_exists", if_not_exists);
         }
         self.next_token(); // -> ident
         node.push_node("ident", self.parse_identifier());
