@@ -126,20 +126,18 @@ from:
   self: FROM
   expr:
     self: data
-    timestamp_expr:
+    for_system_time_as_of:
       self: for
-      as:
-        self: as
       expr:
         self: (
         func:
           self: current_timestamp
         rparen:
           self: )
-      of:
-        self: of
-      system_time:
-        self: system_time
+      system_time_as_of:
+      - self: system_time
+      - self: as
+      - self: of
 groupby:
   self: group
   by:
@@ -556,10 +554,10 @@ exprs:
       self: (
       frame:
         self: rows
+        and:
+          self: and
         between:
           self: between
-          and:
-            self: and
         end:
           self: unbounded
           following:

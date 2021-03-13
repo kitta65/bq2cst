@@ -469,11 +469,13 @@ impl Parser {
             self.next_token(); // table -> for
             let mut for_ = self.construct_node();
             self.next_token(); // for -> system_time
-            for_.push_node("system_time", self.construct_node());
+            let mut system_time_as_of = Vec::new();
+            system_time_as_of.push(self.construct_node());
             self.next_token(); // system_time -> as
-            for_.push_node("as", self.construct_node());
+            system_time_as_of.push(self.construct_node());
             self.next_token(); // as -> of
-            for_.push_node("of", self.construct_node());
+            system_time_as_of.push(self.construct_node());
+            for_.push_node_vec("system_time_as_of", system_time_as_of);
             self.next_token(); // of -> timestamp
             for_.push_node(
                 "expr",
@@ -486,7 +488,7 @@ impl Parser {
                     false,
                 ),
             );
-            left.push_node("timestamp_expr", for_);
+            left.push_node("for_system_time_as_of", for_);
         }
         if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
             self.next_token(); // unnest() -> with
@@ -928,15 +930,14 @@ impl Parser {
                                 if self.peek_token_is("between") {
                                     // frame between
                                     self.next_token(); // rows -> between
-                                    let mut between = self.construct_node();
+                                    frame.push_node("between", self.construct_node());
                                     self.next_token(); // between -> expr
                                     let mut start = self.parse_expr(999, &vec!["preceding"], false);
                                     self.next_token(); // expr -> preceding
                                     start.push_node("preceding", self.construct_node());
                                     frame.push_node("start", start);
                                     self.next_token(); // preceding -> and
-                                    between.push_node("and", self.construct_node());
-                                    frame.push_node("between", between);
+                                    frame.push_node("and", self.construct_node());
                                     self.next_token(); // and -> expr
                                     let mut end = self.parse_expr(999, &vec![")"], false);
                                     self.next_token(); // expr -> following
