@@ -193,6 +193,7 @@ impl Parser {
             let mut return_ = self.construct_node();
             self.next_token(); // return -> type
             return_.push_node("type", self.parse_type());
+            node.push_node("return", return_);
         }
         if self.peek_token_is("as") {
             self.next_token(); // -> as
@@ -204,6 +205,41 @@ impl Parser {
             self.next_token(); // expr -> )
             group.push_node("rparen", self.construct_node());
             as_.push_node("group", group);
+            node.push_node("as", as_);
+        } else {
+            if self.peek_token_in(&vec!["deterministic", "not"]) {
+                self.next_token(); // type -> determinism
+                let mut determinism = self.construct_node();
+                if self.get_token(0).literal.to_uppercase().as_str() == "NOT" {
+                    self.next_token(); // not -> deterministic
+                    determinism.push_node("right", self.construct_node());
+                }
+                node.push_node("determinism", determinism);
+            }
+            self.next_token(); // determinism -> language, type -> language
+            let mut language = self.construct_node();
+            self.next_token(); // language -> js
+            language.push_node("language", self.construct_node());
+            node.push_node("language", language);
+            if self.peek_token_is("options") {
+                self.next_token(); // js -> options
+                let mut options = self.construct_node();
+                self.next_token(); // options -> (
+                let mut group = self.construct_node();
+                self.next_token(); // ( -> expr
+                if !self.peek_token_is(")") {
+                    group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+                }
+                self.next_token(); // expr -> )
+                group.push_node("rparen", self.construct_node());
+                options.push_node("group", group);
+                node.push_node("options", options);
+            }
+            self.next_token(); // js -> as, ) -> as
+            let mut as_ = self.construct_node();
+            self.next_token(); // as -> javascript_code
+            println!("{:?}", self.get_token(0));
+            as_.push_node("expr", self.construct_node());
             node.push_node("as", as_);
         }
         if self.peek_token_is(";") {
