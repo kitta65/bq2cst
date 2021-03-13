@@ -144,7 +144,7 @@ impl Parser {
         let mut node = self.construct_node();
         if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
             let mut or_replace = Vec::new();
-            self.get_token(1); // create -> or
+            self.next_token(); // create -> or
             or_replace.push(self.construct_node());
             self.next_token(); // or -> replace
             or_replace.push(self.construct_node());
@@ -182,7 +182,9 @@ impl Parser {
             }
             args.push(arg);
         }
-        group.push_node_vec("args", args);
+        if args.len() > 0 {
+            group.push_node_vec("args", args);
+        }
         self.next_token(); // type -> )
         group.push_node("rparen", self.construct_node());
         node.push_node("group", group);

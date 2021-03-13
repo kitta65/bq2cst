@@ -105,7 +105,7 @@ fn test_parse_exprs() {
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full join data4 on col1=col2) on true;
-            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) return int64 as (x+y);"
+            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) return int64 as (x+y);create or replace function abc() as(1);"
             .to_string();
     let l = lexer::Lexer::new(input);
     let mut p = Parser::new(l);
@@ -1485,6 +1485,29 @@ if_not_exists:
 - self: if
 - self: not
 - self: exists
+semicolon:
+  self: ;
+what:
+  self: function",
+        "\
+self: create
+as:
+  self: as
+  group:
+    self: (
+    expr:
+      self: 1
+    rparen:
+      self: )
+group:
+  self: (
+  rparen:
+    self: )
+ident:
+  self: abc
+or_replace:
+- self: or
+- self: replace
 semicolon:
   self: ;
 what:
