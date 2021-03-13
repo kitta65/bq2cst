@@ -855,6 +855,22 @@ impl Parser {
                     self.next_token(); // expr -> +
                     left = self.parse_binary_operator(left, until);
                 }
+                ">" => {
+                    self.next_token(); // expr -> >
+                    left = self.parse_binary_operator(left, until);
+                }
+                ">=" => {
+                    self.next_token(); // expr -> >=
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<" => {
+                    self.next_token(); // expr -> <
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<=" => {
+                    self.next_token(); // expr -> <=
+                    left = self.parse_binary_operator(left, until);
+                }
                 "=" => {
                     self.next_token(); // expr -> =
                     left = self.parse_binary_operator(left, until);
@@ -1141,11 +1157,15 @@ impl Parser {
             "(" => 005,
             "." => 101,
             "[" => 101,
-            "-" => 104,
-            "+" => 104,
             "*" => 103,
             "/" => 103,
             "||" => 103,
+            "-" => 104,
+            "+" => 104,
+            ">" => 109,
+            ">=" => 109,
+            "<" => 109,
+            "<=" => 109,
             "IN" => 109,
             "LIKE" => 109,
             "BETWEEN" => 109,
