@@ -117,7 +117,7 @@ fn test_parse_exprs() {
         // simple select
         "\
 self: SELECT
-columns:
+exprs:
 - self: 'aaa'
   comma:
     self: ,
@@ -144,7 +144,7 @@ groupby:
   self: group
   by:
     self: by
-  columns:
+  exprs:
   - self: 1
 having:
   self: HAVING
@@ -178,7 +178,7 @@ where:
         // alias
         "\
 self: select
-columns:
+exprs:
 - self: 1
   as:
     self: as
@@ -193,7 +193,7 @@ semicolon:
         // implicit alias
         "\
 self: select
-columns:
+exprs:
 - self: 2
   as:
     self: None
@@ -204,7 +204,7 @@ semicolon:
         // parse_expr precedence
         "\
 self: select
-columns:
+exprs:
 - self: -
   comma:
     self: ,
@@ -281,7 +281,7 @@ columns:
     self: ,
   expr:
     self: select
-    columns:
+    exprs:
     - self: info
     limit:
       self: limit
@@ -336,7 +336,7 @@ where:
         // not, and, or
         "\
 self: select
-columns:
+exprs:
 - self: or
   comma:
     self: ,
@@ -355,7 +355,7 @@ semicolon:
         // comment
         "\
 self: select
-columns:
+exprs:
 - self: (
   following_comments:
   - self: -- lparen
@@ -375,7 +375,7 @@ semicolon:
         // case when
         "\
 self: select
-columns:
+exprs:
 - self: case
   arms:
   - self: when
@@ -439,7 +439,7 @@ semicolon:
         // window clause
         "\
 self: select
-columns:
+exprs:
 - self: (
   comma:
     self: ,
@@ -615,7 +615,7 @@ semicolon:
         // raw, bytes
         "\
 self: select
-columns:
+exprs:
 - self: r
   comma:
     self: ,
@@ -646,7 +646,7 @@ semicolon:
         // date, timestamp, numeric...
         "\
 self: select
-columns:
+exprs:
 - self: decimal
   comma:
     self: ,
@@ -662,7 +662,7 @@ semicolon:
         // dot operator
         "\
 self: select
-columns:
+exprs:
 - self: (
   as:
     self: as
@@ -700,7 +700,7 @@ semicolon:
   self: ;", // array
         "\
 self: select
-columns:
+exprs:
 - self: [
   comma:
     self: ,
@@ -794,7 +794,7 @@ semicolon:
   self: ;", // struct
         "\
 self: select
-columns:
+exprs:
 - self: (
   comma:
     self: ,
@@ -897,7 +897,7 @@ semicolon:
   self: ;
 stmt:
   self: select
-  columns:
+  exprs:
   - self: 1",
         // union
         "\
@@ -906,11 +906,11 @@ distinct:
   self: all
 left:
   self: select
-  columns:
+  exprs:
   - self: 1
 right:
   self: select
-  columns:
+  exprs:
   - self: 2
 semicolon:
   self: ;",
@@ -924,11 +924,11 @@ left:
     self: )
   stmt:
     self: select
-    columns:
+    exprs:
     - self: 1
 right:
   self: select
-  columns:
+  exprs:
   - self: 2
 semicolon:
   self: ;",
@@ -938,7 +938,7 @@ distinct:
   self: all
 left:
   self: select
-  columns:
+  exprs:
   - self: 1
 right:
   self: (
@@ -946,7 +946,7 @@ right:
     self: )
   stmt:
     self: select
-    columns:
+    exprs:
     - self: 2
 semicolon:
   self: ;",
@@ -960,15 +960,15 @@ left:
     self: all
   left:
     self: select
-    columns:
+    exprs:
     - self: 1
   right:
     self: select
-    columns:
+    exprs:
     - self: 2
 right:
   self: select
-  columns:
+  exprs:
   - self: 3
 semicolon:
   self: ;",
@@ -978,7 +978,7 @@ distinct:
   self: all
 left:
   self: select
-  columns:
+  exprs:
   - self: 1
 right:
   self: (
@@ -990,11 +990,11 @@ right:
       self: all
     left:
       self: select
-      columns:
+      exprs:
       - self: 2
     right:
       self: select
-      columns:
+      exprs:
       - self: 3
 semicolon:
   self: ;",
@@ -1012,21 +1012,21 @@ left:
       self: all
     left:
       self: select
-      columns:
+      exprs:
       - self: 1
     right:
       self: select
-      columns:
+      exprs:
       - self: 2
 right:
   self: select
-  columns:
+  exprs:
   - self: 3
 semicolon:
   self: ;", // with
         "\
 self: select
-columns:
+exprs:
 - self: 2
 semicolon:
   self: ;
@@ -1042,11 +1042,11 @@ with:
         self: )
       stmt:
         self: select
-        columns:
+        exprs:
         - self: 1",
         "\
 self: select
-columns:
+exprs:
 - self: 3
 semicolon:
   self: ;
@@ -1064,7 +1064,7 @@ with:
         self: )
       stmt:
         self: select
-        columns:
+        exprs:
         - self: 1
   - self: b
     as:
@@ -1075,7 +1075,7 @@ with:
         self: )
       stmt:
         self: select
-        columns:
+        exprs:
         - self: 2",
         // optional keyword
         "\
@@ -1084,29 +1084,29 @@ as:
   self: as
   struct_value:
     self: struct
-columns:
+exprs:
 - self: 1
 semicolon:
   self: ;",
         "\
 self: select
-columns:
-- self: 1
 distinct:
   self: distinct
+exprs:
+- self: 1
 semicolon:
   self: ;",
         "\
 self: select
-columns:
-- self: 1
 distinct:
   self: all
+exprs:
+- self: 1
 semicolon:
   self: ;",
         "\
 self: select
-columns:
+exprs:
 - self: .
   comma:
     self: ,
@@ -1118,7 +1118,7 @@ columns:
       self: except
       group:
         self: (
-        columns:
+        exprs:
         - self: col1
         rparen:
           self: )
@@ -1129,7 +1129,7 @@ columns:
     self: except
     group:
       self: (
-      columns:
+      exprs:
       - self: col1
         comma:
           self: ,
@@ -1164,7 +1164,7 @@ semicolon:
         // unnest
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1190,7 +1190,7 @@ semicolon:
   self: ;",
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1214,7 +1214,7 @@ semicolon:
   self: ;",
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1247,7 +1247,7 @@ semicolon:
         // subquery
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1255,7 +1255,7 @@ from:
     self: (
     expr:
       self: select
-      columns:
+      exprs:
       - self: 1
         comma:
           self: ,
@@ -1266,7 +1266,7 @@ semicolon:
   self: ;",
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1286,7 +1286,7 @@ where:
       self: (
       args:
       - self: select
-        columns:
+        exprs:
         - self: 1
         from:
           self: from
@@ -1318,7 +1318,7 @@ where:
         self: )",
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1348,7 +1348,7 @@ semicolon:
         // join
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from
@@ -1376,7 +1376,7 @@ semicolon:
   self: ;",
         "\
 self: select
-columns:
+exprs:
 - self: *
 from:
   self: from

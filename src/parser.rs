@@ -132,7 +132,7 @@ impl Parser {
                     "TABLE" => panic!(),
                     _ => panic!(),
                 }
-            },
+            }
             "(" => self.parse_select_statement(true),
             _ => {
                 panic!();
@@ -322,9 +322,10 @@ impl Parser {
             node.push_node("distinct", self.construct_node());
         }
         self.next_token(); // -> expr
-                           // columns
+
+        // columns
         node.children.insert(
-            "columns".to_string(),
+            "exprs".to_string(),
             cst::Children::NodeVec(self.parse_exprs(
                 &vec!["from", ";", "limit", ")", "union", "intersect", "except"],
                 true,
@@ -358,7 +359,7 @@ impl Parser {
             groupby.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
             groupby.push_node_vec(
-                "columns",
+                "exprs",
                 self.parse_exprs(&vec!["having", "limit", ";", "order"], false),
             );
             node.push_node("groupby", groupby);
@@ -598,7 +599,7 @@ impl Parser {
                         self.next_token(); // except -> (
                         let mut group = self.construct_node();
                         self.next_token(); // ( -> exprs
-                        group.push_node_vec("columns", self.parse_exprs(&vec![")"], false));
+                        group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
                         self.next_token(); // exprs -> )
                         group.push_node("rparen", self.construct_node());
                         except.push_node("group", group);
