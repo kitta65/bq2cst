@@ -98,6 +98,7 @@ impl Parser {
     }
     fn construct_node(&self) -> cst::Node {
         let mut node = cst::Node::new(self.get_token(0).clone());
+        node.push_node("self", cst::Node::new(self.get_token(0).clone()));
         // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {

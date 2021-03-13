@@ -18,7 +18,7 @@ impl Node {
     pub fn new(token: token::Token) -> Node {
         Node {
             token: Some(token),
-            children: HashMap::new()
+            children: HashMap::new(),
         }
     }
     pub fn new_none() -> Node {
@@ -33,7 +33,7 @@ impl Node {
         if is_array {
             res.push(format!(
                 "{}- self: {}",
-                " ".repeat((indent - 1) * 2 ),
+                " ".repeat((indent - 1) * 2),
                 match self.token.clone() {
                     Some(token) => token.literal.clone(),
                     None => "None".to_string(),
@@ -56,8 +56,11 @@ impl Node {
         }
         keys.sort();
         for key in keys {
+            if key == "self" {
+                continue;
+            }
             // push `key:`
-            res.push(format!("{}{}:", " ".repeat(indent*2), key.clone()));
+            res.push(format!("{}{}:", " ".repeat(indent * 2), key.clone()));
             let child_string = match self.children.get(key).unwrap() {
                 Children::Node(n) => n.to_string(indent + 1, false),
                 Children::NodeVec(ns) => {
