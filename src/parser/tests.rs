@@ -498,7 +498,7 @@ exprs:
     self: over
     window:
       self: (
-      partition:
+      partitionby:
         self: partition
         by:
           self: by
@@ -517,7 +517,7 @@ exprs:
     self: over
     window:
       self: (
-      order:
+      orderby:
         self: order
         by:
           self: by
@@ -536,7 +536,7 @@ exprs:
     self: over
     window:
       self: (
-      order:
+      orderby:
         self: order
         by:
           self: by
@@ -545,7 +545,7 @@ exprs:
           comma:
             self: ,
         - self: c
-      partition:
+      partitionby:
         self: partition
         by:
           self: by
@@ -578,7 +578,7 @@ exprs:
           self: unbounded
           preceding:
             self: preceding
-      order:
+      orderby:
         self: order
         by:
           self: by
@@ -587,7 +587,7 @@ exprs:
           comma:
             self: ,
         - self: c
-      partition:
+      partitionby:
         self: partition
         by:
           self: by

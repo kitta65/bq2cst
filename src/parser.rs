@@ -929,7 +929,7 @@ impl Parser {
                                     "exprs",
                                     self.parse_exprs(&vec!["order", ")"], false),
                                 );
-                                window.push_node("partition", partition);
+                                window.push_node("partitionby", partition);
                             }
                             if self.peek_token_is("order") {
                                 self.next_token(); // ( -> order, expr -> order
@@ -941,7 +941,7 @@ impl Parser {
                                     "exprs",
                                     self.parse_exprs(&vec!["rows", "range", ")"], false),
                                 );
-                                window.push_node("order", order);
+                                window.push_node("orderby", order);
                             }
                             if self.peek_token_in(&vec!["range", "rows"]) {
                                 self.next_token(); // ( -> rows, expr -> rows
