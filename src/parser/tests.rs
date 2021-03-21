@@ -1218,7 +1218,7 @@ from:
       self: )
     with:
       self: with
-      offset:
+      unnest_offset:
         self: offset
 semicolon:
   self: ;",
@@ -1246,7 +1246,7 @@ from:
       self: )
     with:
       self: with
-      offset:
+      unnest_offset:
         self: offset
         as:
           self: as

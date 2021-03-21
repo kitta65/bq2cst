@@ -498,7 +498,7 @@ impl Parser {
             let mut with = self.construct_node();
             self.next_token(); // with -> offset
             with.push_node(
-                "offset",
+                "unnest_offset",
                 self.parse_expr(
                     999,
                     &vec![
@@ -599,6 +599,7 @@ impl Parser {
                         left.push_node("replace", replace);
                     }
                     "EXCEPT" => {
+                        // TODO check except is not set operator
                         self.next_token(); // * -> except
                         let mut except = self.construct_node();
                         self.next_token(); // except -> (
