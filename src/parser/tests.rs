@@ -1391,6 +1391,8 @@ from:
   self: from
   expr:
     self: join
+    join_type:
+      self: inner
     left:
       self: data1
       as:
@@ -1407,8 +1409,6 @@ from:
         self: None
         alias:
           self: two
-    type:
-      self: inner
 semicolon:
   self: ;",
         "\
@@ -1441,6 +1441,8 @@ from:
       self: (
       expr:
         self: join
+        join_type:
+          self: full
         left:
           self: data3
         on:
@@ -1453,8 +1455,6 @@ from:
               self: col2
         right:
           self: data4
-        type:
-          self: full
       rparen:
         self: )
 semicolon:

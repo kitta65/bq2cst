@@ -526,7 +526,7 @@ impl Parser {
                     self.next_token(); // outer -> join
                 }
                 let mut join = self.construct_node();
-                join.push_node("type", type_);
+                join.push_node("join_type", type_);
                 join
             };
             self.next_token(); // -> table
