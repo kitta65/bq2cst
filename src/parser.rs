@@ -342,14 +342,26 @@ impl Parser {
             node.push_node("from", from);
         }
         // window
-        //if self.peek_token_is("WINDOW") {
-        //    self.next_token(); // table -> window
-        //    let mut window = self.construct_node();
-        //    let mut window_exprs = Vec::new();
-        //    while self.get_token(1).is_identifier() {
-        //        self.next_token(); // -> ident
-        //    }
-        //}
+        if self.peek_token_is("WINDOW") {
+            self.next_token(); // table -> window
+            let mut window = self.construct_node();
+            let mut window_exprs = Vec::new();
+            while self.get_token(1).is_identifier() {
+                self.next_token(); // -> ident
+                let mut window_expr = self.construct_node();
+                self.next_token(); // ident -> as
+                window_expr.push_node("as", self.construct_node());
+                self.next_token(); // as -> (, as -> named_window
+                window_expr.push_node("window", self.parse_window_expr());
+                if self.peek_token_is(",") {
+                    self.next_token(); // -> ,
+                    window_expr.push_node("comma", self.construct_node());
+                }
+                window_exprs.push(window_expr);
+            }
+            window.push_node_vec("window_exprs", window_exprs);
+            node.push_node("window", window);
+        }
         // where
         if self.peek_token_is("WHERE") {
             self.next_token(); // expr -> where
@@ -932,6 +944,7 @@ impl Parser {
                     if self.peek_token_is("over") {
                         self.next_token(); // ) -> over
                         let mut over = self.construct_node();
+                        self.next_token(); // over -> (, over -> named_expr
                         over.push_node("window", self.parse_window_expr());
                         node.push_node("over", over);
                     }
@@ -986,8 +999,7 @@ impl Parser {
         left
     }
     fn parse_window_expr(&mut self) -> cst::Node {
-        if self.peek_token_is("(") {
-            self.next_token(); // over -> (
+        if self.cur_token_is("(") {
             let mut window = self.construct_node();
             if self.get_token(1).is_identifier() {
                 self.next_token(); // ( -> identifier
@@ -1053,7 +1065,6 @@ impl Parser {
             window.push_node("rparen", self.construct_node());
             window
         } else {
-            self.next_token(); // over -> identifier
             self.construct_node()
         }
     }

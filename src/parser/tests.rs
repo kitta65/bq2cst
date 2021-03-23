@@ -94,6 +94,12 @@ fn test_parse_exprs() {
               sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
               sum() over (rows 1 + 1 preceding),
             ;
+            select last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
+            FROM table
+            WINDOW
+              a AS (PARTITION BY col1),
+              b AS (a ORDER BY col2),
+              c AS b;
             select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
             select decimal '00', timestamp r'2020-01-01';
             select (t.struct_col.num + 1) as result from `dataset`.table as t;
@@ -622,6 +628,85 @@ exprs:
     self: )
 semicolon:
   self: ;",
+        // window clause
+        "\
+self: select
+exprs:
+- self: (
+  args:
+  - self: col3
+  func:
+    self: last_value
+  over:
+    self: OVER
+    window:
+      self: (
+      frame:
+        self: ROWS
+        and:
+          self: AND
+        between:
+          self: BETWEEN
+        end:
+          self: 2
+          following:
+            self: FOLLOWING
+        start:
+          self: 2
+          preceding:
+            self: PRECEDING
+      name:
+        self: c
+      rparen:
+        self: )
+  rparen:
+    self: )
+from:
+  self: FROM
+  expr:
+    self: table
+semicolon:
+  self: ;
+window:
+  self: WINDOW
+  window_exprs:
+  - self: a
+    as:
+      self: AS
+    comma:
+      self: ,
+    window:
+      self: (
+      partitionby:
+        self: PARTITION
+        by:
+          self: BY
+        exprs:
+        - self: col1
+      rparen:
+        self: )
+  - self: b
+    as:
+      self: AS
+    comma:
+      self: ,
+    window:
+      self: (
+      name:
+        self: a
+      orderby:
+        self: ORDER
+        by:
+          self: BY
+        exprs:
+        - self: col2
+      rparen:
+        self: )
+  - self: c
+    as:
+      self: AS
+    window:
+      self: b",
         // raw, bytes
         "\
 self: select
