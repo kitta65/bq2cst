@@ -64,7 +64,7 @@ fn test_next_token() {
 #[test]
 fn test_parse_exprs() {
     let input = "\
-            SELECT 'aaa', 123 FROM data for system_time as of current_timestamp() where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
+            SELECT 'aaa', 123, null FROM data for system_time as of current_timestamp() where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
             select 1 as num from data;
             select 2 two;
             select
@@ -133,6 +133,9 @@ exprs:
   comma:
     self: ,
 - self: 123
+  comma:
+    self: ,
+- self: null
 from:
   self: FROM
   expr:

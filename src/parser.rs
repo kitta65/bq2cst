@@ -668,12 +668,22 @@ impl Parser {
                     left.push_node("right", right);
                 }
             }
+            "TIME" => {
+                if self.get_token(1).is_string()
+                    || self.peek_token_in(&vec!["b", "r", "br", "rb"])
+                        && self.get_token(2).is_string()
+                {
+                    self.next_token(); // time -> 'yyyy-mm-dd'
+                    let right = self.parse_expr(001, until, false);
+                    left.push_node("right", right);
+                }
+            }
             "DATETIME" => {
                 if self.get_token(1).is_string()
                     || self.peek_token_in(&vec!["b", "r", "br", "rb"])
                         && self.get_token(2).is_string()
                 {
-                    self.next_token(); // date -> 'yyyy-mm-dd'
+                    self.next_token(); // datetime -> 'yyyy-mm-dd'
                     let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
                 }
