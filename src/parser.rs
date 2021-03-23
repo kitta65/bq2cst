@@ -341,6 +341,15 @@ impl Parser {
             from.push_node("expr", self.parse_table(true));
             node.push_node("from", from);
         }
+        // window
+        //if self.peek_token_is("WINDOW") {
+        //    self.next_token(); // table -> window
+        //    let mut window = self.construct_node();
+        //    let mut window_exprs = Vec::new();
+        //    while self.get_token(1).is_identifier() {
+        //        self.next_token(); // -> ident
+        //    }
+        //}
         // where
         if self.peek_token_is("WHERE") {
             self.next_token(); // expr -> where
@@ -923,78 +932,8 @@ impl Parser {
                     if self.peek_token_is("over") {
                         self.next_token(); // ) -> over
                         let mut over = self.construct_node();
-                        if self.peek_token_is("(") {
-                            self.next_token(); // over -> (
-                            let mut window = self.construct_node();
-                            if self.get_token(1).is_identifier() {
-                                self.next_token(); // ( -> identifier
-                                window.push_node("name", self.construct_node());
-                            }
-                            if self.peek_token_is("partition") {
-                                self.next_token(); // ( -> partition, order, frame
-                                let mut partition = self.construct_node();
-                                self.next_token(); // partition -> by
-                                partition.push_node("by", self.construct_node());
-                                self.next_token(); // by -> exprs
-                                partition.push_node_vec(
-                                    "exprs",
-                                    self.parse_exprs(&vec!["order", ")"], false),
-                                );
-                                window.push_node("partitionby", partition);
-                            }
-                            if self.peek_token_is("order") {
-                                self.next_token(); // ( -> order, expr -> order
-                                let mut order = self.construct_node();
-                                self.next_token(); // order -> by
-                                order.push_node("by", self.construct_node());
-                                self.next_token(); // by -> exprs
-                                order.push_node_vec(
-                                    "exprs",
-                                    self.parse_exprs(&vec!["rows", "range", ")"], false),
-                                );
-                                window.push_node("orderby", order);
-                            }
-                            if self.peek_token_in(&vec!["range", "rows"]) {
-                                self.next_token(); // ( -> rows, expr -> rows
-                                let mut frame = self.construct_node();
-                                if self.peek_token_is("between") {
-                                    // frame between
-                                    self.next_token(); // rows -> between
-                                    frame.push_node("between", self.construct_node());
-                                    self.next_token(); // between -> expr
-                                    let mut start = self.parse_expr(999, &vec!["preceding"], false);
-                                    self.next_token(); // expr -> preceding
-                                    start.push_node("preceding", self.construct_node());
-                                    frame.push_node("start", start);
-                                    self.next_token(); // preceding -> and
-                                    frame.push_node("and", self.construct_node());
-                                    self.next_token(); // and -> expr
-                                    let mut end = self.parse_expr(999, &vec![")"], false);
-                                    self.next_token(); // expr -> following
-                                    end.push_node("following", self.construct_node());
-                                    frame.push_node("end", end);
-                                } else {
-                                    // frame start
-                                    if !self.peek_token_is(")") {
-                                        self.next_token(); // rows -> expr
-                                        let mut start =
-                                            self.parse_expr(999, &vec!["preceding"], false);
-                                        self.next_token(); // expr -> preceding, row
-                                        start.push_node("preceding", self.construct_node());
-                                        frame.push_node("start", start);
-                                    }
-                                }
-                                window.push_node("frame", frame)
-                            }
-                            self.next_token(); // -> )
-                            window.push_node("rparen", self.construct_node());
-                            over.push_node("window", window);
-                            node.push_node("over", over);
-                        } else {
-                            self.next_token(); // over -> identifier
-                            over.push_node("window", self.construct_node());
-                            node.push_node("over", over);
-                        }
+                        over.push_node("window", self.parse_window_expr());
+                        node.push_node("over", over);
                     }
                     left = node;
                 }
@@ -1045,6 +984,78 @@ impl Parser {
             left.push_node("nulls", nulls);
         }
         left
+    }
+    fn parse_window_expr(&mut self) -> cst::Node {
+        if self.peek_token_is("(") {
+            self.next_token(); // over -> (
+            let mut window = self.construct_node();
+            if self.get_token(1).is_identifier() {
+                self.next_token(); // ( -> identifier
+                window.push_node("name", self.construct_node());
+            }
+            if self.peek_token_is("partition") {
+                self.next_token(); // ( -> partition, order, frame
+                let mut partition = self.construct_node();
+                self.next_token(); // partition -> by
+                partition.push_node("by", self.construct_node());
+                self.next_token(); // by -> exprs
+                partition.push_node_vec(
+                    "exprs",
+                    self.parse_exprs(&vec!["order", ")"], false),
+                );
+                window.push_node("partitionby", partition);
+            }
+            if self.peek_token_is("order") {
+                self.next_token(); // ( -> order, expr -> order
+                let mut order = self.construct_node();
+                self.next_token(); // order -> by
+                order.push_node("by", self.construct_node());
+                self.next_token(); // by -> exprs
+                order.push_node_vec(
+                    "exprs",
+                    self.parse_exprs(&vec!["rows", "range", ")"], false),
+                );
+                window.push_node("orderby", order);
+            }
+            if self.peek_token_in(&vec!["range", "rows"]) {
+                self.next_token(); // ( -> rows, expr -> rows
+                let mut frame = self.construct_node();
+                if self.peek_token_is("between") {
+                    // frame between
+                    self.next_token(); // rows -> between
+                    frame.push_node("between", self.construct_node());
+                    self.next_token(); // between -> expr
+                    let mut start = self.parse_expr(999, &vec!["preceding"], false);
+                    self.next_token(); // expr -> preceding
+                    start.push_node("preceding", self.construct_node());
+                    frame.push_node("start", start);
+                    self.next_token(); // preceding -> and
+                    frame.push_node("and", self.construct_node());
+                    self.next_token(); // and -> expr
+                    let mut end = self.parse_expr(999, &vec![")"], false);
+                    self.next_token(); // expr -> following
+                    end.push_node("following", self.construct_node());
+                    frame.push_node("end", end);
+                } else {
+                    // frame start
+                    if !self.peek_token_is(")") {
+                        self.next_token(); // rows -> expr
+                        let mut start =
+                            self.parse_expr(999, &vec!["preceding"], false);
+                        self.next_token(); // expr -> preceding, row
+                        start.push_node("preceding", self.construct_node());
+                        frame.push_node("start", start);
+                    }
+                }
+                window.push_node("frame", frame)
+            }
+            self.next_token(); // -> )
+            window.push_node("rparen", self.construct_node());
+            window
+        } else {
+            self.next_token(); // over -> identifier
+            self.construct_node()
+        }
     }
     fn parse_alias(&mut self, node: cst::Node) -> cst::Node {
         let mut node = node.clone();

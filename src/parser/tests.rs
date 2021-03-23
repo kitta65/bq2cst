@@ -446,7 +446,7 @@ exprs:
     self: end
 semicolon:
   self: ;",
-        // window clause
+        // window function
         "\
 self: select
 exprs:
