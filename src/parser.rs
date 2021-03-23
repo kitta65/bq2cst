@@ -341,27 +341,6 @@ impl Parser {
             from.push_node("expr", self.parse_table(true));
             node.push_node("from", from);
         }
-        // window
-        if self.peek_token_is("WINDOW") {
-            self.next_token(); // table -> window
-            let mut window = self.construct_node();
-            let mut window_exprs = Vec::new();
-            while self.get_token(1).is_identifier() {
-                self.next_token(); // -> ident
-                let mut window_expr = self.construct_node();
-                self.next_token(); // ident -> as
-                window_expr.push_node("as", self.construct_node());
-                self.next_token(); // as -> (, as -> named_window
-                window_expr.push_node("window", self.parse_window_expr());
-                if self.peek_token_is(",") {
-                    self.next_token(); // -> ,
-                    window_expr.push_node("comma", self.construct_node());
-                }
-                window_exprs.push(window_expr);
-            }
-            window.push_node_vec("window_exprs", window_exprs);
-            node.push_node("window", window);
-        }
         // where
         if self.peek_token_is("WHERE") {
             self.next_token(); // expr -> where
@@ -398,6 +377,27 @@ impl Parser {
             );
             //self.next_token(); // expr -> limit
             node.push_node("having", having);
+        }
+        // window
+        if self.peek_token_is("WINDOW") {
+            self.next_token(); // table -> window
+            let mut window = self.construct_node();
+            let mut window_exprs = Vec::new();
+            while self.get_token(1).is_identifier() {
+                self.next_token(); // -> ident
+                let mut window_expr = self.construct_node();
+                self.next_token(); // ident -> as
+                window_expr.push_node("as", self.construct_node());
+                self.next_token(); // as -> (, as -> named_window
+                window_expr.push_node("window", self.parse_window_expr());
+                if self.peek_token_is(",") {
+                    self.next_token(); // -> ,
+                    window_expr.push_node("comma", self.construct_node());
+                }
+                window_exprs.push(window_expr);
+            }
+            window.push_node_vec("window_exprs", window_exprs);
+            node.push_node("window", window);
         }
         // oeder by
         if self.peek_token_is("order") {
