@@ -29,6 +29,7 @@ impl Token {
             return true;
         }
         !vec![
+            "ALL",
             "AND",
             "ANY",
             "ARRAY",

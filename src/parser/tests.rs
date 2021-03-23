@@ -108,7 +108,7 @@ fn test_parse_exprs() {
             select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
-            select * from data1 as one , data2 two join (data3 full join data4 on col1=col2) on true;
+            select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) return int64 as (x+y);create or replace function abc() as(1);
             create function abc() return int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() return int64 language js options() as '''return 1''';
@@ -1443,6 +1443,8 @@ from:
         self: join
         join_type:
           self: full
+          outer:
+            self: outer
         left:
           self: data3
         on:
