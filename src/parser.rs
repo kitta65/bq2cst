@@ -944,11 +944,15 @@ impl Parser {
                     self.next_token(); // ident -> (
                     let mut node = self.construct_node();
                     self.next_token(); // ( -> args
+                    if self.cur_token_is("distinct") {
+                        node.push_node("distinct", self.construct_node());
+                        self.next_token(); // distinct -> args
+                    }
                     node.push_node("func", left);
                     if !self.cur_token_is(")") {
                         match func.as_str() {
                             "CAST" => {
-                                let cast_from = self.parse_expr(999, &vec![")", "as"],  false);
+                                let cast_from = self.parse_expr(999, &vec![")", "as"], false);
                                 self.next_token(); // expr -> as
                                 let mut as_ = self.construct_node();
                                 self.next_token();
@@ -957,8 +961,37 @@ impl Parser {
                                 node.push_node_vec("args", vec![as_]);
                             }
                             _ => {
-                                node.push_node_vec("args", self.parse_exprs(&vec![")"], false));
+                                node.push_node_vec(
+                                    "args",
+                                    self.parse_exprs(
+                                        &vec![")", "respect", "ignore", "order", "limit"],
+                                        false,
+                                    ),
+                                );
                             }
+                        }
+                        if self.peek_token_in(&vec!["respect", "ignore"]) {
+                            self.next_token(); // expr -> respect, ignore
+                            let mut ignore_nulls = self.construct_node();
+                            self.next_token(); // respect, ignore -> nulls
+                            ignore_nulls.push_node("nulls", self.construct_node());
+                            node.push_node("ignore_nulls", ignore_nulls);
+                        }
+                        if self.peek_token_is("order") {
+                            self.next_token(); // expr -> order
+                            let mut orderby = self.construct_node();
+                            self.next_token(); // order -> by
+                            orderby.push_node("by", self.construct_node());
+                            self.next_token(); // by -> expr
+                            orderby.push_node_vec("exprs", self.parse_exprs(&vec![")", "limit"], false));
+                            node.push_node("orderby", orderby);
+                        }
+                        if self.peek_token_is("limit") {
+                            self.next_token(); // -> limit
+                            let mut limit = self.construct_node();
+                            self.next_token();
+                            limit.push_node("expr", self.parse_expr(999, &vec![")"], false));
+                            node.push_node("limit", limit);
                         }
                         self.next_token(); // expr -> )
                     }
