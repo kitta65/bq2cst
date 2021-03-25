@@ -40,6 +40,73 @@ impl Lexer {
         self.position = self.read_position;
         self.read_position += 1;
     }
+    fn read_escaped_char(&mut self) {
+        self.read_char(); // '\\' -> ?
+        match self.ch {
+            Some('x') => {
+                self.read_char();
+                self.read_char();
+            }
+            Some('u') => {
+                for _ in 0..4 {
+                    self.read_char();
+                }
+            }
+            Some('U') => {
+                for _ in 0..8 {
+                    self.read_char();
+                }
+            }
+            Some('U') => {
+                for _ in 0..8 {
+                    self.read_char();
+                }
+            }
+            Some('0') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('1') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('2') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('3') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('4') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('5') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('6') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some('7') => {
+                for _ in 0..3 {
+                    self.read_char();
+                }
+            }
+            Some(_) => (),
+            None => panic!(),
+        }
+        self.read_char();
+    }
     fn read_identifier(&mut self) -> String {
         let first_position = self.position;
         while is_letter_or_digit(&self.ch) {
@@ -260,7 +327,11 @@ impl Lexer {
         let ch = self.ch;
         self.read_char(); // first ' -> secont '
         while !(self.ch == ch && self.peek_char(1) == ch && self.peek_char(2) == ch) {
-            self.read_char();
+            if self.ch == Some('\\') {
+                self.read_escaped_char();
+            } else {
+                self.read_char();
+            }
         }
         self.read_char(); // first ' -> secont '
         self.read_char(); // second ' -> third '
@@ -274,8 +345,7 @@ impl Lexer {
         self.read_char();
         while self.ch != quote {
             if self.ch == Some('\\') {
-                //self.read_escaped_char();
-                panic!();
+                self.read_escaped_char();
             } else {
                 self.read_char();
             }
@@ -369,7 +439,7 @@ From `data`; -- comment
 e
 o
 f
-*/"
+*/select '\\'','''\\'''',\"\\x00\""
         .to_string();
         let mut l = Lexer::new(input);
         let expected_tokens: Vec<token::Token> = vec![
@@ -727,6 +797,36 @@ o
 f
 */"
                 .to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 2,
+                literal: "select".to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 9,
+                literal: "'\\''".to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 13,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 14,
+                literal: "'''\\''''".to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 22,
+                literal: ",".to_string(),
+            },
+            token::Token {
+                line: 8,
+                column: 23,
+                literal: "\"\\x00\"".to_string(),
             },
         ];
         for t in expected_tokens {
