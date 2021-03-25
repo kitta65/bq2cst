@@ -57,11 +57,6 @@ impl Lexer {
                     self.read_char();
                 }
             }
-            Some('U') => {
-                for _ in 0..8 {
-                    self.read_char();
-                }
-            }
             Some('0') => {
                 for _ in 0..3 {
                     self.read_char();
@@ -283,6 +278,22 @@ impl Lexer {
                     }
                 }
             }
+            '=' => {
+                if self.peek_char(1) == Some('>') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: "=>".to_string(),
+                    }
+                } else {
+                    token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                }
+            }
             // parameter
             '?' => token::Token {
                 line: self.line,
@@ -325,7 +336,7 @@ impl Lexer {
     fn read_multiline_string(&mut self) -> String {
         let first_position = self.position;
         let ch = self.ch;
-        self.read_char(); // first ' -> secont '
+        self.read_char(); // first ' -> second '
         while !(self.ch == ch && self.peek_char(1) == ch && self.peek_char(2) == ch) {
             if self.ch == Some('\\') {
                 self.read_escaped_char();
