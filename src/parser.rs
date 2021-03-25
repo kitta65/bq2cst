@@ -90,7 +90,6 @@ impl Parser {
         let mut code: Vec<cst::Node> = Vec::new();
         while !self.is_eof(0) {
             let stmt = self.parse_statement();
-            //println!("{}\n", stmt.to_string(0, false));
             code.push(stmt);
             self.next_token();
         }
@@ -240,7 +239,6 @@ impl Parser {
             self.next_token(); // js -> as, ) -> as
             let mut as_ = self.construct_node();
             self.next_token(); // as -> javascript_code
-            println!("{:?}", self.get_token(0));
             as_.push_node("expr", self.construct_node());
             node.push_node("as", as_);
         }
@@ -942,12 +940,26 @@ impl Parser {
                     left = node;
                 }
                 "(" => {
-                    self.next_token(); // expr -> (
+                    let func = self.get_token(0).literal.to_uppercase();
+                    self.next_token(); // ident -> (
                     let mut node = self.construct_node();
                     self.next_token(); // ( -> args
                     node.push_node("func", left);
                     if !self.cur_token_is(")") {
-                        node.push_node_vec("args", self.parse_exprs(&vec![")"], false));
+                        match func.as_str() {
+                            "CAST" => {
+                                let cast_from = self.parse_expr(999, &vec![")", "as"],  false);
+                                self.next_token(); // expr -> as
+                                let mut as_ = self.construct_node();
+                                self.next_token();
+                                as_.push_node("cast_to", self.parse_type());
+                                as_.push_node("cast_from", cast_from);
+                                node.push_node_vec("args", vec![as_]);
+                            }
+                            _ => {
+                                node.push_node_vec("args", self.parse_exprs(&vec![")"], false));
+                            }
+                        }
                         self.next_token(); // expr -> )
                     }
                     node.push_node("rparen", self.construct_node());
@@ -978,7 +990,7 @@ impl Parser {
             }
         }
         // alias
-        if self.peek_token_is("as") && precedence == 999 {
+        if self.peek_token_is("as") && precedence == 999 && alias {
             self.next_token(); // expr -> as
             let mut as_ = self.construct_node();
             self.next_token(); // as -> alias
@@ -1021,10 +1033,7 @@ impl Parser {
                 self.next_token(); // partition -> by
                 partition.push_node("by", self.construct_node());
                 self.next_token(); // by -> exprs
-                partition.push_node_vec(
-                    "exprs",
-                    self.parse_exprs(&vec!["order", ")"], false),
-                );
+                partition.push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"], false));
                 window.push_node("partitionby", partition);
             }
             if self.peek_token_is("order") {
@@ -1062,8 +1071,7 @@ impl Parser {
                     // frame start
                     if !self.peek_token_is(")") {
                         self.next_token(); // rows -> expr
-                        let mut start =
-                            self.parse_expr(999, &vec!["preceding"], false);
+                        let mut start = self.parse_expr(999, &vec!["preceding"], false);
                         self.next_token(); // expr -> preceding, row
                         start.push_node("preceding", self.construct_node());
                         frame.push_node("start", start);

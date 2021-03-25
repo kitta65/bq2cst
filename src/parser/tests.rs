@@ -115,6 +115,7 @@ fn test_parse_exprs() {
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
+            select cast(abc as string);
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
@@ -1547,6 +1548,23 @@ from:
           self: data4
       rparen:
         self: )
+semicolon:
+  self: ;",
+  // irregular functions
+  "\
+self: select
+exprs:
+- self: (
+  args:
+  - self: as
+    cast_from:
+      self: abc
+    cast_to:
+      self: string
+  func:
+    self: cast
+  rparen:
+    self: )
 semicolon:
   self: ;",
         // create function
