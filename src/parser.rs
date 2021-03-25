@@ -190,12 +190,12 @@ impl Parser {
         self.next_token(); // type -> )
         group.push_node("rparen", self.construct_node());
         node.push_node("group", group);
-        if self.peek_token_is("return") {
+        if self.peek_token_is("returns") {
             self.next_token(); // ) -> return
             let mut return_ = self.construct_node();
             self.next_token(); // return -> type
             return_.push_node("type", self.parse_type());
-            node.push_node("return", return_);
+            node.push_node("returns", return_);
         }
         if self.peek_token_is("as") {
             self.next_token(); // -> as

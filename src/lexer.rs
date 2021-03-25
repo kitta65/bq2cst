@@ -265,13 +265,20 @@ impl Lexer {
         self.read_char(); // first ' -> secont '
         self.read_char(); // second ' -> third '
         self.read_char(); // third ' ->  next_ch
-        self.input[first_position..self.position].into_iter().collect()
+        self.input[first_position..self.position]
+            .into_iter()
+            .collect()
     }
     fn read_quoted(&mut self, quote: Option<char>) -> String {
         let first_position = self.position;
         self.read_char();
         while self.ch != quote {
-            self.read_char();
+            if self.ch == Some('\\') {
+                //self.read_escaped_char();
+                panic!();
+            } else {
+                self.read_char();
+            }
         }
         self.read_char();
         self.input[first_position..self.position]
