@@ -962,13 +962,13 @@ impl Parser {
                                 node.push_node_vec("args", vec![as_]);
                             }
                             "EXTRACT" => {
-                                let mut expr =
+                                let datepart =
                                     self.parse_expr(999, &vec![")", "from", "at"], false);
                                 self.next_token(); // expr -> from
                                 let mut from = self.construct_node();
                                 self.next_token(); // from -> timestamp_expr
-                                from.push_node("expr", self.parse_expr(999, &vec!["at", ")"], false));
-                                expr.push_node("extract_from", from);
+                                from.push_node("extract_datepart", datepart);
+                                from.push_node("extract_from", self.parse_expr(999, &vec!["at", ")"], false));
                                 if self.peek_token_is("at") {
                                     self.next_token(); // timestamp_expr -> at
                                     let mut at = self.construct_node();
@@ -980,9 +980,9 @@ impl Parser {
                                     at.push_node_vec("time_zone", time_zone);
                                     self.next_token(); // zone -> 'UTC'
                                     at.push_node("expr", self.parse_expr(999, &vec![")"], false));
-                                    expr.push_node("at", at);
+                                    from.push_node("at", at);
                                 }
-                                node.push_node_vec("args", vec![expr]);
+                                node.push_node_vec("args", vec![from]);
                             }
                             _ => {
                                 node.push_node_vec(

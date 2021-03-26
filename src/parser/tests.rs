@@ -1619,11 +1619,11 @@ exprs:
     self: )
 - self: (
   args:
-  - self: day
+  - self: from
+    extract_datepart:
+      self: day
     extract_from:
-      self: from
-      expr:
-        self: ts
+      self: ts
   comma:
     self: ,
   func:
@@ -1632,7 +1632,7 @@ exprs:
     self: )
 - self: (
   args:
-  - self: day
+  - self: from
     at:
       self: at
       expr:
@@ -1640,10 +1640,10 @@ exprs:
       time_zone:
       - self: time
       - self: zone
+    extract_datepart:
+      self: day
     extract_from:
-      self: from
-      expr:
-        self: ts
+      self: ts
   comma:
     self: ,
   func:
@@ -1652,17 +1652,17 @@ exprs:
     self: )
 - self: (
   args:
-  - self: (
-    args:
-    - self: sunday
+  - self: from
+    extract_datepart:
+      self: (
+      args:
+      - self: sunday
+      func:
+        self: week
+      rparen:
+        self: )
     extract_from:
-      self: from
-      expr:
-        self: ts
-    func:
-      self: week
-    rparen:
-      self: )
+      self: ts
   comma:
     self: ,
   func:
