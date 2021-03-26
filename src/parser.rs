@@ -641,7 +641,6 @@ impl Parser {
                 } else {
                     left.push_node_vec("exprs", exprs);
                 }
-                //left.push_node("expr", self.parse_expr(999, until));
                 self.next_token(); // expr -> )
                 left.push_node("rparen", self.construct_node());
             }
@@ -961,6 +960,29 @@ impl Parser {
                                 as_.push_node("cast_to", self.parse_type());
                                 as_.push_node("cast_from", cast_from);
                                 node.push_node_vec("args", vec![as_]);
+                            }
+                            "EXTRACT" => {
+                                let mut expr =
+                                    self.parse_expr(999, &vec![")", "from", "at"], false);
+                                self.next_token(); // expr -> from
+                                let mut from = self.construct_node();
+                                self.next_token(); // from -> timestamp_expr
+                                from.push_node("expr", self.parse_expr(999, &vec!["at", ")"], false));
+                                expr.push_node("extract_from", from);
+                                if self.peek_token_is("at") {
+                                    self.next_token(); // timestamp_expr -> at
+                                    let mut at = self.construct_node();
+                                    self.next_token(); // at -> time
+                                    let mut time_zone = Vec::new();
+                                    time_zone.push(self.construct_node());
+                                    self.next_token(); // time -> zone
+                                    time_zone.push(self.construct_node());
+                                    at.push_node_vec("time_zone", time_zone);
+                                    self.next_token(); // zone -> 'UTC'
+                                    at.push_node("expr", self.parse_expr(999, &vec![")"], false));
+                                    expr.push_node("at", at);
+                                }
+                                node.push_node_vec("args", vec![expr]);
                             }
                             _ => {
                                 node.push_node_vec(

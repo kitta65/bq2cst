@@ -115,7 +115,10 @@ fn test_parse_exprs() {
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
-            select cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2);
+            select
+              cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2),
+              extract(day from ts),extract(day from ts at time zone 'UTC'),extract(week(sunday) from ts),
+            ;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
@@ -1608,8 +1611,62 @@ exprs:
       self: select
       exprs:
       - self: 2
+  comma:
+    self: ,
   func:
     self: array
+  rparen:
+    self: )
+- self: (
+  args:
+  - self: day
+    extract_from:
+      self: from
+      expr:
+        self: ts
+  comma:
+    self: ,
+  func:
+    self: extract
+  rparen:
+    self: )
+- self: (
+  args:
+  - self: day
+    at:
+      self: at
+      expr:
+        self: 'UTC'
+      time_zone:
+      - self: time
+      - self: zone
+    extract_from:
+      self: from
+      expr:
+        self: ts
+  comma:
+    self: ,
+  func:
+    self: extract
+  rparen:
+    self: )
+- self: (
+  args:
+  - self: (
+    args:
+    - self: sunday
+    extract_from:
+      self: from
+      expr:
+        self: ts
+    func:
+      self: week
+    rparen:
+      self: )
+  comma:
+    self: ,
+  func:
+    self: extract
   rparen:
     self: )
 semicolon:
