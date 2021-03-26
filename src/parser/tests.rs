@@ -118,6 +118,7 @@ fn test_parse_exprs() {
             select
               cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2),
               extract(day from ts),extract(day from ts at time zone 'UTC'),extract(week(sunday) from ts),
+              st_geogfromtext(p, oriented => true),
             ;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
@@ -1667,6 +1668,22 @@ exprs:
     self: ,
   func:
     self: extract
+  rparen:
+    self: )
+- self: (
+  args:
+  - self: p
+    comma:
+      self: ,
+  - self: =>
+    left:
+      self: oriented
+    right:
+      self: true
+  comma:
+    self: ,
+  func:
+    self: st_geogfromtext
   rparen:
     self: )
 semicolon:

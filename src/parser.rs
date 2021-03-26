@@ -913,6 +913,10 @@ impl Parser {
                     self.next_token(); // expr -> <=
                     left = self.parse_binary_operator(left, until);
                 }
+                "=>" => {
+                    self.next_token(); // expr -> <=
+                    left = self.parse_binary_operator(left, until);
+                }
                 "=" => {
                     self.next_token(); // expr -> =
                     left = self.parse_binary_operator(left, until);
@@ -1173,7 +1177,7 @@ impl Parser {
         node.push_node("right", self.parse_expr(precedence, until, false));
         node
     }
-    fn parse_in_operator(&mut self, mut left: cst::Node) -> cst::Node {
+    fn parse_in_operator(&mut self, left: cst::Node) -> cst::Node {
         let mut node = self.construct_node();
         self.next_token(); // in -> (
         node.push_node("left", left);
@@ -1264,6 +1268,7 @@ impl Parser {
         // 110... not
         // 111... and
         // 112... or
+        // 200... => (ST_GEOGFROMGEOJSON)
         // 999... LOWEST
         match self.get_token(offset).literal.to_uppercase().as_str() {
             "(" => 005,
@@ -1296,6 +1301,7 @@ impl Parser {
             }
             "AND" => 111,
             "OR" => 112,
+            "=>" => 200,
             _ => 999,
         }
     }
