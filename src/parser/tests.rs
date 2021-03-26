@@ -115,7 +115,7 @@ fn test_parse_exprs() {
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
-            select cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100);
+            select cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2);
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
@@ -1573,6 +1573,8 @@ exprs:
     comma:
       self: ,
   - self: y
+  comma:
+    self: ,
   distinct:
     self: distinct
   func:
@@ -1591,6 +1593,23 @@ exprs:
       self: by
     exprs:
     - self: z
+  rparen:
+    self: )
+- self: (
+  args:
+  - self: union
+    distinct:
+      self: all
+    left:
+      self: select
+      exprs:
+      - self: 1
+    right:
+      self: select
+      exprs:
+      - self: 2
+  func:
+    self: array
   rparen:
     self: )
 semicolon:

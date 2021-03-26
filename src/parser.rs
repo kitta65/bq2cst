@@ -789,13 +789,15 @@ impl Parser {
                     type_.push_node("rparen", self.construct_node());
                     left.push_node("type_declaration", type_);
                 }
-                self.next_token(); // ARRAY -> [, > -> [
-                let mut right = self.construct_node();
-                self.next_token(); // [ -> exprs
-                right.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
-                self.next_token(); // exprs -> ]
-                right.push_node("rparen", self.construct_node());
-                left.push_node("right", right);
+                if !self.peek_token_is("(") {
+                    self.next_token(); // ARRAY -> [, > -> [
+                    let mut right = self.construct_node();
+                    self.next_token(); // [ -> exprs
+                    right.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
+                    self.next_token(); // exprs -> ]
+                    right.push_node("rparen", self.construct_node());
+                    left.push_node("right", right);
+                }
             }
             "STRUCT" => {
                 if self.get_token(1).literal.as_str() == "<" {
@@ -983,7 +985,10 @@ impl Parser {
                             self.next_token(); // order -> by
                             orderby.push_node("by", self.construct_node());
                             self.next_token(); // by -> expr
-                            orderby.push_node_vec("exprs", self.parse_exprs(&vec![")", "limit"], false));
+                            orderby.push_node_vec(
+                                "exprs",
+                                self.parse_exprs(&vec![")", "limit"], false),
+                            );
                             node.push_node("orderby", orderby);
                         }
                         if self.peek_token_is("limit") {
