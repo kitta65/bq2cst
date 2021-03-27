@@ -654,6 +654,11 @@ impl Parser {
                 let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
             }
+            "~" => {
+                self.next_token(); // - -> expr
+                let right = self.parse_expr(102, until, false);
+                left.push_node("right", right);
+            }
             "[" => {
                 self.next_token(); // [ -> exprs
                 left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
@@ -871,84 +876,6 @@ impl Parser {
         while !self.peek_token_in(until) && self.get_precedence(1) < precedence {
             // actually, until is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
-                "BETWEEN" => {
-                    self.next_token(); // expr -> between
-                    let precedence = self.get_precedence(0);
-                    let mut between = self.construct_node();
-                    between.push_node("left", left);
-                    left = between;
-                    self.next_token(); // between -> expr1
-                    let mut exprs = Vec::new();
-                    exprs.push(self.parse_expr(precedence, until, false));
-                    self.next_token(); // expr1 -> and
-                    left.push_node("and", self.construct_node());
-                    self.next_token(); // and -> expr2
-                    exprs.push(self.parse_expr(precedence, until, false));
-                    left.push_node_vec("right", exprs);
-                }
-                "LIKE" => {
-                    self.next_token(); // expr -> like
-                    left = self.parse_binary_operator(left, until);
-                }
-                "." => {
-                    self.next_token(); // expr -> .
-                    left = self.parse_binary_operator(left, until);
-                }
-                "+" => {
-                    self.next_token(); // expr -> +
-                    left = self.parse_binary_operator(left, until);
-                }
-                "*" => {
-                    self.next_token(); // expr -> +
-                    left = self.parse_binary_operator(left, until);
-                }
-                ">" => {
-                    self.next_token(); // expr -> >
-                    left = self.parse_binary_operator(left, until);
-                }
-                ">=" => {
-                    self.next_token(); // expr -> >=
-                    left = self.parse_binary_operator(left, until);
-                }
-                "<" => {
-                    self.next_token(); // expr -> <
-                    left = self.parse_binary_operator(left, until);
-                }
-                "<=" => {
-                    self.next_token(); // expr -> <=
-                    left = self.parse_binary_operator(left, until);
-                }
-                "=>" => {
-                    self.next_token(); // expr -> <=
-                    left = self.parse_binary_operator(left, until);
-                }
-                "=" => {
-                    self.next_token(); // expr -> =
-                    left = self.parse_binary_operator(left, until);
-                }
-                "AND" => {
-                    self.next_token(); // expr -> =
-                    left = self.parse_binary_operator(left, until);
-                }
-                "OR" => {
-                    self.next_token(); // expr -> =
-                    left = self.parse_binary_operator(left, until);
-                }
-                "IN" => {
-                    self.next_token(); // expr -> in
-                    left = self.parse_in_operator(left);
-                }
-                "[" => {
-                    self.next_token(); // expr -> [
-                    let mut node = self.construct_node();
-                    node.push_node("left", left);
-                    //let precedence = self.get_precedence(0);
-                    self.next_token(); // [ -> index_expr
-                    node.push_node("right", self.parse_expr(999, &vec!["]"], false));
-                    self.next_token(); // index_expr -> ]
-                    node.push_node("rparen", self.construct_node());
-                    left = node;
-                }
                 "(" => {
                     let func = self.get_token(0).literal.to_uppercase();
                     self.next_token(); // ident -> (
@@ -1041,6 +968,116 @@ impl Parser {
                     }
                     left = node;
                 }
+                "." => {
+                    self.next_token(); // expr -> .
+                    left = self.parse_binary_operator(left, until);
+                }
+                "[" => {
+                    self.next_token(); // expr -> [
+                    let mut node = self.construct_node();
+                    node.push_node("left", left);
+                    //let precedence = self.get_precedence(0);
+                    self.next_token(); // [ -> index_expr
+                    node.push_node("right", self.parse_expr(999, &vec!["]"], false));
+                    self.next_token(); // index_expr -> ]
+                    node.push_node("rparen", self.construct_node());
+                    left = node;
+                }
+                "*" => {
+                    self.next_token(); // expr -> *
+                    left = self.parse_binary_operator(left, until);
+                }
+                "/" => {
+                    self.next_token(); // expr -> /
+                    left = self.parse_binary_operator(left, until);
+                }
+                "||" => {
+                    self.next_token(); // expr -> ||
+                    left = self.parse_binary_operator(left, until);
+                }
+                "+" => {
+                    self.next_token(); // expr -> +
+                    left = self.parse_binary_operator(left, until);
+                }
+                "-" => {
+                    self.next_token(); // expr -> +
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<<" => {
+                    self.next_token(); // expr -> <<
+                    left = self.parse_binary_operator(left, until);
+                }
+                ">>" => {
+                    self.next_token(); // expr -> >>
+                    left = self.parse_binary_operator(left, until);
+                }
+                "&" => {
+                    self.next_token(); // expr -> &
+                    left = self.parse_binary_operator(left, until);
+                }
+                "^" => {
+                    self.next_token(); // expr -> ^
+                    left = self.parse_binary_operator(left, until);
+                }
+                "|" => {
+                    self.next_token(); // expr -> |
+                    left = self.parse_binary_operator(left, until);
+                }
+                "=" => {
+                    self.next_token(); // expr -> =
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<" => {
+                    self.next_token(); // expr -> <
+                    left = self.parse_binary_operator(left, until);
+                }
+                ">" => {
+                    self.next_token(); // expr -> >
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<=" => {
+                    self.next_token(); // expr -> <=
+                    left = self.parse_binary_operator(left, until);
+                }
+                ">=" => {
+                    self.next_token(); // expr -> >=
+                    left = self.parse_binary_operator(left, until);
+                }
+                "!=" => {
+                    self.next_token(); // expr -> >=
+                    left = self.parse_binary_operator(left, until);
+                }
+                "<>" => {
+                    self.next_token(); // expr -> >=
+                    left = self.parse_binary_operator(left, until);
+                }
+                "LIKE" => {
+                    self.next_token(); // expr -> like
+                    left = self.parse_binary_operator(left, until);
+                }
+                "BETWEEN" => {
+                    self.next_token(); // expr -> between
+                    let precedence = self.get_precedence(0);
+                    let mut between = self.construct_node();
+                    between.push_node("left", left);
+                    left = between;
+                    self.next_token(); // between -> expr1
+                    let mut exprs = Vec::new();
+                    exprs.push(self.parse_expr(precedence, until, false));
+                    self.next_token(); // expr1 -> and
+                    left.push_node("and", self.construct_node());
+                    self.next_token(); // and -> expr2
+                    exprs.push(self.parse_expr(precedence, until, false));
+                    left.push_node_vec("right", exprs);
+                }
+                "IN" => {
+                    self.next_token(); // expr -> in
+                    left = self.parse_in_operator(left);
+                }
+                "IS" => {
+                    self.next_token(); // expr -> in
+                    left = self.parse_in_operator(left);
+                }
                 "NOT" => {
                     self.next_token(); // expr -> not
                     let not = self.construct_node();
@@ -1054,6 +1091,18 @@ impl Parser {
                     } else {
                         panic!();
                     }
+                }
+                "AND" => {
+                    self.next_token(); // expr -> =
+                    left = self.parse_binary_operator(left, until);
+                }
+                "OR" => {
+                    self.next_token(); // expr -> =
+                    left = self.parse_binary_operator(left, until);
+                }
+                "=>" => {
+                    self.next_token(); // expr -> <=
+                    left = self.parse_binary_operator(left, until);
                 }
                 _ => panic!(),
             }
@@ -1281,23 +1330,23 @@ impl Parser {
             "*" => 103,
             "/" => 103,
             "||" => 103,
-            "-" => 104,
             "+" => 104,
-            ">>" => 105,
+            "-" => 104,
             "<<" => 105,
+            ">>" => 105,
             "&" => 106,
             "^" => 107,
             "|" => 108,
             "=" => 109,
-            ">" => 109,
             "<" => 109,
-            ">=" => 109,
+            ">" => 109,
             "<=" => 109,
+            ">=" => 109,
             "!=" => 109,
             "<>" => 109,
-            "IN" => 109,
             "LIKE" => 109,
             "BETWEEN" => 109,
+            "IN" => 109,
             "IS" => 109,
             "NOT" => {
                 match self.get_token(offset + 1).literal.to_uppercase().as_str() {
