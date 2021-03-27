@@ -120,7 +120,12 @@ fn test_parse_exprs() {
               extract(day from ts),extract(day from ts at time zone 'UTC'),extract(week(sunday) from ts),
               st_geogfromtext(p, oriented => true),
             ;
-            select aaa.bbb.ccc,x[offset(1)],-+1,~1,1*2/3,'a'||'b',1+2-3,1<<3>>2,;
+            select
+              aaa.bbb.ccc,x[offset(1)],-+1,~1,1*2/3,'a'||'b',1+2-3,1<<3>>2,1|2^3&4,
+              1<2,3>4,1<=2,3>=4,1!=2,1<>2,
+              'a' like '%a','a' not like 'b',1 between 1 and 2,1 not between 1 and 2,'a' in ('a'),'a' not in ('a','b'),
+              a is null,a is not null,true is true,true or true is not true,not true is true,true or false not in (true),
+            ;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
@@ -1771,6 +1776,190 @@ exprs:
       self: 3
   right:
     self: 2
+- self: |
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+    self: ^
+    left:
+      self: 2
+    right:
+      self: &
+      left:
+        self: 3
+      right:
+        self: 4
+- self: <
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+    self: 2
+- self: >
+  comma:
+    self: ,
+  left:
+    self: 3
+  right:
+    self: 4
+- self: <=
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+    self: 2
+- self: >=
+  comma:
+    self: ,
+  left:
+    self: 3
+  right:
+    self: 4
+- self: !=
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+    self: 2
+- self: <>
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+    self: 2
+- self: like
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  right:
+    self: '%a'
+- self: like
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  not:
+    self: not
+  right:
+    self: 'b'
+- self: between
+  and:
+    self: and
+  comma:
+    self: ,
+  left:
+    self: 1
+  right:
+  - self: 1
+  - self: 2
+- self: between
+  and:
+    self: and
+  comma:
+    self: ,
+  left:
+    self: 1
+  not:
+    self: not
+  right:
+  - self: 1
+  - self: 2
+- self: in
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  right:
+    self: (
+    exprs:
+    - self: 'a'
+    rparen:
+      self: )
+- self: in
+  comma:
+    self: ,
+  left:
+    self: 'a'
+  not:
+    self: not
+  right:
+    self: (
+    exprs:
+    - self: 'a'
+      comma:
+        self: ,
+    - self: 'b'
+    rparen:
+      self: )
+- self: is
+  comma:
+    self: ,
+  left:
+    self: a
+  right:
+    self: null
+- self: is
+  comma:
+    self: ,
+  left:
+    self: a
+  not:
+    self: not
+  right:
+    self: null
+- self: is
+  comma:
+    self: ,
+  left:
+    self: true
+  right:
+    self: true
+- self: or
+  comma:
+    self: ,
+  left:
+    self: true
+  right:
+    self: is
+    left:
+      self: true
+    not:
+      self: not
+    right:
+      self: true
+- self: not
+  comma:
+    self: ,
+  right:
+    self: is
+    left:
+      self: true
+    right:
+      self: true
+- self: or
+  comma:
+    self: ,
+  left:
+    self: true
+  right:
+    self: in
+    left:
+      self: false
+    not:
+      self: not
+    right:
+      self: (
+      exprs:
+      - self: true
+      rparen:
+        self: )
 semicolon:
   self: ;",
         // create function

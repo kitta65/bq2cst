@@ -1076,7 +1076,7 @@ impl Parser {
                 }
                 "IS" => {
                     self.next_token(); // expr -> in
-                    left = self.parse_in_operator(left);
+                    left = self.parse_binary_operator(left, until);
                 }
                 "NOT" => {
                     self.next_token(); // expr -> not
@@ -1087,6 +1087,20 @@ impl Parser {
                         left.push_node("not", not);
                     } else if self.cur_token_is("like") {
                         left = self.parse_binary_operator(left, until);
+                        left.push_node("not", not);
+                    } else if self.cur_token_is("between") {
+                        let precedence = self.get_precedence(0);
+                        let mut between = self.construct_node();
+                        between.push_node("left", left);
+                        left = between;
+                        self.next_token(); // between -> expr1
+                        let mut exprs = Vec::new();
+                        exprs.push(self.parse_expr(precedence, until, false));
+                        self.next_token(); // expr1 -> and
+                        left.push_node("and", self.construct_node());
+                        self.next_token(); // and -> expr2
+                        exprs.push(self.parse_expr(precedence, until, false));
+                        left.push_node_vec("right", exprs);
                         left.push_node("not", not);
                     } else {
                         panic!();
@@ -1226,6 +1240,10 @@ impl Parser {
     fn parse_binary_operator(&mut self, left: cst::Node, until: &Vec<&str>) -> cst::Node {
         let precedence = self.get_precedence(0);
         let mut node = self.construct_node();
+        if self.peek_token_is("not") {
+            self.next_token(); // is -> not
+            node.push_node("not", self.construct_node());
+        }
         self.next_token(); // binary_operator -> expr
         node.push_node("left", left);
         node.push_node("right", self.parse_expr(precedence, until, false));
