@@ -7,6 +7,8 @@ pub struct Lexer {
     ch: Option<char>,
     line: usize,
     column: usize,
+    previous_token: Option<crate::token::Token>,
+    type_declaration_depth: usize,
 }
 
 impl Lexer {
@@ -23,6 +25,8 @@ impl Lexer {
             ch: Some(first_char),
             line: 0,
             column: 0,
+            previous_token: None,
+            type_declaration_depth: 0,
         }
     }
     fn read_char(&mut self) {
@@ -149,91 +153,87 @@ impl Lexer {
                         literal: ch.to_string(),
                     }
                 } else {
-                    return Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 }
             }
             '#' => {
-                return Some(token::Token {
+                let token =  Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_comment(),
                 });
+                self.previous_token = token.clone();
+                return token;
             }
-            //'(' => token::Token {
-            //    literal: ch.to_string(),
-            //    line: self.line,
-            //    column: self.column,
-            //},
-            //')' => token::Token {
-            //    literal: ch.to_string(),
-            //    line: self.line,
-            //    column: self.column,
-            //},
-            //'[' => token::Token {
-            //    literal: ch.to_string(),
-            //    line: self.line,
-            //    column: self.column,
-            //},
-            //']' => token::Token {
-            //    literal: ch.to_string(),
-            //    line: self.line,
-            //    column: self.column,
-            //},
             // quotation
             '`' => {
-                return Some(token::Token {
+                let token =  Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
-                })
+                });
+                self.previous_token = token.clone();
+                return token;
             }
             '"' => {
                 if self.peek_char(1) == Some('"') && self.peek_char(2) == Some('"') {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_multiline_string(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 } else {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_quoted(self.ch),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 }
             }
             '\'' => {
                 if self.peek_char(1) == Some('\'') && self.peek_char(2) == Some('\'') {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_multiline_string(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 } else {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_quoted(self.ch),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 }
             }
-            // binary operator
-            '+' => token::Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
+            // operators
+            //'+' => token::Token {
+            //    literal: ch.to_string(),
+            //    line: self.line,
+            //    column: self.column,
+            //},
             '-' => {
                 if self.peek_char(1) == Some('-') {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_comment(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 } else {
                     token::Token {
                         line: self.line,
@@ -242,18 +242,20 @@ impl Lexer {
                     }
                 }
             }
-            '*' => token::Token {
-                line: self.line,
-                column: self.column,
-                literal: ch.to_string(),
-            },
+            //'*' => token::Token {
+            //    line: self.line,
+            //    column: self.column,
+            //    literal: ch.to_string(),
+            //},
             '/' => {
                 if self.peek_char(1) == Some('*') {
-                    return Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_multiline_comment(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 } else {
                     token::Token {
                         line: self.line,
@@ -269,6 +271,69 @@ impl Lexer {
                         line: self.line,
                         column: self.column - 1,
                         literal: "||".to_string(),
+                    }
+                } else {
+                    token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                }
+            }
+            '<' => {
+                if self.peek_char(1) == Some('<') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: "<<".to_string(),
+                    }
+                } else if self.peek_char(1) == Some('=') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: "<=".to_string(),
+                    }
+                } else if self.peek_char(1) == Some('>') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: "<>".to_string(),
+                    }
+                } else {
+                    if self.previous_token.clone().unwrap().literal.to_uppercase() == "ARRAY" || self.previous_token.clone().unwrap().literal.to_uppercase() == "STRUCT" {
+                        self.type_declaration_depth += 1;
+                    }
+                    token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                }
+            }
+            '>' => {
+                if 0 < self.type_declaration_depth {
+                    self.type_declaration_depth -= 1;
+                    token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                } else if self.peek_char(1) == Some('>') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: ">>".to_string(),
+                    }
+                } else if self.peek_char(1) == Some('=') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: ">=".to_string(),
                     }
                 } else {
                     token::Token {
@@ -294,6 +359,22 @@ impl Lexer {
                     }
                 }
             }
+            '!' => {
+                if self.peek_char(1) == Some('=') {
+                    self.read_char();
+                    token::Token {
+                        line: self.line,
+                        column: self.column - 1,
+                        literal: "!=".to_string(),
+                    }
+                } else {
+                    token::Token {
+                        line: self.line,
+                        column: self.column,
+                        literal: ch.to_string(),
+                    }
+                }
+            }
             // parameter
             '?' => token::Token {
                 line: self.line,
@@ -301,26 +382,32 @@ impl Lexer {
                 literal: ch.to_string(),
             },
             '@' => {
-                return Some(token::Token {
+                let token = Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_parameter(),
                 });
+                self.previous_token = token.clone();
+                return token;
             }
             // other
             _ => {
                 if ch.is_digit(10) {
-                    return Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_number(),
                     });
+                    self.previous_token = token.clone();
+                    return token;
                 } else if is_letter_or_digit(&self.ch) {
-                    return Some(token::Token {
+                    let token =  Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_identifier(),
                     }); // note: the ownerwhip moves
+                    self.previous_token = token.clone();
+                    return token;
                 } else {
                     token::Token {
                         literal: ch.to_string(),
@@ -331,6 +418,7 @@ impl Lexer {
             }
         };
         self.read_char();
+        self.previous_token = Some(token.clone());
         Some(token)
     }
     fn read_multiline_string(&mut self) -> String {

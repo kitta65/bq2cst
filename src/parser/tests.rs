@@ -120,7 +120,7 @@ fn test_parse_exprs() {
               extract(day from ts),extract(day from ts at time zone 'UTC'),extract(week(sunday) from ts),
               st_geogfromtext(p, oriented => true),
             ;
-            select aaa.bbb.ccc,x[offset(1)],-+1,~1,1*2/3,'a'||'b',1+2-3,1<<3>>2;
+            select aaa.bbb.ccc,x[offset(1)],-+1,~1,1*2/3,'a'||'b',1+2-3,1<<3>>2,;
             create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
