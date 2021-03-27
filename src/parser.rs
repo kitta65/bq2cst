@@ -649,6 +649,11 @@ impl Parser {
                 let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
             }
+            //"+" => {
+            //    self.next_token(); // - -> expr
+            //    let right = self.parse_expr(102, until, false);
+            //    left.push_node("right", right);
+            //}
             "[" => {
                 self.next_token(); // [ -> exprs
                 left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
@@ -1080,7 +1085,7 @@ impl Parser {
             let mut nulls = self.construct_node();
             self.next_token(); // nulls -> first, last
             nulls.push_node("first", self.construct_node());
-            left.push_node("nulls", nulls);
+            left.push_node("null_order", nulls);
         }
         left
     }
@@ -1252,7 +1257,6 @@ impl Parser {
         res
     }
     fn get_precedence(&self, offset: usize) -> usize {
-        // precedenc
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
         // 001... date, timestamp, r'', b'' (literal)
         // 005... ( (call expression)
@@ -1264,7 +1268,7 @@ impl Parser {
         // 106... & (bit operator)
         // 107... ^ (bit operator)
         // 108... | (bit operator)
-        // 109... =, <, >, (not)like, between, (not)in
+        // 109... =, <, >, like, between, in
         // 110... not
         // 111... and
         // 112... or
@@ -1279,25 +1283,29 @@ impl Parser {
             "||" => 103,
             "-" => 104,
             "+" => 104,
+            ">>" => 105,
+            "<<" => 105,
+            "&" => 106,
+            "^" => 107,
+            "|" => 108,
+            "=" => 109,
             ">" => 109,
-            ">=" => 109,
             "<" => 109,
+            ">=" => 109,
             "<=" => 109,
+            "!=" => 109,
+            "<>" => 109,
             "IN" => 109,
             "LIKE" => 109,
             "BETWEEN" => 109,
-            "=" => 109,
+            "IS" => 109,
             "NOT" => {
                 match self.get_token(offset + 1).literal.to_uppercase().as_str() {
-                    "IN" => {
-                        return 109;
-                    }
-                    "LIKE" => {
-                        return 109;
-                    }
-                    _ => (),
+                    "IN" => 109,
+                    "LIKE" => 109,
+                    "BETWEEN" => 109,
+                    _ =>  110,
                 }
-                110
             }
             "AND" => 111,
             "OR" => 112,
