@@ -649,11 +649,11 @@ impl Parser {
                 let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
             }
-            //"+" => {
-            //    self.next_token(); // - -> expr
-            //    let right = self.parse_expr(102, until, false);
-            //    left.push_node("right", right);
-            //}
+            "+" => {
+                self.next_token(); // - -> expr
+                let right = self.parse_expr(102, until, false);
+                left.push_node("right", right);
+            }
             "[" => {
                 self.next_token(); // [ -> exprs
                 left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
