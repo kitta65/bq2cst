@@ -132,6 +132,7 @@ fn test_parse_exprs() {
             create function abc() returns int64 not deterministic language js as '''return 1''';
             insert into table values(1,2);insert table values(1),(2);insert table (col) select 1;
             delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
+            truncate table t;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2277,6 +2278,15 @@ where:
         self: exists
       rparen:
         self: )",
+        // truncate
+        "\
+self: truncate
+semicolon:
+  self: ;
+table:
+  self: table
+target_name:
+  self: t",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

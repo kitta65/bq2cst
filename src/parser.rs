@@ -122,6 +122,7 @@ impl Parser {
             "SELECT" => self.parse_select_statement(true),
             "INSERT" => self.parse_insert_statement(),
             "DELETE" => self.parse_delete_statement(),
+            "TRUNCATE" => self.parse_truncate_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -142,6 +143,18 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_truncate_statement(&mut self) -> cst::Node {
+        let mut truncate = self.construct_node();
+        self.next_token(); // truncate -> table
+        truncate.push_node("table", self.construct_node());
+        self.next_token(); // table -> ident
+        truncate.push_node("target_name", self.parse_identifier());
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            truncate.push_node("semicolon", self.construct_node());
+        }
+        truncate
     }
     fn parse_delete_statement(&mut self) -> cst::Node {
         let mut delete = self.construct_node();
