@@ -130,6 +130,7 @@ fn test_parse_exprs() {
             create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
             create function abc() returns int64 language js options() as '''return 1''';
             create function abc() returns int64 not deterministic language js as '''return 1''';
+            insert into table values(1,2);insert table values(1),(2);insert table (col) select 1;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -1560,8 +1561,8 @@ from:
         self: )
 semicolon:
   self: ;",
-  // irregular functions
-  "\
+        // irregular functions
+        "\
 self: select
 exprs:
 - self: (
@@ -1694,8 +1695,8 @@ exprs:
     self: )
 semicolon:
   self: ;",
-  //
-  "\
+        //
+        "\
 self: select
 exprs:
 - self: .
@@ -2159,6 +2160,63 @@ semicolon:
   self: ;
 what:
   self: function",
+        // insert
+        "\
+self: insert
+input:
+  self: values
+  exprs:
+  - self: (
+    exprs:
+    - self: 1
+      comma:
+        self: ,
+    - self: 2
+    rparen:
+      self: )
+into:
+  self: into
+semicolon:
+  self: ;
+target_name:
+  self: table",
+        "\
+self: insert
+input:
+  self: values
+  exprs:
+  - self: (
+    comma:
+      self: ,
+    exprs:
+    - self: 1
+    rparen:
+      self: )
+  - self: (
+    exprs:
+    - self: 2
+    rparen:
+      self: )
+semicolon:
+  self: ;
+target_name:
+  self: table",
+        "\
+self: insert
+columns:
+  self: (
+  exprs:
+  - self: col
+  rparen:
+    self: )
+input:
+  self: select
+  exprs:
+  - self: 1
+semicolon:
+  self: ;
+target_name:
+  self: table",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

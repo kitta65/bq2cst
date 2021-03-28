@@ -120,6 +120,7 @@ impl Parser {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
+            "INSERT" => self.parse_insert_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -140,6 +141,52 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_insert_statement(&mut self) -> cst::Node {
+        let mut insert = self.construct_node();
+        if self.peek_token_is("into") {
+            self.next_token(); // insert -> into
+            insert.push_node("into", self.construct_node());
+        }
+        self.next_token(); // insert -> identifier
+        insert.push_node("target_name", self.parse_identifier());
+        if self.peek_token_is("(") {
+            self.next_token(); // identifier -> (
+            let mut group = self.construct_node();
+            self.next_token(); // ( -> columns
+            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            self.next_token(); // columns -> )
+            group.push_node("rparen", self.construct_node());
+            insert.push_node("columns", group);
+        }
+        if self.peek_token_is("values") {
+            self.next_token(); // ) -> values
+            let mut values = self.construct_node();
+            let mut lparens = Vec::new();
+            while self.peek_token_is("(") {
+                self.next_token(); // vlaues -> (, ',' -> (
+                let mut lparen = self.construct_node();
+                self.next_token(); // -> expr
+                lparen.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+                self.next_token(); // expr -> )
+                lparen.push_node("rparen", self.construct_node());
+                if self.peek_token_is(",") {
+                    self.next_token(); // ) -> ,
+                    lparen.push_node("comma", self.construct_node());
+                }
+                lparens.push(lparen);
+            }
+            values.push_node_vec("exprs", lparens);
+            insert.push_node("input", values);
+        } else {
+            self.next_token(); // ) -> select
+            insert.push_node("input", self.parse_select_statement(false));
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            insert.push_node("semicolon", self.construct_node());
+        }
+        insert
     }
     fn parse_create_function_statement(&mut self) -> cst::Node {
         let mut node = self.construct_node();
@@ -904,7 +951,10 @@ impl Parser {
                                 let mut from = self.construct_node();
                                 self.next_token(); // from -> timestamp_expr
                                 from.push_node("extract_datepart", datepart);
-                                from.push_node("extract_from", self.parse_expr(999, &vec!["at", ")"], false));
+                                from.push_node(
+                                    "extract_from",
+                                    self.parse_expr(999, &vec!["at", ")"], false),
+                                );
                                 if self.peek_token_is("at") {
                                     self.next_token(); // timestamp_expr -> at
                                     let mut at = self.construct_node();
@@ -1366,14 +1416,12 @@ impl Parser {
             "BETWEEN" => 109,
             "IN" => 109,
             "IS" => 109,
-            "NOT" => {
-                match self.get_token(offset + 1).literal.to_uppercase().as_str() {
-                    "IN" => 109,
-                    "LIKE" => 109,
-                    "BETWEEN" => 109,
-                    _ =>  110,
-                }
-            }
+            "NOT" => match self.get_token(offset + 1).literal.to_uppercase().as_str() {
+                "IN" => 109,
+                "LIKE" => 109,
+                "BETWEEN" => 109,
+                _ => 110,
+            },
             "AND" => 111,
             "OR" => 112,
             "=>" => 200,
