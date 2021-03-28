@@ -205,6 +205,11 @@ impl Parser {
             when.push_node("stmt", stmt);
             whens.push(when);
         }
+        merge.push_node_vec("whens", whens);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            merge.push_node("semicolon", self.construct_node());
+        }
         merge
     }
     fn parse_update_statement(&mut self) -> cst::Node {
