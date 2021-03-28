@@ -140,12 +140,23 @@ impl Parser {
             }
             "(" => self.parse_select_statement(true),
             "DECLARE" => self.parse_declare_statement(),
+            "SET" => self.parse_set_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_set_statement(&mut self) -> cst::Node {
+        let mut set = self.construct_node();
+        self.next_token(); // set -> expr
+        set.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        if self.peek_token_is(";") {
+            self.next_token();
+            set.push_node("semicolon", self.construct_node());
+        }
+        set
     }
     fn parse_declare_statement(&mut self) -> cst::Node {
         let mut declare = self.construct_node();
