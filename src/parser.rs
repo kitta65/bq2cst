@@ -141,12 +141,51 @@ impl Parser {
             "(" => self.parse_select_statement(true),
             "DECLARE" => self.parse_declare_statement(),
             "SET" => self.parse_set_statement(),
+            "EXECUTE" => self.parse_execute_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_execute_statement(&mut self) -> cst::Node {
+        let mut execute = self.construct_node();
+        self.next_token(); // execute -> immediate
+        execute.push_node("immediate", self.construct_node());
+        self.next_token(); // immediate -> sql_expr
+        execute.push_node("sql_expr", self.parse_expr(999, &vec!["into", "using", ";"], false));
+        if self.peek_token_is("into") {
+            self.next_token(); // sql_expr -> into
+            let mut into = self.construct_node();
+            let mut idents = Vec::new();
+            loop {
+                self.next_token(); // -> ident
+                if self.peek_token_is(",") {
+                    let mut ident = self.parse_identifier();
+                    self.next_token(); // ident -> ,
+                    ident.push_node("comma", self.construct_node());
+                    idents.push(ident);
+                } else {
+                    idents.push(self.parse_identifier());
+                    break;
+                }
+            }
+            into.push_node_vec("idents", idents);
+            execute.push_node("into", into);
+        }
+        if self.peek_token_is("using") {
+            self.next_token(); // -> using
+            let mut using = self.construct_node();
+            self.next_token(); // using -> exprs
+            using.push_node_vec("exprs", self.parse_exprs(&vec![";"], true));
+            execute.push_node("using", using);
+        }
+        if self.peek_token_is(";") {
+            self.next_token();
+            execute.push_node("semicolon", self.construct_node());
+        }
+        execute
     }
     fn parse_set_statement(&mut self) -> cst::Node {
         let mut set = self.construct_node();

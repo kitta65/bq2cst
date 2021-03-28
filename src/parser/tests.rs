@@ -144,6 +144,8 @@ fn test_parse_exprs() {
             ;
             declare x int64;declare x,y default 1;
             set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
+            execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
+
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2697,6 +2699,57 @@ expr:
       self: )
 semicolon:
   self: ;",
+  // execute
+  "\
+self: execute
+immediate:
+  self: immediate
+semicolon:
+  self: ;
+sql_expr:
+  self: 'select 1'",
+  "\
+self: execute
+immediate:
+  self: immediate
+into:
+  self: into
+  idents:
+  - self: x
+    comma:
+      self: ,
+  - self: y
+semicolon:
+  self: ;
+sql_expr:
+  self: 'select ?,?'
+using:
+  self: using
+  exprs:
+  - self: 1
+    comma:
+      self: ,
+  - self: 2",
+  "\
+self: execute
+immediate:
+  self: immediate
+into:
+  self: into
+  idents:
+  - self: x
+semicolon:
+  self: ;
+sql_expr:
+  self: 'select @x'
+using:
+  self: using
+  exprs:
+  - self: 1
+    as:
+      self: as
+      alias:
+        self: x",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
