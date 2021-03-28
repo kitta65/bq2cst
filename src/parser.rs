@@ -221,7 +221,7 @@ impl Parser {
         self.next_token(); // -> set
         let mut set = self.construct_node();
         self.next_token(); // set -> exprs
-        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where", "when"], false));
+        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where", "when", ";"], false));
         if self.peek_token_is("from") {
             self.next_token(); // exprs -> from
             let mut from = self.construct_node();

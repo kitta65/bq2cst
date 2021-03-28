@@ -2489,6 +2489,8 @@ on:
         self: s
       right:
         self: id
+semicolon:
+  self: ;
 target_name:
   self: .
   as:
@@ -2604,7 +2606,6 @@ whens:
           self: value
         right:
           self: 999
-      - self: ;
   then:
     self: then",
     ];
