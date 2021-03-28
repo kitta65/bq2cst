@@ -124,6 +124,7 @@ impl Parser {
             "DELETE" => self.parse_delete_statement(),
             "TRUNCATE" => self.parse_truncate_statement(),
             "UPDATE" => self.parse_update_statement(),
+            "MERGE" => self.parse_merge_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -145,6 +146,10 @@ impl Parser {
         };
         node
     }
+    fn parse_merge_statement(&mut self) -> cst::Node {
+        let mut merge = self.construct_node();
+        merge
+    }
     fn parse_update_statement(&mut self) -> cst::Node {
         let mut update = self.construct_node();
         self.next_token(); // update -> target_name
@@ -161,11 +166,7 @@ impl Parser {
             self.next_token(); // exprs -> from
             let mut from = self.construct_node();
             self.next_token(); // from -> target_name
-            let mut table = self.parse_identifier();
-            if !self.peek_token_is("where") {
-                table = self.parse_alias(table);
-            }
-            from.push_node("expr", table);
+            from.push_node("expr", self.parse_table(true));
             update.push_node("from", from);
         }
         update.push_node("set", set);

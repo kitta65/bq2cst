@@ -134,6 +134,7 @@ fn test_parse_exprs() {
             delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
             truncate table t;
             update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
+            update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2366,6 +2367,66 @@ where:
       self: .
       left:
         self: two
+      right:
+        self: id",
+        "\
+self: update
+from:
+  self: from
+  expr:
+    self: join
+    join_type:
+      self: inner
+    left:
+      self: t2
+    on:
+      self: on
+      expr:
+        self: =
+        left:
+          self: .
+          left:
+            self: t2
+          right:
+            self: id
+        right:
+          self: .
+          left:
+            self: t3
+          right:
+            self: id
+    right:
+      self: t3
+semicolon:
+  self: ;
+set:
+  self: set
+  exprs:
+  - self: =
+    left:
+      self: .
+      left:
+        self: t1
+      right:
+        self: flg
+    right:
+      self: true
+target_name:
+  self: t1
+where:
+  self: where
+  expr:
+    self: =
+    left:
+      self: .
+      left:
+        self: t1
+      right:
+        self: id
+    right:
+      self: .
+      left:
+        self: t3
       right:
         self: id",
     ];
