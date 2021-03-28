@@ -121,6 +121,7 @@ impl Parser {
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
             "INSERT" => self.parse_insert_statement(),
+            "DELETE" => self.parse_delete_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -141,6 +142,29 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_delete_statement(&mut self) -> cst::Node {
+        let mut delete = self.construct_node();
+        if self.peek_token_is("from") {
+            self.next_token(); // delete -> from
+            delete.push_node("from", self.construct_node());
+        }
+        self.next_token(); // -> target_name
+        let mut target_name = self.parse_identifier();
+        if !self.peek_token_is("where") {
+            target_name = self.parse_alias(target_name);
+        }
+        delete.push_node("target_name", target_name);
+        self.next_token(); // target_name -> where, alias -> where
+        let mut where_ = self.construct_node();
+        self.next_token(); // where -> expr
+        where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        delete.push_node("where", where_);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            delete.push_node("semicolon", self.construct_node());
+        }
+        delete
     }
     fn parse_insert_statement(&mut self) -> cst::Node {
         let mut insert = self.construct_node();

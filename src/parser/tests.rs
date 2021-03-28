@@ -131,6 +131,7 @@ fn test_parse_exprs() {
             create function abc() returns int64 language js options() as '''return 1''';
             create function abc() returns int64 not deterministic language js as '''return 1''';
             insert into table values(1,2);insert table values(1),(2);insert table (col) select 1;
+            delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2217,6 +2218,65 @@ semicolon:
   self: ;
 target_name:
   self: table",
+  // delete
+  "\
+self: delete
+semicolon:
+  self: ;
+target_name:
+  self: table
+where:
+  self: where
+  expr:
+    self: true",
+  "\
+self: delete
+semicolon:
+  self: ;
+target_name:
+  self: table
+  as:
+    self: None
+    alias:
+      self: t
+where:
+  self: where
+  expr:
+    self: true",
+  "\
+self: delete
+from:
+  self: from
+semicolon:
+  self: ;
+target_name:
+  self: table
+  as:
+    self: as
+    alias:
+      self: t
+where:
+  self: where
+  expr:
+    self: not
+    right:
+      self: (
+      args:
+      - self: select
+        exprs:
+        - self: *
+        from:
+          self: from
+          expr:
+            self: t
+        where:
+          self: where
+          expr:
+            self: true
+      func:
+        self: exists
+      rparen:
+        self: )",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
