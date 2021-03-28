@@ -148,16 +148,71 @@ impl Parser {
     }
     fn parse_merge_statement(&mut self) -> cst::Node {
         let mut merge = self.construct_node();
+        if self.peek_token_is("into") {
+            self.next_token(); // merge -> into
+            merge.push_node("into", self.construct_node());
+        }
+        self.next_token(); // -> target_table
+        merge.push_node("target_name", self.parse_table(true));
+        self.next_token(); // -> using
+        let mut using = self.construct_node();
+        self.next_token(); // using -> expr
+        using.push_node("expr", self.parse_expr(999, &vec!["on"], true));
+        merge.push_node("using", using);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            merge.push_node("semicolon", self.construct_node());
+        }
+        self.next_token(); // -> on
+        let mut on = self.construct_node();
+        self.next_token(); // on -> expr
+        on.push_node("expr", self.parse_expr(999, &vec!["when"], false));
+        merge.push_node("on", on);
+        let mut whens = Vec::new();
+        while self.peek_token_is("when") {
+            self.next_token(); // -> when
+            let mut when = self.construct_node();
+            if self.peek_token_is("not") {
+                self.next_token(); // when -> not
+                when.push_node("not", self.construct_node());
+            }
+            self.next_token(); // -> matched
+            when.push_node("matched", self.construct_node());
+            if self.peek_token_is("by") {
+                self.next_token(); // -> by
+                let by = self.construct_node();
+                self.next_token(); // -> target, source
+                let target = self.construct_node();
+                when.push_node_vec("by_target", vec![by, target]);
+            }
+            if self.peek_token_is("and") {
+                self.next_token(); // -> and
+                let mut and = self.construct_node();
+                self.next_token(); // -> expr
+                let cond = self.parse_expr(999, &vec!["then"], false);
+                and.push_node("expr", cond);
+                when.push_node("and", and);
+            }
+            self.next_token(); // -> then
+            when.push_node("then", self.construct_node());
+            self.next_token(); // then -> stmt
+            let stmt = match self.get_token(0).literal.to_uppercase().as_str() {
+                "DELETE" => self.construct_node(),
+                "MERGE" => self.parse_merge_statement(),
+                "INSERT" => self.parse_insert_statement(),
+                _ => panic!(),
+            };
+            when.push_node("stmt", stmt);
+            whens.push(when);
+        }
         merge
     }
     fn parse_update_statement(&mut self) -> cst::Node {
         let mut update = self.construct_node();
-        self.next_token(); // update -> target_name
-        let mut target_name = self.parse_identifier();
         if !self.peek_token_is("set") {
-            target_name = self.parse_alias(target_name);
+            self.next_token(); // -> target_name
+            update.push_node("target_name", self.parse_table(true));
         }
-        update.push_node("target_name", target_name);
         self.next_token(); // -> set
         let mut set = self.construct_node();
         self.next_token(); // set -> exprs
@@ -170,11 +225,13 @@ impl Parser {
             update.push_node("from", from);
         }
         update.push_node("set", set);
-        self.next_token(); // exprs -> where
-        let mut where_ = self.construct_node();
-        self.next_token(); // where -> expr
-        where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        update.push_node("where", where_);
+        if self.peek_token_is("where") {
+            self.next_token(); // exprs -> where
+            let mut where_ = self.construct_node();
+            self.next_token(); // where -> expr
+            where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            update.push_node("where", where_);
+        }
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             update.push_node("semicolon", self.construct_node());
@@ -222,8 +279,10 @@ impl Parser {
             self.next_token(); // insert -> into
             insert.push_node("into", self.construct_node());
         }
-        self.next_token(); // insert -> identifier
-        insert.push_node("target_name", self.parse_identifier());
+        if !self.peek_token_in(&vec!["(", "value", "row"]) {
+            self.next_token(); // insert -> identifier
+            insert.push_node("target_name", self.parse_identifier());
+        }
         if self.peek_token_is("(") {
             self.next_token(); // identifier -> (
             let mut group = self.construct_node();
@@ -252,6 +311,9 @@ impl Parser {
             }
             values.push_node_vec("exprs", lparens);
             insert.push_node("input", values);
+        } else if self.peek_token_is("row"){
+            self.next_token(); // -> row
+            insert.push_node("input", self.construct_node());
         } else {
             self.next_token(); // ) -> select
             insert.push_node("input", self.parse_select_statement(false));

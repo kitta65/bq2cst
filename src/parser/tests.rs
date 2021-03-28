@@ -135,6 +135,8 @@ fn test_parse_exprs() {
             truncate table t;
             update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
             update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
+            --merge dataset.t t using dataset.s s on t.id=s.id;
+            select 1;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2429,6 +2431,9 @@ where:
         self: t3
       right:
         self: id",
+        // merge
+        "\
+self: merge",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
