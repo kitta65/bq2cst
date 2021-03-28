@@ -137,11 +137,12 @@ fn test_parse_exprs() {
             update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
             merge t using s on t.id=s.id when matched then delete;
             merge dataset.t t using dataset.s s on t.id=s.id
-              when not matched then insert row
-              when not matched by target then insert (id,value) values (1,2)
-              when not matched by source then update set id=999
-              when not matched by source and true then update set id=999,value=999
+            when not matched then insert row
+            when not matched by target then insert (id,value) values (1,2)
+            when not matched by source then update set id=999
+            when not matched by source and true then update set id=999,value=999
             ;
+            declare x int64;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2608,6 +2609,15 @@ whens:
           self: 999
   then:
     self: then",
+    // declare
+    "\
+self: declare
+idents:
+- self: x
+semicolon:
+  self: ;
+variable_type:
+  self: int64",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

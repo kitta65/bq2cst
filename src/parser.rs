@@ -139,12 +139,37 @@ impl Parser {
                 }
             }
             "(" => self.parse_select_statement(true),
+            "DECLARE" => self.parse_declare_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_declare_statement(&mut self) -> cst::Node {
+        let mut declare = self.construct_node();
+        let mut idents = Vec::new();
+        loop {
+            self.next_token(); // -> ident
+            if self.peek_token_is(",") {
+                let mut ident = self.parse_identifier();
+                self.next_token(); // ident -> comma
+                ident.push_node("comma", self.construct_node());
+                idents.push(ident);
+            } else {
+                idents.push(self.parse_identifier());
+                break;
+            }
+        }
+        declare.push_node_vec("idents", idents);
+        self.next_token(); // ident -> variable_type
+        declare.push_node("variable_type", self.parse_type());
+        if self.peek_token_is(";") {
+            self.next_token();
+            declare.push_node("semicolon", self.construct_node());
+        }
+        declare
     }
     fn parse_merge_statement(&mut self, root:bool) -> cst::Node {
         let mut merge = self.construct_node();
