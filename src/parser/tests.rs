@@ -136,6 +136,12 @@ fn test_parse_exprs() {
             update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
             update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
             merge t using s on t.id=s.id when matched then delete;
+            merge dataset.t t using dataset.s s on t.id=s.id
+              when not matched then insert row
+              when not matched by target then insert (id,value) values (1,2)
+              when not matched by source then update set id=999
+              when not matched by source and true then update set id=999,value=999
+            ;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2463,6 +2469,142 @@ whens:
     self: matched
   stmt:
     self: delete
+  then:
+    self: then",
+    "\
+self: merge
+on:
+  self: on
+  expr:
+    self: =
+    left:
+      self: .
+      left:
+        self: t
+      right:
+        self: id
+    right:
+      self: .
+      left:
+        self: s
+      right:
+        self: id
+target_name:
+  self: .
+  as:
+    self: None
+    alias:
+      self: t
+  left:
+    self: dataset
+  right:
+    self: t
+using:
+  self: using
+  expr:
+    self: .
+    as:
+      self: None
+      alias:
+        self: s
+    left:
+      self: dataset
+    right:
+      self: s
+whens:
+- self: when
+  matched:
+    self: matched
+  not:
+    self: not
+  stmt:
+    self: insert
+    input:
+      self: row
+  then:
+    self: then
+- self: when
+  by_target:
+  - self: by
+  - self: target
+  matched:
+    self: matched
+  not:
+    self: not
+  stmt:
+    self: insert
+    columns:
+      self: (
+      exprs:
+      - self: id
+        comma:
+          self: ,
+      - self: value
+      rparen:
+        self: )
+    input:
+      self: values
+      exprs:
+      - self: (
+        exprs:
+        - self: 1
+          comma:
+            self: ,
+        - self: 2
+        rparen:
+          self: )
+  then:
+    self: then
+- self: when
+  by_target:
+  - self: by
+  - self: source
+  matched:
+    self: matched
+  not:
+    self: not
+  stmt:
+    self: update
+    set:
+      self: set
+      exprs:
+      - self: =
+        left:
+          self: id
+        right:
+          self: 999
+  then:
+    self: then
+- self: when
+  and:
+    self: and
+    expr:
+      self: true
+  by_target:
+  - self: by
+  - self: source
+  matched:
+    self: matched
+  not:
+    self: not
+  stmt:
+    self: update
+    set:
+      self: set
+      exprs:
+      - self: =
+        comma:
+          self: ,
+        left:
+          self: id
+        right:
+          self: 999
+      - self: =
+        left:
+          self: value
+        right:
+          self: 999
+      - self: ;
   then:
     self: then",
     ];

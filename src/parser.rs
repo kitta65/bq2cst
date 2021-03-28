@@ -120,11 +120,11 @@ impl Parser {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
-            "INSERT" => self.parse_insert_statement(),
+            "INSERT" => self.parse_insert_statement(true),
             "DELETE" => self.parse_delete_statement(),
             "TRUNCATE" => self.parse_truncate_statement(),
-            "UPDATE" => self.parse_update_statement(),
-            "MERGE" => self.parse_merge_statement(),
+            "UPDATE" => self.parse_update_statement(true),
+            "MERGE" => self.parse_merge_statement(true),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -146,7 +146,7 @@ impl Parser {
         };
         node
     }
-    fn parse_merge_statement(&mut self) -> cst::Node {
+    fn parse_merge_statement(&mut self, root:bool) -> cst::Node {
         let mut merge = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // merge -> into
@@ -198,21 +198,21 @@ impl Parser {
             self.next_token(); // then -> stmt
             let stmt = match self.get_token(0).literal.to_uppercase().as_str() {
                 "DELETE" => self.construct_node(),
-                "MERGE" => self.parse_merge_statement(),
-                "INSERT" => self.parse_insert_statement(),
+                "UPDATE" => self.parse_update_statement(false),
+                "INSERT" => self.parse_insert_statement(false),
                 _ => panic!(),
             };
             when.push_node("stmt", stmt);
             whens.push(when);
         }
         merge.push_node_vec("whens", whens);
-        if self.peek_token_is(";") {
+        if self.peek_token_is(";") && root{
             self.next_token(); // -> ;
             merge.push_node("semicolon", self.construct_node());
         }
         merge
     }
-    fn parse_update_statement(&mut self) -> cst::Node {
+    fn parse_update_statement(&mut self, root:bool) -> cst::Node {
         let mut update = self.construct_node();
         if !self.peek_token_is("set") {
             self.next_token(); // -> target_name
@@ -221,7 +221,7 @@ impl Parser {
         self.next_token(); // -> set
         let mut set = self.construct_node();
         self.next_token(); // set -> exprs
-        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where"], false));
+        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where", "when"], false));
         if self.peek_token_is("from") {
             self.next_token(); // exprs -> from
             let mut from = self.construct_node();
@@ -237,7 +237,7 @@ impl Parser {
             where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
             update.push_node("where", where_);
         }
-        if self.peek_token_is(";") {
+        if self.peek_token_is(";") && root{
             self.next_token(); // -> ;
             update.push_node("semicolon", self.construct_node());
         }
@@ -278,7 +278,7 @@ impl Parser {
         }
         delete
     }
-    fn parse_insert_statement(&mut self) -> cst::Node {
+    fn parse_insert_statement(&mut self, root:bool) -> cst::Node {
         let mut insert = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // insert -> into
@@ -323,7 +323,7 @@ impl Parser {
             self.next_token(); // ) -> select
             insert.push_node("input", self.parse_select_statement(false));
         }
-        if self.peek_token_is(";") {
+        if self.peek_token_is(";") && root {
             self.next_token(); // -> ;
             insert.push_node("semicolon", self.construct_node());
         }
