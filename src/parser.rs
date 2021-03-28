@@ -123,6 +123,7 @@ impl Parser {
             "INSERT" => self.parse_insert_statement(),
             "DELETE" => self.parse_delete_statement(),
             "TRUNCATE" => self.parse_truncate_statement(),
+            "UPDATE" => self.parse_update_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -143,6 +144,41 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_update_statement(&mut self) -> cst::Node {
+        let mut update = self.construct_node();
+        self.next_token(); // update -> target_name
+        let mut target_name = self.parse_identifier();
+        if !self.peek_token_is("set") {
+            target_name = self.parse_alias(target_name);
+        }
+        update.push_node("target_name", target_name);
+        self.next_token(); // -> set
+        let mut set = self.construct_node();
+        self.next_token(); // set -> exprs
+        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where"], false));
+        if self.peek_token_is("from") {
+            self.next_token(); // exprs -> from
+            let mut from = self.construct_node();
+            self.next_token(); // from -> target_name
+            let mut table = self.parse_identifier();
+            if !self.peek_token_is("where") {
+                table = self.parse_alias(table);
+            }
+            from.push_node("expr", table);
+            update.push_node("from", from);
+        }
+        update.push_node("set", set);
+        self.next_token(); // exprs -> where
+        let mut where_ = self.construct_node();
+        self.next_token(); // where -> expr
+        where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        update.push_node("where", where_);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            update.push_node("semicolon", self.construct_node());
+        }
+        update
     }
     fn parse_truncate_statement(&mut self) -> cst::Node {
         let mut truncate = self.construct_node();

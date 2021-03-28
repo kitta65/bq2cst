@@ -133,6 +133,7 @@ fn test_parse_exprs() {
             insert into table values(1,2);insert table values(1),(2);insert table (col) select 1;
             delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
             truncate table t;
+            update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2287,6 +2288,86 @@ table:
   self: table
 target_name:
   self: t",
+  // update
+        "\
+self: update
+semicolon:
+  self: ;
+set:
+  self: set
+  exprs:
+  - self: =
+    comma:
+      self: ,
+    left:
+      self: col1
+    right:
+      self: 1
+  - self: =
+    left:
+      self: col2
+    right:
+      self: 2
+target_name:
+  self: table
+  as:
+    self: None
+    alias:
+      self: t
+where:
+  self: where
+  expr:
+    self: true",
+        "\
+self: update
+from:
+  self: from
+  expr:
+    self: table2
+    as:
+      self: as
+      alias:
+        self: two
+semicolon:
+  self: ;
+set:
+  self: set
+  exprs:
+  - self: =
+    left:
+      self: .
+      left:
+        self: one
+      right:
+        self: value
+    right:
+      self: .
+      left:
+        self: two
+      right:
+        self: value
+target_name:
+  self: table1
+  as:
+    self: as
+    alias:
+      self: one
+where:
+  self: where
+  expr:
+    self: =
+    left:
+      self: .
+      left:
+        self: one
+      right:
+        self: id
+    right:
+      self: .
+      left:
+        self: two
+      right:
+        self: id",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
