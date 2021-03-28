@@ -142,7 +142,7 @@ fn test_parse_exprs() {
             when not matched by source then update set id=999
             when not matched by source and true then update set id=999,value=999
             ;
-            declare x int64;
+            declare x int64;declare x,y default 1;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2618,6 +2618,19 @@ semicolon:
   self: ;
 variable_type:
   self: int64",
+    "\
+self: declare
+default:
+  self: default
+  expr:
+    self: 1
+idents:
+- self: x
+  comma:
+    self: ,
+- self: y
+semicolon:
+  self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

@@ -163,8 +163,17 @@ impl Parser {
             }
         }
         declare.push_node_vec("idents", idents);
-        self.next_token(); // ident -> variable_type
-        declare.push_node("variable_type", self.parse_type());
+        if !self.peek_token_is("default") {
+            self.next_token(); // ident -> variable_type
+            declare.push_node("variable_type", self.parse_type());
+        }
+        if self.peek_token_is("default") {
+            self.next_token(); // -> default
+            let mut default = self.construct_node();
+            self.next_token(); // default -> expr
+            default.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            declare.push_node("default", default);
+        }
         if self.peek_token_is(";") {
             self.next_token();
             declare.push_node("semicolon", self.construct_node());
