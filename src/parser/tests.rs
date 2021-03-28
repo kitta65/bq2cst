@@ -143,7 +143,7 @@ fn test_parse_exprs() {
             when not matched by source and true then update set id=999,value=999
             ;
             declare x int64;declare x,y default 1;
-            set x=5;set (x,y)=(1,2);
+            set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2663,6 +2663,36 @@ expr:
       comma:
         self: ,
     - self: 2
+    rparen:
+      self: )
+semicolon:
+  self: ;",
+  "\
+self: set
+expr:
+  self: =
+  left:
+    self: (
+    exprs:
+    - self: x
+      comma:
+        self: ,
+    - self: y
+    rparen:
+      self: )
+  right:
+    self: (
+    expr:
+      self: select
+      as:
+        self: as
+        struct_value:
+          self: struct
+      exprs:
+      - self: 1
+        comma:
+          self: ,
+      - self: 2
     rparen:
       self: )
 semicolon:
