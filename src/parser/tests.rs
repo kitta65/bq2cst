@@ -146,6 +146,7 @@ fn test_parse_exprs() {
             set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
             execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
             begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
+            if true then end;
 
 "
             .to_string();
@@ -2803,6 +2804,17 @@ exception_when_error_then:
 - self: then
 semicolon:
   self: ;",
+        // if
+        "\
+self: if
+condition:
+  self: true
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

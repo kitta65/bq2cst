@@ -143,12 +143,69 @@ impl Parser {
             "DECLARE" => self.parse_declare_statement(),
             "SET" => self.parse_set_statement(),
             "EXECUTE" => self.parse_execute_statement(),
+            "IF" => self.parse_if_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_if_statement(&mut self) -> cst::Node {
+        let mut if_ = self.construct_node();
+        self.next_token(); // -> cond
+        if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
+
+        self.next_token(); // -> then
+        let mut then = self.construct_node();
+        let mut then_stmts = Vec::new();
+        while !self.peek_token_in(&vec!["elif", "else", "end"]) {
+            self.next_token(); // -> stmt
+            then_stmts.push(self.parse_statement());
+        }
+        if 0 < then_stmts.len() {
+            then.push_node_vec("stmts", then_stmts);
+        }
+        if_.push_node("then", then);
+
+        let mut elifs = Vec::new();
+        while self.peek_token_is("elif") {
+            self.next_token(); // -> elif
+            let mut elif = self.construct_node();
+            let mut elif_stmts = Vec::new();
+            while !self.peek_token_in(&vec!["elif", "else", "end"]) {
+                self.next_token();
+                elif_stmts.push(self.parse_statement());
+            }
+            if 0 < elif_stmts.len() {
+                elif.push_node_vec("stmts", elif_stmts);
+            }
+            elifs.push(elif);
+        }
+        if 0 < elifs.len() {
+            if_.push_node_vec("elifs", elifs);
+        }
+
+        if self.peek_token_is("else") {
+            self.next_token(); // -> else
+            let mut else_ = self.construct_node();
+            let mut else_stmts = Vec::new();
+            while !self.peek_token_is("end") {
+                self.next_token(); // -> stmt
+                else_stmts.push(self.parse_statement());
+            }
+            if 0< else_stmts.len() {
+                else_.push_node_vec("stmts", else_stmts);
+            }
+            if_.push_node("else", else_);
+        }
+        self.next_token(); // -> end
+        if_.push_node("end", self.construct_node());
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            if_.push_node("semicolon", self.construct_node());
+        }
+        if_
     }
     fn parse_begin_statement(&mut self) -> cst::Node {
         let mut begin = self.construct_node();
