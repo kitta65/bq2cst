@@ -152,6 +152,7 @@ fn test_parse_exprs() {
             if true then elseif true then select 1; elseif true then select 2; select 3; else end;
             if true then else select 1; end;
             if true then else select 1;select 2; end;
+            loop select 1; end loop;loop select 1;break; end loop;
 
 "
             .to_string();
@@ -2944,6 +2945,36 @@ semicolon:
   self: ;
 then:
   self: then",
+  // loop
+  "\
+self: loop
+end_loop:
+- self: end
+- self: loop
+semicolon:
+  self: ;
+stmts:
+- self: select
+  exprs:
+  - self: 1
+  semicolon:
+    self: ;",
+  "\
+self: loop
+end_loop:
+- self: end
+- self: loop
+semicolon:
+  self: ;
+stmts:
+- self: select
+  exprs:
+  - self: 1
+  semicolon:
+    self: ;
+- self: break
+  semicolon:
+    self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

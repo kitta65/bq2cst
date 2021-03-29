@@ -144,12 +144,45 @@ impl Parser {
             "SET" => self.parse_set_statement(),
             "EXECUTE" => self.parse_execute_statement(),
             "IF" => self.parse_if_statement(),
+            "LOOP" => self.parse_loop_statement(),
+            "BREAK" => self.parse_break_statement(),
+            "LEAVE" => self.parse_break_statement(),
+            "CONTINUE" => self.parse_break_statement(),
+            "ITERATE" => self.parse_if_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_loop_statement(&mut self) -> cst::Node {
+        let mut loop_ = self.construct_node();
+        let mut stmts = Vec::new();
+        while !self.peek_token_is("end") {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            loop_.push_node_vec("stmts", stmts);
+        }
+        self.next_token(); // -> end
+        let end = self.construct_node();
+        self.next_token(); // -> loop
+        loop_.push_node_vec("end_loop", vec![end, self.construct_node()]);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            loop_.push_node("semicolon", self.construct_node());
+        }
+        loop_
+    }
+    fn parse_break_statement(&mut self) -> cst::Node {
+        let mut break_ = self.construct_node();
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            break_.push_node("semicolon", self.construct_node());
+        }
+        break_
     }
     fn parse_if_statement(&mut self) -> cst::Node {
         let mut if_ = self.construct_node();
