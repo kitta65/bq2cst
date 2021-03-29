@@ -153,6 +153,8 @@ fn test_parse_exprs() {
             if true then else select 1; end;
             if true then else select 1;select 2; end;
             loop select 1; end loop;loop select 1;break; end loop;
+            while true do select 1; end while;
+            while true do iterate;leave;continue; end while;
 
 "
             .to_string();
@@ -2973,6 +2975,45 @@ stmts:
   semicolon:
     self: ;
 - self: break
+  semicolon:
+    self: ;",
+    // while
+    "\
+self: while
+condition:
+  self: true
+do:
+  self: do
+end_while:
+- self: end
+- self: while
+semicolon:
+  self: ;
+stmts:
+- self: select
+  exprs:
+  - self: 1
+  semicolon:
+    self: ;",
+    "\
+self: while
+condition:
+  self: true
+do:
+  self: do
+end_while:
+- self: end
+- self: while
+semicolon:
+  self: ;
+stmts:
+- self: iterate
+  semicolon:
+    self: ;
+- self: leave
+  semicolon:
+    self: ;
+- self: continue
   semicolon:
     self: ;",
     ];

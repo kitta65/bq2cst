@@ -145,10 +145,11 @@ impl Parser {
             "EXECUTE" => self.parse_execute_statement(),
             "IF" => self.parse_if_statement(),
             "LOOP" => self.parse_loop_statement(),
+            "WHILE" => self.parse_while_statement(),
             "BREAK" => self.parse_break_statement(),
             "LEAVE" => self.parse_break_statement(),
             "CONTINUE" => self.parse_break_statement(),
-            "ITERATE" => self.parse_if_statement(),
+            "ITERATE" => self.parse_break_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
@@ -175,6 +176,30 @@ impl Parser {
             loop_.push_node("semicolon", self.construct_node());
         }
         loop_
+    }
+    fn parse_while_statement(&mut self) -> cst::Node {
+        let mut while_ = self.construct_node();
+        self.next_token(); // -> boolean_expression
+        while_.push_node("condition", self.parse_expr(999, &vec!["do"], false));
+        self.next_token(); // -> do
+        while_.push_node("do", self.construct_node());
+        let mut stmts = Vec::new();
+        while !self.peek_token_is("end") {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            while_.push_node_vec("stmts", stmts);
+        }
+        self.next_token(); // -> end
+        let end = self.construct_node();
+        self.next_token(); // -> while
+        while_.push_node_vec("end_while", vec![end, self.construct_node()]);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            while_.push_node("semicolon", self.construct_node());
+        }
+        while_
     }
     fn parse_break_statement(&mut self) -> cst::Node {
         let mut break_ = self.construct_node();
@@ -232,7 +257,7 @@ impl Parser {
                 self.next_token(); // -> stmt
                 else_stmts.push(self.parse_statement());
             }
-            if 0< else_stmts.len() {
+            if 0 < else_stmts.len() {
                 else_.push_node_vec("stmts", else_stmts);
             }
             if_.push_node("else", else_);
