@@ -165,6 +165,7 @@ fn test_parse_exprs() {
             exception when error then
               select @@error.message;
             end;
+            call mydataset.myprocedure(1)
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3092,6 +3093,21 @@ stmts:
     - self: 1
     semicolon:
       self: ;",
+      // call
+      "\
+self: call
+expr:
+  self: (
+  args:
+  - self: 1
+  func:
+    self: .
+    left:
+      self: mydataset
+    right:
+      self: myprocedure
+  rparen:
+    self: )",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

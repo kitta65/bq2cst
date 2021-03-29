@@ -152,12 +152,23 @@ impl Parser {
             "ITERATE" => self.parse_break_statement(),
             "RETURN" => self.parse_break_statement(),
             "RAISE" => self.parse_raise_statement(),
+            "CALL" => self.parse_call_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_call_statement(&mut self) -> cst::Node {
+        let mut call = self.construct_node();
+        self.next_token(); // -> procedure_name
+        call.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            call.push_node("semicolon", self.construct_node());
+        }
+        call
     }
     fn parse_raise_statement(&mut self) -> cst::Node {
         let mut raise = self.construct_node();
@@ -1785,8 +1796,7 @@ impl Parser {
     fn get_precedence(&self, offset: usize) -> usize {
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
         // 001... date, timestamp, r'', b'' (literal)
-        // 005... ( (call expression)
-        // 101... [], .
+        // 101... [], ., ( (call expression. it's not mentioned in documentation)
         // 102... +, - , ~ (unary operator)
         // 103... *, / , ||
         // 104... +, - (binary operator)
@@ -1801,7 +1811,7 @@ impl Parser {
         // 200... => (ST_GEOGFROMGEOJSON)
         // 999... LOWEST
         match self.get_token(offset).literal.to_uppercase().as_str() {
-            "(" => 005,
+            "(" => 101,
             "." => 101,
             "[" => 101,
             "*" => 103,
