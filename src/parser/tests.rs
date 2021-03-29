@@ -155,7 +155,16 @@ fn test_parse_exprs() {
             loop select 1; end loop;loop select 1;break; end loop;
             while true do select 1; end while;
             while true do iterate;leave;continue; end while;
-
+            raise;raise using message = 'error';
+            begin
+              begin
+                select 1;
+              exception when error then
+                raise using message='error';
+              end;
+            exception when error then
+              select @@error.message;
+            end;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -2947,8 +2956,8 @@ semicolon:
   self: ;
 then:
   self: then",
-  // loop
-  "\
+        // loop
+        "\
 self: loop
 end_loop:
 - self: end
@@ -2961,7 +2970,7 @@ stmts:
   - self: 1
   semicolon:
     self: ;",
-  "\
+        "\
 self: loop
 end_loop:
 - self: end
@@ -2977,8 +2986,8 @@ stmts:
 - self: break
   semicolon:
     self: ;",
-    // while
-    "\
+        // while
+        "\
 self: while
 condition:
   self: true
@@ -2995,7 +3004,7 @@ stmts:
   - self: 1
   semicolon:
     self: ;",
-    "\
+        "\
 self: while
 condition:
   self: true
@@ -3016,6 +3025,73 @@ stmts:
 - self: continue
   semicolon:
     self: ;",
+        // raise
+        "\
+self: raise
+semicolon:
+  self: ;",
+        "\
+self: raise
+semicolon:
+  self: ;
+using:
+  self: using
+  expr:
+    self: =
+    left:
+      self: message
+    right:
+      self: 'error'",
+      "\
+self: begin
+end:
+  self: end
+exception_stmts:
+- self: select
+  exprs:
+  - self: .
+    left:
+      self: @@error
+    right:
+      self: message
+  semicolon:
+    self: ;
+exception_when_error_then:
+- self: exception
+- self: when
+- self: error
+- self: then
+semicolon:
+  self: ;
+stmts:
+- self: begin
+  end:
+    self: end
+  exception_stmts:
+  - self: raise
+    semicolon:
+      self: ;
+    using:
+      self: using
+      expr:
+        self: =
+        left:
+          self: message
+        right:
+          self: 'error'
+  exception_when_error_then:
+  - self: exception
+  - self: when
+  - self: error
+  - self: then
+  semicolon:
+    self: ;
+  stmts:
+  - self: select
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

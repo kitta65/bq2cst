@@ -150,12 +150,29 @@ impl Parser {
             "LEAVE" => self.parse_break_statement(),
             "CONTINUE" => self.parse_break_statement(),
             "ITERATE" => self.parse_break_statement(),
+            "RETURN" => self.parse_break_statement(),
+            "RAISE" => self.parse_raise_statement(),
             _ => {
                 println!("{:?}", self.get_token(0));
                 panic!();
             }
         };
         node
+    }
+    fn parse_raise_statement(&mut self) -> cst::Node {
+        let mut raise = self.construct_node();
+        if self.peek_token_is("using") {
+            self.next_token(); // -> using
+            let mut using = self.construct_node();
+            self.next_token(); // -> message
+            using.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            raise.push_node("using", using);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            raise.push_node("semicolon", self.construct_node());
+        }
+        raise
     }
     fn parse_loop_statement(&mut self) -> cst::Node {
         let mut loop_ = self.construct_node();
