@@ -125,6 +125,7 @@ impl Parser {
             "TRUNCATE" => self.parse_truncate_statement(),
             "UPDATE" => self.parse_update_statement(true),
             "MERGE" => self.parse_merge_statement(true),
+            "BEGIN" => self.parse_begin_statement(),
             "CREATE" => {
                 let mut target = self.get_token(1).literal.to_uppercase();
                 if target == "OR" {
@@ -149,12 +150,55 @@ impl Parser {
         };
         node
     }
+    fn parse_begin_statement(&mut self) -> cst::Node {
+        let mut begin = self.construct_node();
+        let mut stmts = Vec::new();
+        while !self.peek_token_in(&vec!["end", "exception"]) {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            begin.push_node_vec("stmts", stmts);
+        }
+        if self.peek_token_is("exception") {
+            self.next_token(); // ; -> exception
+            let exception = self.construct_node();
+            self.next_token(); // exception -> when
+            let when = self.construct_node();
+            self.next_token(); // exception -> error
+            let error = self.construct_node();
+            self.next_token(); // when -> then
+            let then = self.construct_node();
+            begin.push_node_vec(
+                "exception_when_error_then",
+                vec![exception, when, error, then],
+            );
+            let mut exception_stmts = Vec::new();
+            while !self.peek_token_is("end") {
+                self.next_token(); // -> stmt
+                exception_stmts.push(self.parse_statement());
+            }
+            if 0 < exception_stmts.len() {
+                begin.push_node_vec("exception_stmts", exception_stmts);
+            }
+        }
+        self.next_token(); // -> end
+        begin.push_node("end", self.construct_node());
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            begin.push_node("semicolon", self.construct_node());
+        }
+        begin
+    }
     fn parse_execute_statement(&mut self) -> cst::Node {
         let mut execute = self.construct_node();
         self.next_token(); // execute -> immediate
         execute.push_node("immediate", self.construct_node());
         self.next_token(); // immediate -> sql_expr
-        execute.push_node("sql_expr", self.parse_expr(999, &vec!["into", "using", ";"], false));
+        execute.push_node(
+            "sql_expr",
+            self.parse_expr(999, &vec!["into", "using", ";"], false),
+        );
         if self.peek_token_is("into") {
             self.next_token(); // sql_expr -> into
             let mut into = self.construct_node();
@@ -230,7 +274,7 @@ impl Parser {
         }
         declare
     }
-    fn parse_merge_statement(&mut self, root:bool) -> cst::Node {
+    fn parse_merge_statement(&mut self, root: bool) -> cst::Node {
         let mut merge = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // merge -> into
@@ -290,13 +334,13 @@ impl Parser {
             whens.push(when);
         }
         merge.push_node_vec("whens", whens);
-        if self.peek_token_is(";") && root{
+        if self.peek_token_is(";") && root {
             self.next_token(); // -> ;
             merge.push_node("semicolon", self.construct_node());
         }
         merge
     }
-    fn parse_update_statement(&mut self, root:bool) -> cst::Node {
+    fn parse_update_statement(&mut self, root: bool) -> cst::Node {
         let mut update = self.construct_node();
         if !self.peek_token_is("set") {
             self.next_token(); // -> target_name
@@ -305,7 +349,10 @@ impl Parser {
         self.next_token(); // -> set
         let mut set = self.construct_node();
         self.next_token(); // set -> exprs
-        set.push_node_vec("exprs", self.parse_exprs(&vec!["from", "where", "when", ";"], false));
+        set.push_node_vec(
+            "exprs",
+            self.parse_exprs(&vec!["from", "where", "when", ";"], false),
+        );
         if self.peek_token_is("from") {
             self.next_token(); // exprs -> from
             let mut from = self.construct_node();
@@ -321,7 +368,7 @@ impl Parser {
             where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
             update.push_node("where", where_);
         }
-        if self.peek_token_is(";") && root{
+        if self.peek_token_is(";") && root {
             self.next_token(); // -> ;
             update.push_node("semicolon", self.construct_node());
         }
@@ -362,7 +409,7 @@ impl Parser {
         }
         delete
     }
-    fn parse_insert_statement(&mut self, root:bool) -> cst::Node {
+    fn parse_insert_statement(&mut self, root: bool) -> cst::Node {
         let mut insert = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // insert -> into
@@ -400,7 +447,7 @@ impl Parser {
             }
             values.push_node_vec("exprs", lparens);
             insert.push_node("input", values);
-        } else if self.peek_token_is("row"){
+        } else if self.peek_token_is("row") {
             self.next_token(); // -> row
             insert.push_node("input", self.construct_node());
         } else {

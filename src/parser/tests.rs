@@ -145,6 +145,7 @@ fn test_parse_exprs() {
             declare x int64;declare x,y default 1;
             set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
             execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
+            begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
 
 "
             .to_string();
@@ -2232,8 +2233,8 @@ semicolon:
   self: ;
 target_name:
   self: table",
-  // delete
-  "\
+        // delete
+        "\
 self: delete
 semicolon:
   self: ;
@@ -2243,7 +2244,7 @@ where:
   self: where
   expr:
     self: true",
-  "\
+        "\
 self: delete
 semicolon:
   self: ;
@@ -2257,7 +2258,7 @@ where:
   self: where
   expr:
     self: true",
-  "\
+        "\
 self: delete
 from:
   self: from
@@ -2300,7 +2301,7 @@ table:
   self: table
 target_name:
   self: t",
-  // update
+        // update
         "\
 self: update
 semicolon:
@@ -2475,7 +2476,7 @@ whens:
     self: delete
   then:
     self: then",
-    "\
+        "\
 self: merge
 on:
   self: on
@@ -2612,8 +2613,8 @@ whens:
           self: 999
   then:
     self: then",
-    // declare
-    "\
+        // declare
+        "\
 self: declare
 idents:
 - self: x
@@ -2621,7 +2622,7 @@ semicolon:
   self: ;
 variable_type:
   self: int64",
-    "\
+        "\
 self: declare
 default:
   self: default
@@ -2634,8 +2635,8 @@ idents:
 - self: y
 semicolon:
   self: ;",
-  // set
-  "\
+        // set
+        "\
 self: set
 expr:
   self: =
@@ -2645,7 +2646,7 @@ expr:
     self: 5
 semicolon:
   self: ;",
-  "\
+        "\
 self: set
 expr:
   self: =
@@ -2669,7 +2670,7 @@ expr:
       self: )
 semicolon:
   self: ;",
-  "\
+        "\
 self: set
 expr:
   self: =
@@ -2699,8 +2700,8 @@ expr:
       self: )
 semicolon:
   self: ;",
-  // execute
-  "\
+        // execute
+        "\
 self: execute
 immediate:
   self: immediate
@@ -2708,7 +2709,7 @@ semicolon:
   self: ;
 sql_expr:
   self: 'select 1'",
-  "\
+        "\
 self: execute
 immediate:
   self: immediate
@@ -2730,7 +2731,7 @@ using:
     comma:
       self: ,
   - self: 2",
-  "\
+        "\
 self: execute
 immediate:
   self: immediate
@@ -2750,6 +2751,58 @@ using:
       self: as
       alias:
         self: x",
+        // begin
+        "\
+self: begin
+end:
+  self: end
+semicolon:
+  self: ;
+stmts:
+- self: select
+  exprs:
+  - self: 1
+  semicolon:
+    self: ;
+- self: select
+  exprs:
+  - self: 2
+  semicolon:
+    self: ;",
+        "\
+self: begin
+end:
+  self: end
+exception_stmts:
+- self: select
+  exprs:
+  - self: 2
+  semicolon:
+    self: ;
+exception_when_error_then:
+- self: exception
+- self: when
+- self: error
+- self: then
+semicolon:
+  self: ;
+stmts:
+- self: select
+  exprs:
+  - self: 1
+  semicolon:
+    self: ;",
+        "\
+self: begin
+end:
+  self: end
+exception_when_error_then:
+- self: exception
+- self: when
+- self: error
+- self: then
+semicolon:
+  self: ;",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
