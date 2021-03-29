@@ -159,7 +159,7 @@ impl Parser {
         self.next_token(); // -> then
         let mut then = self.construct_node();
         let mut then_stmts = Vec::new();
-        while !self.peek_token_in(&vec!["elif", "else", "end"]) {
+        while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
             self.next_token(); // -> stmt
             then_stmts.push(self.parse_statement());
         }
@@ -168,22 +168,27 @@ impl Parser {
         }
         if_.push_node("then", then);
 
-        let mut elifs = Vec::new();
-        while self.peek_token_is("elif") {
-            self.next_token(); // -> elif
-            let mut elif = self.construct_node();
-            let mut elif_stmts = Vec::new();
-            while !self.peek_token_in(&vec!["elif", "else", "end"]) {
-                self.next_token();
-                elif_stmts.push(self.parse_statement());
+        let mut elseifs = Vec::new();
+        while self.peek_token_is("elseif") {
+            self.next_token(); // -> elseif
+            let mut elseif = self.construct_node();
+            self.next_token(); // -> condition
+            elseif.push_node("condition", self.parse_expr(999, &vec!["then"], false));
+            self.next_token(); // -> then
+            let mut then = self.construct_node();
+            let mut then_stmts = Vec::new();
+            while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
+                self.next_token(); // -> stmt
+                then_stmts.push(self.parse_statement());
             }
-            if 0 < elif_stmts.len() {
-                elif.push_node_vec("stmts", elif_stmts);
+            if 0 < then_stmts.len() {
+                then.push_node_vec("stmts", then_stmts);
             }
-            elifs.push(elif);
+            elseif.push_node("then", then);
+            elseifs.push(elseif);
         }
-        if 0 < elifs.len() {
-            if_.push_node_vec("elifs", elifs);
+        if 0 < elseifs.len() {
+            if_.push_node_vec("elseifs", elseifs);
         }
 
         if self.peek_token_is("else") {

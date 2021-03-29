@@ -147,6 +147,11 @@ fn test_parse_exprs() {
             execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
             begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
             if true then end;
+            if true then select 1; select 2;end;
+            if true then select 1; elseif true then end;
+            if true then elseif true then select 1; elseif true then select 2; select 3; else end;
+            if true then else select 1; end;
+            if true then else select 1;select 2; end;
 
 "
             .to_string();
@@ -2809,6 +2814,130 @@ semicolon:
 self: if
 condition:
   self: true
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then",
+        "\
+self: if
+condition:
+  self: true
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then
+  stmts:
+  - self: select
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;
+  - self: select
+    exprs:
+    - self: 2
+    semicolon:
+      self: ;",
+        "\
+self: if
+condition:
+  self: true
+elseifs:
+- self: elseif
+  condition:
+    self: true
+  then:
+    self: then
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then
+  stmts:
+  - self: select
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;",
+        "\
+self: if
+condition:
+  self: true
+else:
+  self: else
+elseifs:
+- self: elseif
+  condition:
+    self: true
+  then:
+    self: then
+    stmts:
+    - self: select
+      exprs:
+      - self: 1
+      semicolon:
+        self: ;
+- self: elseif
+  condition:
+    self: true
+  then:
+    self: then
+    stmts:
+    - self: select
+      exprs:
+      - self: 2
+      semicolon:
+        self: ;
+    - self: select
+      exprs:
+      - self: 3
+      semicolon:
+        self: ;
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then",
+        "\
+self: if
+condition:
+  self: true
+else:
+  self: else
+  stmts:
+  - self: select
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;
+end:
+  self: end
+semicolon:
+  self: ;
+then:
+  self: then",
+        "\
+self: if
+condition:
+  self: true
+else:
+  self: else
+  stmts:
+  - self: select
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;
+  - self: select
+    exprs:
+    - self: 2
+    semicolon:
+      self: ;
 end:
   self: end
 semicolon:
