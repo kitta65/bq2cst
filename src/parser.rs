@@ -127,15 +127,28 @@ impl Parser {
             "MERGE" => self.parse_merge_statement(true),
             "BEGIN" => self.parse_begin_statement(),
             "CREATE" => {
-                let mut target = self.get_token(1).literal.to_uppercase();
-                if target == "OR" {
-                    target = self.get_token(3).literal.to_uppercase();
+                let mut offset = 1;
+                let mut target = self.get_token(offset).literal.to_uppercase();
+                loop {
+                    match target.as_str() {
+                        "TEMP" => {
+                            offset += 1;
+                            target = self.get_token(offset).literal.to_uppercase();
+                        },
+                        "TEMPORARY" => {
+                            offset += 1;
+                            target = self.get_token(offset).literal.to_uppercase();
+                        },
+                        "OR" => {
+                            offset += 2;
+                            target = self.get_token(offset).literal.to_uppercase();
+                        },
+                        _ => break,
+                    }
                 }
                 match target.as_str() {
                     "FUNCTION" => self.parse_create_function_statement(),
-                    "TEMP" => self.parse_create_function_statement(),
-                    "TEMPORARY" => self.parse_create_function_statement(),
-                    "TABLE" => panic!(),
+                    "TABLE" => self.parse_create_table_statement(),
                     _ => panic!(),
                 }
             }
@@ -159,6 +172,88 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_create_table_statement(&mut self) -> cst::Node {
+        let mut create = self.construct_node();
+        if self.peek_token_is("or") {
+            self.next_token(); // -> or
+            let or_ = self.construct_node();
+            self.next_token(); // -> replace
+            let replace = self.construct_node();
+            create.push_node_vec("or_replace", vec![or_, replace]);
+        }
+        if self.peek_token_in(&vec!["temp", "temporary"]) {
+            self.next_token(); // -> temporary
+            create.push_node("temp", self.construct_node());
+        }
+        self.next_token(); // -> table
+        create.push_node("what", self.construct_node());
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node();
+            self.next_token(); // -> not
+            let not = self.construct_node();
+            self.next_token(); // -> exists
+            let exists = self.construct_node();
+            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        if self.peek_token_is("(") {
+            self.next_token(); // -> (
+            let mut group = self.construct_node();
+            let mut column_definitions = Vec::new();
+            while !self.peek_token_is(")") {
+                self.next_token(); // -> column_identifier
+                let mut column = self.construct_node();
+                self.next_token(); // -> type
+                column.push_node("schema", self.parse_type()); // TODO parse_schema
+                if self.peek_token_is(",") {
+                    self.next_token(); // -> ,
+                    column.push_node("comma", self.construct_node());
+                }
+                column_definitions.push(column);
+            }
+            group.push_node_vec("column_definitions", column_definitions);
+        }
+        if self.peek_token_is("partition") {
+            let mut partitionby = self.construct_node();
+            self.next_token(); // -> by
+            partitionby.push_node("by", self.construct_node());
+            self.next_token(); // -> expr
+            partitionby.push_node("expr", self.parse_expr(999, &vec!["cluster", "options", "as"], false));
+            create.push_node("partitionby", partitionby);
+        }
+        if self.peek_token_is("cluster") {
+            let mut clusterby = self.construct_node();
+            self.next_token(); // -> by
+            clusterby.push_node("by", self.construct_node());
+            self.next_token(); // -> expr
+            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false));
+            create.push_node("clusterby", clusterby);
+        }
+        if self.peek_token_is("options") {
+            self.next_token(); // options
+            let mut options = self.construct_node();
+            self.next_token(); // options -> (
+            let mut group = self.construct_node();
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            options.push_node("group", group);
+            create.push_node("options", options);
+        }
+        if self.peek_token_is("as") {
+            self.next_token(); // -> as
+            let mut as_ = self.construct_node();
+            self.next_token(); // as -> stmt
+            as_.push_node("stmt", self.parse_select_statement(false));
+            create.push_node("as", as_);
+        }
+        create
     }
     fn parse_call_statement(&mut self) -> cst::Node {
         let mut call = self.construct_node();
