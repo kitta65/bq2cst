@@ -186,6 +186,7 @@ fn test_parse_exprs() {
               uris=['dummy'],
               format=csv,
             );
+            CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3427,6 +3428,33 @@ with_partition_columns:
   partition_columns:
   - self: PARTITION
   - self: COLUMNS",
+  // create procedure
+  "\
+self: CREATE
+group:
+  self: (
+  rparen:
+    self: )
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: procede
+semicolon:
+  self: ;
+stmt:
+  self: BEGIN
+  end:
+    self: END
+  stmts:
+  - self: SELECT
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;
+what:
+  self: PROCEDURE",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

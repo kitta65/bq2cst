@@ -125,7 +125,7 @@ impl Parser {
             "TRUNCATE" => self.parse_truncate_statement(),
             "UPDATE" => self.parse_update_statement(true),
             "MERGE" => self.parse_merge_statement(true),
-            "BEGIN" => self.parse_begin_statement(),
+            "BEGIN" => self.parse_begin_statement(true),
             "CREATE" => {
                 let mut offset = 1;
                 let mut target = self.get_token(offset).literal.to_uppercase();
@@ -152,6 +152,7 @@ impl Parser {
                     "VIEW" => self.parse_create_table_statement(),
                     "MATERIALIZED" => self.parse_create_table_statement(),
                     "EXTERNAL" => self.parse_create_table_statement(),
+                    "PROCEDURE" => self.parse_create_procedure_statement(),
                     _ => panic!(),
                 }
             }
@@ -175,6 +176,70 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_create_procedure_statement(&mut self) -> cst::Node {
+        let mut create = self.construct_node();
+        if self.peek_token_is("or") {
+            self.next_token(); // -> or
+            let or_ = self.construct_node();
+            self.next_token(); // -> replace
+            let replace = self.construct_node();
+            create.push_node_vec("or_replace", vec![or_, replace]);
+        }
+        self.next_token(); // -> procedure
+        create.push_node("what", self.construct_node());
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node();
+            self.next_token(); // -> not
+            let not = self.construct_node();
+            self.next_token(); // -> exists
+            let exists = self.construct_node();
+            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        self.next_token(); // ident -> (
+        let mut group = self.construct_node();
+        let mut args = Vec::new();
+        while !self.peek_token_is(")") {
+            self.next_token(); // ( -> arg, ',' -> arg
+            let mut arg = self.construct_node();
+            self.next_token(); // arg -> type
+            arg.push_node("type", self.parse_type());
+            if self.peek_token_is(",") {
+                self.next_token(); // type -> ,
+                arg.push_node("comma", self.construct_node());
+            }
+            args.push(arg);
+        }
+        if args.len() > 0 {
+            group.push_node_vec("args", args);
+        }
+        self.next_token(); // -> )
+        group.push_node("rparen", self.construct_node());
+        create.push_node("group", group);
+        if self.peek_token_is("options") {
+            self.next_token(); // js -> options
+            let mut options = self.construct_node();
+            self.next_token(); // options -> (
+            let mut group = self.construct_node();
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            options.push_node("group", group);
+            create.push_node("options", options);
+        }
+        self.next_token(); // -> begin
+        create.push_node("stmt", self.parse_begin_statement(false));
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node());
+        }
+        create
     }
     fn parse_create_table_statement(&mut self) -> cst::Node {
         let mut create = self.construct_node();
@@ -474,7 +539,7 @@ impl Parser {
         }
         if_
     }
-    fn parse_begin_statement(&mut self) -> cst::Node {
+    fn parse_begin_statement(&mut self, root: bool) -> cst::Node {
         let mut begin = self.construct_node();
         let mut stmts = Vec::new();
         while !self.peek_token_in(&vec!["end", "exception"]) {
@@ -508,7 +573,7 @@ impl Parser {
         }
         self.next_token(); // -> end
         begin.push_node("end", self.construct_node());
-        if self.peek_token_is(";") {
+        if self.peek_token_is(";") && root {
             self.next_token(); // -> ;
             begin.push_node("semicolon", self.construct_node());
         }
