@@ -203,8 +203,20 @@ impl Parser {
         let mut group = self.construct_node();
         let mut args = Vec::new();
         while !self.peek_token_is(")") {
-            self.next_token(); // ( -> arg, ',' -> arg
+            self.next_token(); // ) -> arg, in
             let mut arg = self.construct_node();
+            match self.get_token(2).literal.to_uppercase().as_str() {
+                "TYPE" => (),
+                "," => (),
+                "<" => (),
+                ")" => (),
+                _ => {
+                    self.next_token(); // -> ident
+                    let mut ident = self.construct_node();
+                    ident.push_node("in_out", arg);
+                    arg = ident;
+                },
+            }
             self.next_token(); // arg -> type
             arg.push_node("type", self.parse_type());
             if self.peek_token_is(",") {

@@ -187,6 +187,7 @@ fn test_parse_exprs() {
               format=csv,
             );
             CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
+            CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3441,6 +3442,55 @@ ident:
     self: dataset
   right:
     self: procede
+semicolon:
+  self: ;
+stmt:
+  self: BEGIN
+  end:
+    self: END
+  stmts:
+  - self: SELECT
+    exprs:
+    - self: 1
+    semicolon:
+      self: ;
+what:
+  self: PROCEDURE",
+  "\
+self: CREATE
+group:
+  self: (
+  args:
+  - self: x
+    comma:
+      self: ,
+    type:
+      self: int64
+  - self: y
+    in_out:
+      self: inout
+    type:
+      self: int64
+  rparen:
+    self: )
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: procede
+options:
+  self: options
+  group:
+    self: (
+    exprs:
+    - self: =
+      left:
+        self: dummy
+      right:
+        self: 'dummy'
+    rparen:
+      self: )
 semicolon:
   self: ;
 stmt:
