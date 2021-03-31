@@ -207,7 +207,7 @@ impl Parser {
                 self.next_token(); // -> column_identifier
                 let mut column = self.construct_node();
                 self.next_token(); // -> type
-                column.push_node("schema", self.parse_type()); // TODO parse_schema
+                column.push_node("schema", self.parse_schema());
                 if self.peek_token_is(",") {
                     self.next_token(); // -> ,
                     column.push_node("comma", self.construct_node());
@@ -215,8 +215,12 @@ impl Parser {
                 column_definitions.push(column);
             }
             group.push_node_vec("column_definitions", column_definitions);
+            self.next_token(); // -> )
+            group.push_node("rparen", self.construct_node());
+            create.push_node("column_schema_group", group);
         }
         if self.peek_token_is("partition") {
+            self.next_token(); // -> partition
             let mut partitionby = self.construct_node();
             self.next_token(); // -> by
             partitionby.push_node("by", self.construct_node());
@@ -225,6 +229,7 @@ impl Parser {
             create.push_node("partitionby", partitionby);
         }
         if self.peek_token_is("cluster") {
+            self.next_token(); // -> cluster
             let mut clusterby = self.construct_node();
             self.next_token(); // -> by
             clusterby.push_node("by", self.construct_node());
@@ -253,7 +258,37 @@ impl Parser {
             as_.push_node("stmt", self.parse_select_statement(false));
             create.push_node("as", as_);
         }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node());
+        }
         create
+    }
+    fn parse_schema(&mut self) -> cst::Node {
+        let mut schema = self.parse_type();
+        if self.peek_token_is("not") {
+            self.next_token(); // -> not
+            let not_ = self.construct_node();
+            self.next_token(); // -> null
+            let null = self.construct_node();
+            schema.push_node_vec("not_null", vec![not_, null]);
+        }
+        if self.peek_token_is("options") {
+            self.construct_node(); // -> options
+            self.next_token(); // options
+            let mut options = self.construct_node();
+            self.next_token(); // options -> (
+            let mut group = self.construct_node();
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            options.push_node("group", group);
+            schema.push_node("options", options);
+        }
+        schema
     }
     fn parse_call_statement(&mut self) -> cst::Node {
         let mut call = self.construct_node();
@@ -816,7 +851,7 @@ impl Parser {
             self.next_token(); // ident -> .
             let mut operator = self.construct_node();
             operator.push_node("left", left);
-            self.construct_node(); // . -> ident
+            self.next_token(); // . -> ident
             operator.push_node("right", self.construct_node());
             left = operator;
         }

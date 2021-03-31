@@ -165,7 +165,11 @@ fn test_parse_exprs() {
             exception when error then
               select @@error.message;
             end;
-            call mydataset.myprocedure(1)
+            call mydataset.myprocedure(1);
+            create table example (x int64);create temp table example (x int64, y int64);
+            CREATE TABLE dataset.example(x INT64 OPTIONS(description='dummy'))
+            PARTITION BY _PARTITIONDATE OPTIONS(partition_expiration_days=1);
+            create table example (x int64 not null) cluster by x as select 1;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3043,7 +3047,7 @@ using:
       self: message
     right:
       self: 'error'",
-      "\
+        "\
 self: begin
 end:
   self: end
@@ -3093,8 +3097,8 @@ stmts:
     - self: 1
     semicolon:
       self: ;",
-      // call
-      "\
+        // call
+        "\
 self: call
 expr:
   self: (
@@ -3107,7 +3111,130 @@ expr:
     right:
       self: myprocedure
   rparen:
-    self: )",
+    self: )
+semicolon:
+  self: ;",
+        // create table
+        "\
+self: create
+column_schema_group:
+  self: (
+  column_definitions:
+  - self: x
+    schema:
+      self: int64
+  rparen:
+    self: )
+ident:
+  self: example
+semicolon:
+  self: ;
+what:
+  self: table",
+        "\
+self: create
+column_schema_group:
+  self: (
+  column_definitions:
+  - self: x
+    comma:
+      self: ,
+    schema:
+      self: int64
+  - self: y
+    schema:
+      self: int64
+  rparen:
+    self: )
+ident:
+  self: example
+semicolon:
+  self: ;
+temp:
+  self: temp
+what:
+  self: table",
+        "\
+self: CREATE
+column_schema_group:
+  self: (
+  column_definitions:
+  - self: x
+    schema:
+      self: INT64
+      options:
+        self: OPTIONS
+        group:
+          self: (
+          exprs:
+          - self: =
+            left:
+              self: description
+            right:
+              self: 'dummy'
+          rparen:
+            self: )
+  rparen:
+    self: )
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: example
+options:
+  self: OPTIONS
+  group:
+    self: (
+    exprs:
+    - self: =
+      left:
+        self: partition_expiration_days
+      right:
+        self: 1
+    rparen:
+      self: )
+partitionby:
+  self: PARTITION
+  by:
+    self: BY
+  expr:
+    self: _PARTITIONDATE
+semicolon:
+  self: ;
+what:
+  self: TABLE",
+        "\
+self: create
+as:
+  self: as
+  stmt:
+    self: select
+    exprs:
+    - self: 1
+clusterby:
+  self: cluster
+  by:
+    self: by
+  exprs:
+  - self: x
+column_schema_group:
+  self: (
+  column_definitions:
+  - self: x
+    schema:
+      self: int64
+      not_null:
+      - self: not
+      - self: null
+  rparen:
+    self: )
+ident:
+  self: example
+semicolon:
+  self: ;
+what:
+  self: table",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
