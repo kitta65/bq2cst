@@ -134,21 +134,22 @@ impl Parser {
                         "TEMP" => {
                             offset += 1;
                             target = self.get_token(offset).literal.to_uppercase();
-                        },
+                        }
                         "TEMPORARY" => {
                             offset += 1;
                             target = self.get_token(offset).literal.to_uppercase();
-                        },
+                        }
                         "OR" => {
                             offset += 2;
                             target = self.get_token(offset).literal.to_uppercase();
-                        },
+                        }
                         _ => break,
                     }
                 }
                 match target.as_str() {
                     "FUNCTION" => self.parse_create_function_statement(),
                     "TABLE" => self.parse_create_table_statement(),
+                    "VIEW" => self.parse_create_table_statement(),
                     _ => panic!(),
                 }
             }
@@ -181,6 +182,14 @@ impl Parser {
             self.next_token(); // -> replace
             let replace = self.construct_node();
             create.push_node_vec("or_replace", vec![or_, replace]);
+        }
+        if self.peek_token_is("materialized") {
+            self.next_token();
+            create.push_node("materialized", self.construct_node());
+        }
+        if self.peek_token_is("external") {
+            self.next_token();
+            create.push_node("external", self.construct_node());
         }
         if self.peek_token_in(&vec!["temp", "temporary"]) {
             self.next_token(); // -> temporary
@@ -225,7 +234,10 @@ impl Parser {
             self.next_token(); // -> by
             partitionby.push_node("by", self.construct_node());
             self.next_token(); // -> expr
-            partitionby.push_node("expr", self.parse_expr(999, &vec!["cluster", "options", "as"], false));
+            partitionby.push_node(
+                "expr",
+                self.parse_expr(999, &vec!["cluster", "options", "as"], false),
+            );
             create.push_node("partitionby", partitionby);
         }
         if self.peek_token_is("cluster") {
@@ -236,6 +248,36 @@ impl Parser {
             self.next_token(); // -> expr
             clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false));
             create.push_node("clusterby", clusterby);
+        }
+        if self.peek_token_is("with") {
+            self.next_token(); // -> with
+            let mut with = self.construct_node();
+            self.next_token(); // -> partition
+            let partition = self.construct_node();
+            self.next_token(); // -> columns
+            let columns = self.construct_node();
+            with.push_node_vec("partition_columns", vec![partition, columns]);
+            if self.peek_token_is("(") {
+                self.next_token(); // -> "("
+                let mut group = self.construct_node();
+                let mut column_definitions = Vec::new();
+                while !self.peek_token_is(")") {
+                    self.next_token(); // -> column_identifier
+                    let mut column = self.construct_node();
+                    self.next_token(); // -> type
+                    column.push_node("schema", self.parse_schema());
+                    if self.peek_token_is(",") {
+                        self.next_token(); // -> ,
+                        column.push_node("comma", self.construct_node());
+                    }
+                    column_definitions.push(column);
+                }
+                group.push_node_vec("column_definitions", column_definitions);
+                self.next_token(); // -> )
+                group.push_node("rparen", self.construct_node());
+                with.push_node("column_schema_group", group);
+            }
+            create.push_node("with_partition_columns", with);
         }
         if self.peek_token_is("options") {
             self.next_token(); // options
