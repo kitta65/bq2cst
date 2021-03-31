@@ -150,6 +150,8 @@ impl Parser {
                     "FUNCTION" => self.parse_create_function_statement(),
                     "TABLE" => self.parse_create_table_statement(),
                     "VIEW" => self.parse_create_table_statement(),
+                    "MATERIALIZED" => self.parse_create_table_statement(),
+                    "EXTERNAL" => self.parse_create_table_statement(),
                     _ => panic!(),
                 }
             }
@@ -272,7 +274,9 @@ impl Parser {
                     }
                     column_definitions.push(column);
                 }
-                group.push_node_vec("column_definitions", column_definitions);
+                if 0 < column_definitions.len() {
+                    group.push_node_vec("column_definitions", column_definitions);
+                }
                 self.next_token(); // -> )
                 group.push_node("rparen", self.construct_node());
                 with.push_node("column_schema_group", group);

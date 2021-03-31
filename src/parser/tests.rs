@@ -167,9 +167,25 @@ fn test_parse_exprs() {
             end;
             call mydataset.myprocedure(1);
             create table example (x int64);create temp table example (x int64, y int64);
-            CREATE TABLE dataset.example(x INT64 OPTIONS(description='dummy'))
+            CREATE  or replace TABLE dataset.example(x INT64 OPTIONS(description='dummy'))
             PARTITION BY _PARTITIONDATE OPTIONS(partition_expiration_days=1);
-            create table example (x int64 not null) cluster by x as select 1;
+            create table if not exists example (x int64 not null) cluster by x as select 1;
+            create view dataset.new_table as select * from dataset.old_table;
+            create materialized view dataset.new_table options(dummy='dummy') as select count(*) from dataset.old_table;
+            CREATE EXTERNAL TABLE dataset.new_table
+            WITH PARTITION COLUMNS
+            OPTIONS (
+              uris=['dummy'],
+              format=csv,
+            );
+            CREATE EXTERNAL TABLE dataset.new_table
+            WITH PARTITION COLUMNS (
+                col1 string
+            )
+            OPTIONS (
+              uris=['dummy'],
+              format=csv,
+            );
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3194,6 +3210,9 @@ options:
         self: 1
     rparen:
       self: )
+or_replace:
+- self: or
+- self: replace
 partitionby:
   self: PARTITION
   by:
@@ -3231,10 +3250,183 @@ column_schema_group:
     self: )
 ident:
   self: example
+if_not_exists:
+- self: if
+- self: not
+- self: exists
 semicolon:
   self: ;
 what:
   self: table",
+  // view
+  "\
+self: create
+as:
+  self: as
+  stmt:
+    self: select
+    exprs:
+    - self: *
+    from:
+      self: from
+      expr:
+        self: .
+        left:
+          self: dataset
+        right:
+          self: old_table
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: new_table
+semicolon:
+  self: ;
+what:
+  self: view",
+  "\
+self: create
+as:
+  self: as
+  stmt:
+    self: select
+    exprs:
+    - self: (
+      args:
+      - self: *
+      func:
+        self: count
+      rparen:
+        self: )
+    from:
+      self: from
+      expr:
+        self: .
+        left:
+          self: dataset
+        right:
+          self: old_table
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: new_table
+materialized:
+  self: materialized
+options:
+  self: options
+  group:
+    self: (
+    exprs:
+    - self: =
+      left:
+        self: dummy
+      right:
+        self: 'dummy'
+    rparen:
+      self: )
+semicolon:
+  self: ;
+what:
+  self: view",
+  "\
+self: CREATE
+external:
+  self: EXTERNAL
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: new_table
+options:
+  self: OPTIONS
+  group:
+    self: (
+    exprs:
+    - self: =
+      comma:
+        self: ,
+      left:
+        self: uris
+      right:
+        self: [
+        exprs:
+        - self: 'dummy'
+        rparen:
+          self: ]
+    - self: =
+      comma:
+        self: ,
+      left:
+        self: format
+      right:
+        self: csv
+    rparen:
+      self: )
+semicolon:
+  self: ;
+what:
+  self: TABLE
+with_partition_columns:
+  self: WITH
+  partition_columns:
+  - self: PARTITION
+  - self: COLUMNS",
+  "\
+self: CREATE
+external:
+  self: EXTERNAL
+ident:
+  self: .
+  left:
+    self: dataset
+  right:
+    self: new_table
+options:
+  self: OPTIONS
+  group:
+    self: (
+    exprs:
+    - self: =
+      comma:
+        self: ,
+      left:
+        self: uris
+      right:
+        self: [
+        exprs:
+        - self: 'dummy'
+        rparen:
+          self: ]
+    - self: =
+      comma:
+        self: ,
+      left:
+        self: format
+      right:
+        self: csv
+    rparen:
+      self: )
+semicolon:
+  self: ;
+what:
+  self: TABLE
+with_partition_columns:
+  self: WITH
+  column_schema_group:
+    self: (
+    column_definitions:
+    - self: col1
+      schema:
+        self: string
+    rparen:
+      self: )
+  partition_columns:
+  - self: PARTITION
+  - self: COLUMNS",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
