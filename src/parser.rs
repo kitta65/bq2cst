@@ -118,14 +118,17 @@ impl Parser {
     }
     fn parse_statement(&mut self) -> cst::Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
+            // SELECT
             "WITH" => self.parse_select_statement(true),
             "SELECT" => self.parse_select_statement(true),
+            "(" => self.parse_select_statement(true),
+            // DML
             "INSERT" => self.parse_insert_statement(true),
             "DELETE" => self.parse_delete_statement(),
             "TRUNCATE" => self.parse_truncate_statement(),
             "UPDATE" => self.parse_update_statement(true),
             "MERGE" => self.parse_merge_statement(true),
-            "BEGIN" => self.parse_begin_statement(true),
+            // DDL
             "CREATE" => {
                 let mut offset = 1;
                 let mut target = self.get_token(offset).literal.to_uppercase();
@@ -157,11 +160,13 @@ impl Parser {
                 }
             }
             "ALTER" => self.parse_alter_statement(),
-            "(" => self.parse_select_statement(true),
+            "DROP" => self.parse_drop_statement(),
+            // script
             "DECLARE" => self.parse_declare_statement(),
             "SET" => self.parse_set_statement(),
             "EXECUTE" => self.parse_execute_statement(),
             "IF" => self.parse_if_statement(),
+            "BEGIN" => self.parse_begin_statement(true),
             "LOOP" => self.parse_loop_statement(),
             "WHILE" => self.parse_while_statement(),
             "BREAK" => self.parse_break_statement(),
@@ -177,6 +182,33 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_drop_statement(&mut self) -> cst::Node {
+        let mut drop = self.construct_node();
+        if self.peek_token_is("external") {
+            self.next_token(); // -> external
+            drop.push_node("external", self.construct_node());
+        }
+        if self.peek_token_is("materialized") {
+            self.next_token(); // -> materialized
+            drop.push_node("materialized", self.construct_node());
+        }
+        self.next_token(); // -> table, view, function, procedure
+        drop.push_node("what", self.construct_node());
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node();
+            self.next_token(); // -> exists
+            let exists = self.construct_node();
+            drop.push_node_vec("if_exists", vec![if_, exists]);
+        }
+        self.next_token(); // -> ident
+        drop.push_node("ident", self.parse_identifier());
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            drop.push_node("semicolon", self.construct_node());
+        }
+        drop
     }
     fn parse_alter_statement(&mut self) -> cst::Node {
         let mut alter = self.construct_node();
