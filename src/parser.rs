@@ -18,6 +18,7 @@ impl Parser {
             tokens.push(token.unwrap());
             token = l.next_token();
         }
+        tokens.push(token::Token::new(usize::MAX, usize::MAX, "")); // EOF token
         let mut p = Parser {
             tokens,
             position: 0,
@@ -77,22 +78,23 @@ impl Parser {
     }
     fn get_token(&self, offset: usize) -> token::Token {
         let idx = self.get_offset_index(offset);
-        if idx <= self.tokens.len() - 1 {
+        if idx < self.tokens.len() {
             return self.tokens[idx].clone();
         }
         token::Token::new(usize::MAX, usize::MAX, "") // eof token
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);
-        self.tokens.len() <= idx
+        self.tokens.len() - 1 <= idx
     }
     pub fn parse_code(&mut self) -> Vec<cst::Node> {
         let mut code: Vec<cst::Node> = Vec::new();
-        while !self.is_eof(0) {
+        while self.position < self.tokens.len() - 1 {
             let stmt = self.parse_statement();
             code.push(stmt);
             self.next_token();
         }
+        // TODO return leading_comments of EOF
         code
     }
     fn construct_node(&self) -> cst::Node {
@@ -2058,7 +2060,7 @@ impl Parser {
     fn cur_token_is(&self, s: &str) -> bool {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
     }
-    fn parse_type(&mut self, schema:bool) -> cst::Node {
+    fn parse_type(&mut self, schema: bool) -> cst::Node {
         let mut res = match self.get_token(0).literal.to_uppercase().as_str() {
             "ARRAY" => {
                 let mut res = self.construct_node();
