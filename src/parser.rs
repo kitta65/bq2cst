@@ -222,7 +222,7 @@ impl Parser {
             self.next_token(); // -> column_name
             let mut column = self.construct_node();
             self.next_token(); // -> schema
-            column.push_node("schema", self.parse_schema());
+            column.push_node("schema", self.parse_type(true));
             add_column.push_node("column_definition", column);
             if self.peek_token_is(",") {
                 self.next_token(); // -> ,
@@ -280,7 +280,7 @@ impl Parser {
                 }
             }
             self.next_token(); // arg -> type
-            arg.push_node("type", self.parse_type());
+            arg.push_node("type", self.parse_type(false));
             if self.peek_token_is(",") {
                 self.next_token(); // type -> ,
                 arg.push_node("comma", self.construct_node());
@@ -357,7 +357,7 @@ impl Parser {
                 self.next_token(); // -> column_identifier
                 let mut column = self.construct_node();
                 self.next_token(); // -> type
-                column.push_node("schema", self.parse_schema());
+                column.push_node("schema", self.parse_type(true));
                 if self.peek_token_is(",") {
                     self.next_token(); // -> ,
                     column.push_node("comma", self.construct_node());
@@ -406,7 +406,7 @@ impl Parser {
                     self.next_token(); // -> column_identifier
                     let mut column = self.construct_node();
                     self.next_token(); // -> type
-                    column.push_node("schema", self.parse_schema());
+                    column.push_node("schema", self.parse_type(true));
                     if self.peek_token_is(",") {
                         self.next_token(); // -> ,
                         column.push_node("comma", self.construct_node());
@@ -448,32 +448,6 @@ impl Parser {
             create.push_node("semicolon", self.construct_node());
         }
         create
-    }
-    fn parse_schema(&mut self) -> cst::Node {
-        let mut schema = self.parse_type();
-        if self.peek_token_is("not") {
-            self.next_token(); // -> not
-            let not_ = self.construct_node();
-            self.next_token(); // -> null
-            let null = self.construct_node();
-            schema.push_node_vec("not_null", vec![not_, null]);
-        }
-        if self.peek_token_is("options") {
-            self.construct_node(); // -> options
-            self.next_token(); // options
-            let mut options = self.construct_node();
-            self.next_token(); // options -> (
-            let mut group = self.construct_node();
-            if !self.peek_token_is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node());
-            options.push_node("group", group);
-            schema.push_node("options", options);
-        }
-        schema
     }
     fn parse_call_statement(&mut self) -> cst::Node {
         let mut call = self.construct_node();
@@ -722,7 +696,7 @@ impl Parser {
         declare.push_node_vec("idents", idents);
         if !self.peek_token_is("default") {
             self.next_token(); // ident -> variable_type
-            declare.push_node("variable_type", self.parse_type());
+            declare.push_node("variable_type", self.parse_type(false));
         }
         if self.peek_token_is("default") {
             self.next_token(); // -> default
@@ -958,7 +932,7 @@ impl Parser {
             self.next_token(); // ( -> arg, ',' -> arg
             let mut arg = self.construct_node();
             self.next_token(); // arg -> type
-            arg.push_node("type", self.parse_type());
+            arg.push_node("type", self.parse_type(false));
             if self.peek_token_is(",") {
                 self.next_token(); // type -> ,
                 arg.push_node("comma", self.construct_node());
@@ -975,7 +949,7 @@ impl Parser {
             self.next_token(); // ) -> return
             let mut return_ = self.construct_node();
             self.next_token(); // return -> type
-            return_.push_node("type", self.parse_type());
+            return_.push_node("type", self.parse_type(false));
             node.push_node("returns", return_);
         }
         if self.peek_token_is("as") {
@@ -1575,7 +1549,7 @@ impl Parser {
                     self.next_token(); // ARRAY -> <
                     let mut type_ = self.construct_node();
                     self.next_token(); // < -> type
-                    type_.push_node("type", self.parse_type());
+                    type_.push_node("type", self.parse_type(false));
                     self.next_token(); // type -> >
                     type_.push_node("rparen", self.construct_node());
                     left.push_node("type_declaration", type_);
@@ -1606,7 +1580,7 @@ impl Parser {
                         } else {
                             type_declaration = cst::Node::new_none();
                         }
-                        type_declaration.push_node("type", self.parse_type());
+                        type_declaration.push_node("type", self.parse_type(false));
                         self.next_token(); // type -> , or next_declaration
                         if self.cur_token_is(",") {
                             type_declaration.push_node("comma", self.construct_node());
@@ -1675,7 +1649,7 @@ impl Parser {
                                 self.next_token(); // expr -> as
                                 let mut as_ = self.construct_node();
                                 self.next_token();
-                                as_.push_node("cast_to", self.parse_type());
+                                as_.push_node("cast_to", self.parse_type(false));
                                 as_.push_node("cast_from", cast_from);
                                 node.push_node_vec("args", vec![as_]);
                             }
@@ -2052,15 +2026,15 @@ impl Parser {
     fn cur_token_is(&self, s: &str) -> bool {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
     }
-    fn parse_type(&mut self) -> cst::Node {
-        let res = match self.get_token(0).literal.to_uppercase().as_str() {
+    fn parse_type(&mut self, schema:bool) -> cst::Node {
+        let mut res = match self.get_token(0).literal.to_uppercase().as_str() {
             "ARRAY" => {
                 let mut res = self.construct_node();
                 if self.get_token(1).literal.as_str() == "<" {
                     self.next_token(); // array -> <
                     let mut type_ = self.construct_node();
                     self.next_token(); // < -> type_expr
-                    type_.push_node("type", self.parse_type());
+                    type_.push_node("type", self.parse_type(schema));
                     self.next_token(); // type_expr -> >
                     type_.push_node("rparen", self.construct_node());
                     res.push_node("type_declaration", type_);
@@ -2084,7 +2058,7 @@ impl Parser {
                         } else {
                             type_declaration = cst::Node::new_none();
                         }
-                        type_declaration.push_node("type", self.parse_type());
+                        type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
                         if self.cur_token_is(",") {
                             type_declaration.push_node("comma", self.construct_node());
@@ -2106,6 +2080,28 @@ impl Parser {
             }
             _ => self.construct_node(),
         };
+        if self.peek_token_is("not") && schema {
+            self.next_token(); // -> not
+            let not_ = self.construct_node();
+            self.next_token(); // -> null
+            let null = self.construct_node();
+            res.push_node_vec("not_null", vec![not_, null]);
+        }
+        if self.peek_token_is("options") && schema {
+            self.construct_node(); // -> options
+            self.next_token(); // options
+            let mut options = self.construct_node();
+            self.next_token(); // options -> (
+            let mut group = self.construct_node();
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            options.push_node("group", group);
+            res.push_node("options", options);
+        }
         res
     }
     fn get_precedence(&self, offset: usize) -> usize {

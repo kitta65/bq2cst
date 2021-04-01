@@ -192,7 +192,7 @@ fn test_parse_exprs() {
             alter view example set options(dummy='dummy',description='abc');
             alter materialized view example set options(dummy='dummy');
             alter table example add column x int64;
-            alter table example add column if not exists x int64 options(description='dummy'),add column y int64;
+            alter table example add column if not exists x int64 options(description='dummy'),add column y struct<z int64 not null>;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3636,7 +3636,18 @@ add_columns:
   column_definition:
     self: y
     schema:
-      self: int64
+      self: struct
+      type_declaration:
+        self: <
+        declarations:
+        - self: z
+          type:
+            self: int64
+            not_null:
+            - self: not
+            - self: null
+        rparen:
+          self: >
 ident:
   self: example
 semicolon:
