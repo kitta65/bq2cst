@@ -156,6 +156,7 @@ impl Parser {
                     _ => panic!(),
                 }
             }
+            "ALTER" => self.parse_alter_statement(),
             "(" => self.parse_select_statement(true),
             "DECLARE" => self.parse_declare_statement(),
             "SET" => self.parse_set_statement(),
@@ -176,6 +177,67 @@ impl Parser {
             }
         };
         node
+    }
+    fn parse_alter_statement(&mut self) -> cst::Node {
+        let mut alter = self.construct_node();
+        if self.peek_token_is("materialized") {
+            self.next_token(); // -> materialized
+            alter.push_node("materialized", self.construct_node());
+        }
+        self.next_token(); // -> table, view
+        alter.push_node("what", self.construct_node());
+        self.next_token(); // -> ident
+        alter.push_node("ident", self.parse_identifier());
+        if self.peek_token_is("set") {
+            self.next_token(); // -> set
+            alter.push_node("set", self.construct_node());
+            self.next_token(); // js -> options
+            let mut options = self.construct_node();
+            self.next_token(); // options -> (
+            let mut group = self.construct_node();
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node());
+            options.push_node("group", group);
+            alter.push_node("options", options);
+        }
+        let mut add_columns = Vec::new();
+        while self.peek_token_is("add") {
+            self.next_token(); // -> add
+            let mut add_column = self.construct_node();
+            self.next_token();
+            add_column.push_node("column", self.construct_node());
+            if self.peek_token_is("if") {
+                self.next_token(); // -> if
+                let if_ = self.construct_node();
+                self.next_token(); // -> not
+                let not = self.construct_node();
+                self.next_token(); // -> exists
+                let exists = self.construct_node();
+                add_column.push_node_vec("if_not_exists", vec![if_, not, exists]);
+            }
+            self.next_token(); // -> column_name
+            let mut column = self.construct_node();
+            self.next_token(); // -> schema
+            column.push_node("schema", self.parse_schema());
+            add_column.push_node("column_definition", column);
+            if self.peek_token_is(",") {
+                self.next_token(); // -> ,
+                add_column.push_node("comma", self.construct_node());
+            }
+            add_columns.push(add_column);
+        }
+        if 0 < add_columns.len() {
+            alter.push_node_vec("add_columns", add_columns);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            alter.push_node("semicolon", self.construct_node());
+        }
+        alter
     }
     fn parse_create_procedure_statement(&mut self) -> cst::Node {
         let mut create = self.construct_node();
@@ -215,7 +277,7 @@ impl Parser {
                     let mut ident = self.construct_node();
                     ident.push_node("in_out", arg);
                     arg = ident;
-                },
+                }
             }
             self.next_token(); // arg -> type
             arg.push_node("type", self.parse_type());

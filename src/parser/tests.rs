@@ -188,6 +188,11 @@ fn test_parse_exprs() {
             );
             CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
             CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
+            alter table example set options(dummy='dummy');
+            alter view example set options(dummy='dummy',description='abc');
+            alter materialized view example set options(dummy='dummy');
+            alter table example add column x int64;
+            alter table example add column if not exists x int64 options(description='dummy'),add column y int64;
 "
             .to_string();
     let l = lexer::Lexer::new(input);
@@ -3260,8 +3265,8 @@ semicolon:
   self: ;
 what:
   self: table",
-  // view
-  "\
+        // view
+        "\
 self: create
 as:
   self: as
@@ -3287,7 +3292,7 @@ semicolon:
   self: ;
 what:
   self: view",
-  "\
+        "\
 self: create
 as:
   self: as
@@ -3333,7 +3338,7 @@ semicolon:
   self: ;
 what:
   self: view",
-  "\
+        "\
 self: CREATE
 external:
   self: EXTERNAL
@@ -3377,7 +3382,7 @@ with_partition_columns:
   partition_columns:
   - self: PARTITION
   - self: COLUMNS",
-  "\
+        "\
 self: CREATE
 external:
   self: EXTERNAL
@@ -3429,8 +3434,8 @@ with_partition_columns:
   partition_columns:
   - self: PARTITION
   - self: COLUMNS",
-  // create procedure
-  "\
+        // create procedure
+        "\
 self: CREATE
 group:
   self: (
@@ -3456,7 +3461,7 @@ stmt:
       self: ;
 what:
   self: PROCEDURE",
-  "\
+        "\
 self: CREATE
 group:
   self: (
@@ -3505,6 +3510,139 @@ stmt:
       self: ;
 what:
   self: PROCEDURE",
+        // alter
+        "\
+self: alter
+ident:
+  self: example
+options:
+  self: options
+  group:
+    self: (
+    exprs:
+    - self: =
+      left:
+        self: dummy
+      right:
+        self: 'dummy'
+    rparen:
+      self: )
+semicolon:
+  self: ;
+set:
+  self: set
+what:
+  self: table",
+        "\
+self: alter
+ident:
+  self: example
+options:
+  self: options
+  group:
+    self: (
+    exprs:
+    - self: =
+      comma:
+        self: ,
+      left:
+        self: dummy
+      right:
+        self: 'dummy'
+    - self: =
+      left:
+        self: description
+      right:
+        self: 'abc'
+    rparen:
+      self: )
+semicolon:
+  self: ;
+set:
+  self: set
+what:
+  self: view",
+        "\
+self: alter
+ident:
+  self: example
+materialized:
+  self: materialized
+options:
+  self: options
+  group:
+    self: (
+    exprs:
+    - self: =
+      left:
+        self: dummy
+      right:
+        self: 'dummy'
+    rparen:
+      self: )
+semicolon:
+  self: ;
+set:
+  self: set
+what:
+  self: view",
+        "\
+self: alter
+add_columns:
+- self: add
+  column:
+    self: column
+  column_definition:
+    self: x
+    schema:
+      self: int64
+ident:
+  self: example
+semicolon:
+  self: ;
+what:
+  self: table",
+        "\
+self: alter
+add_columns:
+- self: add
+  column:
+    self: column
+  column_definition:
+    self: x
+    schema:
+      self: int64
+      options:
+        self: options
+        group:
+          self: (
+          exprs:
+          - self: =
+            left:
+              self: description
+            right:
+              self: 'dummy'
+          rparen:
+            self: )
+  comma:
+    self: ,
+  if_not_exists:
+  - self: if
+  - self: not
+  - self: exists
+- self: add
+  column:
+    self: column
+  column_definition:
+    self: y
+    schema:
+      self: int64
+ident:
+  self: example
+semicolon:
+  self: ;
+what:
+  self: table",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));
