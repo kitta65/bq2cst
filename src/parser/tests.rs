@@ -3688,6 +3688,11 @@ semicolon:
   self: ;
 what:
   self: view",
+  // EOF
+  "\
+self: None
+leading_comments:
+- self: -- end comment",
     ];
     for i in 0..tests.len() {
         println!("{}\n", stmt[i].to_string(0, false));

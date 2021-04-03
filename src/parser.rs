@@ -94,7 +94,9 @@ impl Parser {
             code.push(stmt);
             self.next_token();
         }
-        // TODO return leading_comments of EOF
+        let mut eof = self.construct_node();
+        eof.token.take();
+        code.push(eof);
         code
     }
     fn construct_node(&self) -> cst::Node {
