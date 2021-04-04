@@ -1,6 +1,6 @@
 [package]
 name = "bq2cst"
-version = "0.0.16"
+version = "0.0.18"
 authors = ["dr666m1 <skndr666m1@gmail.com>"]
 edition = "2018"
 

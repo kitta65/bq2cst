@@ -258,7 +258,7 @@ impl Parser {
             self.next_token(); // -> column_name
             let mut column = self.construct_node();
             self.next_token(); // -> schema
-            column.push_node("schema", self.parse_type(true));
+            column.push_node("type", self.parse_type(true));
             add_column.push_node("column_definition", column);
             if self.peek_token_is(",") {
                 self.next_token(); // -> ,
@@ -393,7 +393,7 @@ impl Parser {
                 self.next_token(); // -> column_identifier
                 let mut column = self.construct_node();
                 self.next_token(); // -> type
-                column.push_node("schema", self.parse_type(true));
+                column.push_node("type", self.parse_type(true));
                 if self.peek_token_is(",") {
                     self.next_token(); // -> ,
                     column.push_node("comma", self.construct_node());
@@ -442,7 +442,7 @@ impl Parser {
                     self.next_token(); // -> column_identifier
                     let mut column = self.construct_node();
                     self.next_token(); // -> type
-                    column.push_node("schema", self.parse_type(true));
+                    column.push_node("type", self.parse_type(true));
                     if self.peek_token_is(",") {
                         self.next_token(); // -> ,
                         column.push_node("comma", self.construct_node());

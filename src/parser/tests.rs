@@ -3146,7 +3146,7 @@ column_schema_group:
   self: (
   column_definitions:
   - self: x
-    schema:
+    type:
       self: int64
   rparen:
     self: )
@@ -3164,10 +3164,10 @@ column_schema_group:
   - self: x
     comma:
       self: ,
-    schema:
+    type:
       self: int64
   - self: y
-    schema:
+    type:
       self: int64
   rparen:
     self: )
@@ -3185,7 +3185,7 @@ column_schema_group:
   self: (
   column_definitions:
   - self: x
-    schema:
+    type:
       self: INT64
       options:
         self: OPTIONS
@@ -3250,7 +3250,7 @@ column_schema_group:
   self: (
   column_definitions:
   - self: x
-    schema:
+    type:
       self: int64
       not_null:
       - self: not
@@ -3429,7 +3429,7 @@ with_partition_columns:
     self: (
     column_definitions:
     - self: col1
-      schema:
+      type:
         self: string
     rparen:
       self: )
@@ -3596,7 +3596,7 @@ add_columns:
     self: column
   column_definition:
     self: x
-    schema:
+    type:
       self: int64
 ident:
   self: example
@@ -3612,7 +3612,7 @@ add_columns:
     self: column
   column_definition:
     self: x
-    schema:
+    type:
       self: int64
       options:
         self: options
@@ -3637,7 +3637,7 @@ add_columns:
     self: column
   column_definition:
     self: y
-    schema:
+    type:
       self: struct
       type_declaration:
         self: <
