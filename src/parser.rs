@@ -1358,6 +1358,19 @@ impl Parser {
                     ),
                 );
                 join.push_node("on", on);
+            } else if self.peek_token_is("using") {
+                self.next_token(); // -> using
+                join.push_node(
+                    "using",
+                    self.parse_expr(
+                        999,
+                        &vec![
+                            "left", "right", "cross", "inner", ",", "full", "join", "where",
+                            "group", "having", ";",
+                        ],
+                        false,
+                    ),
+                )
             }
             join.push_node("left", left);
             join.push_node("right", right);

@@ -114,6 +114,7 @@ fn test_parse_exprs() {
             select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
+            select * from data1 as one inner join data2 two using(col) left outer join data3 on true;
             select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
             select
               cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2),
@@ -176,7 +177,7 @@ fn test_parse_exprs() {
             WITH PARTITION COLUMNS
             OPTIONS (
               uris=['dummy'],
-              format=csv,
+              format=csv
             );
             CREATE EXTERNAL TABLE dataset.new_table
             WITH PARTITION COLUMNS (
@@ -184,7 +185,7 @@ fn test_parse_exprs() {
             )
             OPTIONS (
               uris=['dummy'],
-              format=csv,
+              format=csv
             );
             CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
             CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
@@ -1573,6 +1574,50 @@ from:
         self: None
         alias:
           self: two
+semicolon:
+  self: ;",
+        "\
+self: select
+exprs:
+- self: *
+from:
+  self: from
+  expr:
+    self: join
+    join_type:
+      self: left
+      outer:
+        self: outer
+    left:
+      self: join
+      join_type:
+        self: inner
+      left:
+        self: data1
+        as:
+          self: as
+          alias:
+            self: one
+      right:
+        self: data2
+        as:
+          self: None
+          alias:
+            self: two
+      using:
+        self: (
+        args:
+        - self: col
+        func:
+          self: using
+        rparen:
+          self: )
+    on:
+      self: on
+      expr:
+        self: true
+    right:
+      self: data3
 semicolon:
   self: ;",
         "\
@@ -3367,8 +3412,6 @@ options:
         rparen:
           self: ]
     - self: =
-      comma:
-        self: ,
       left:
         self: format
       right:
@@ -3411,8 +3454,6 @@ options:
         rparen:
           self: ]
     - self: =
-      comma:
-        self: ,
       left:
         self: format
       right:
