@@ -1152,7 +1152,7 @@ impl Parser {
             self.next_token(); // by -> expr
             groupby.push_node_vec(
                 "exprs",
-                self.parse_exprs(&vec!["having", "limit", ";", "order"], false),
+                self.parse_exprs(&vec!["having", "limit", ";", "order", ")"], false),
             );
             node.push_node("groupby", groupby);
         }
@@ -1163,7 +1163,7 @@ impl Parser {
             self.next_token(); // by -> expr
             having.push_node(
                 "expr",
-                self.parse_expr(999, &vec!["LIMIT", ";", "order"], false),
+                self.parse_expr(999, &vec!["LIMIT", ";", "order", ")"], false),
             );
             //self.next_token(); // expr -> limit
             node.push_node("having", having);
@@ -1196,7 +1196,7 @@ impl Parser {
             self.next_token(); // order -> by
             order.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ",", ";"], false));
+            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ",", ";", ")"], false));
             node.push_node("orderby", order);
         }
         // limit
@@ -1206,7 +1206,7 @@ impl Parser {
             self.next_token(); // limit -> expr
             limit.push_node(
                 "expr",
-                self.parse_expr(999, &vec![";", ",", "offset"], false),
+                self.parse_expr(999, &vec![";", ",", "offset", ")"], false),
             );
             if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
                 self.next_token(); // expr -> offset
@@ -1214,7 +1214,7 @@ impl Parser {
                 self.next_token(); // offset -> expr
                 offset.push_node(
                     "expr",
-                    self.parse_expr(999, &vec!["union", "intersect", "except", ";"], false),
+                    self.parse_expr(999, &vec!["union", "intersect", "except", ";", ")"], false),
                 );
                 limit.push_node("offset", offset);
             }
@@ -1275,7 +1275,7 @@ impl Parser {
                     999,
                     &vec![
                         "where", "group", "having", "limit", ";", "on", ",", "left", "right",
-                        "cross", "inner", "join",
+                        "cross", "inner", "join", ")"
                     ],
                     true,
                 );
@@ -1299,7 +1299,7 @@ impl Parser {
                     999,
                     &vec![
                         "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";",
+                        "group", "having", ";", ")"
                     ],
                     false,
                 ),
@@ -1316,7 +1316,7 @@ impl Parser {
                     999,
                     &vec![
                         "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";",
+                        "group", "having", ";",")"
                     ],
                     true,
                 ),
@@ -1354,7 +1354,7 @@ impl Parser {
                         999,
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
-                            "group", "having", ";",
+                            "group", "having", ";",")"
                         ],
                         false,
                     ),
@@ -1368,7 +1368,7 @@ impl Parser {
                         999,
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
-                            "group", "having", ";",
+                            "group", "having", ";",")"
                         ],
                         false,
                     ),

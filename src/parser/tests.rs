@@ -108,7 +108,7 @@ fn test_parse_exprs() {
             (select 1);
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
             select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
-            with a as (select 1) select 2;with a as (select 1), b as (select 2) select 3;
+            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data group by 1) select 3;
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
             select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
@@ -1199,7 +1199,8 @@ right:
   exprs:
   - self: 3
 semicolon:
-  self: ;", // with
+  self: ;",
+  // with
         "\
 self: select
 exprs:
@@ -1252,7 +1253,17 @@ with:
       stmt:
         self: select
         exprs:
-        - self: 2",
+        - self: 2
+        from:
+          self: from
+          expr:
+            self: data
+        groupby:
+          self: group
+          by:
+            self: by
+          exprs:
+          - self: 1",
         // optional keyword
         "\
 self: select
