@@ -112,6 +112,7 @@ fn test_parse_exprs() {
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
             select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
+            select * from (select 1 from table1) inner join table2;
             select * from t order by col1 asc nulls last, col2 nulls first;
             select * from data1 as one inner join data2 two ON true;
             select * from data1 as one inner join data2 two using(col) left outer join data3 on true;
@@ -1518,6 +1519,33 @@ where:
         self: exists
       rparen:
         self: )",
+        "\
+self: select
+exprs:
+- self: *
+from:
+  self: from
+  expr:
+    self: join
+    join_type:
+      self: inner
+    left:
+      self: (
+      expr:
+        self: select
+        exprs:
+        - self: 1
+        from:
+          self: from
+          expr:
+            self: table1
+      rparen:
+        self: )
+    right:
+      self: table2
+semicolon:
+  self: ;",
+// nulls first, last
         "\
 self: select
 exprs:

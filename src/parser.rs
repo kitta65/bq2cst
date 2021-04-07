@@ -1259,6 +1259,7 @@ impl Parser {
         false
     }
     fn parse_table(&mut self, root: bool) -> cst::Node {
+        let mut left:cst::Node;
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 let mut group = self.construct_node();
@@ -1267,18 +1268,19 @@ impl Parser {
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node());
                 group = self.parse_alias(group);
-                return group;
+                left = group;
             }
-            _ => (),
+            _ => {
+                left = self.parse_expr(
+                    999,
+                    &vec![
+                        "where", "group", "having", "limit", ";", "on", ",", "left", "right",
+                        "cross", "inner", "join",
+                    ],
+                    true,
+                );
+            }
         }
-        let mut left = self.parse_expr(
-            999,
-            &vec![
-                "where", "group", "having", "limit", ";", "on", ",", "left", "right", "cross",
-                "inner", "join",
-            ],
-            true,
-        );
         if self.get_token(1).literal.to_uppercase().as_str() == "FOR" {
             self.next_token(); // table -> for
             let mut for_ = self.construct_node();
