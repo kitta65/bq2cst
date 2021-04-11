@@ -64,7 +64,7 @@ fn test_next_token() {
 #[test]
 fn test_parse_exprs() {
     let input = "\
-            SELECT 'aaa', 123, null FROM data for system_time as of current_timestamp() where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
+            SELECT 'aaa', 123, null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
             select 1 as num from data;
             select 2 two;
             select
@@ -108,7 +108,7 @@ fn test_parse_exprs() {
             (select 1);
             select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
             select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
-            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data group by 1) select 3;
+            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
             select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
             select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
             select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
@@ -230,6 +230,18 @@ from:
       - self: system_time
       - self: as
       - self: of
+    tablesample:
+      self: tablesample
+      group:
+        self: (
+        expr:
+          self: 20
+        percent:
+          self: percent
+        rparen:
+          self: )
+      system:
+        self: system
 groupby:
   self: group
   by:
@@ -1258,12 +1270,10 @@ with:
           self: from
           expr:
             self: data
-        groupby:
-          self: group
-          by:
-            self: by
-          exprs:
-          - self: 1",
+        where:
+          self: where
+          expr:
+            self: true",
         // optional keyword
         "\
 self: select

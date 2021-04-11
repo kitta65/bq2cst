@@ -1119,7 +1119,7 @@ impl Parser {
         node.children.insert(
             "exprs".to_string(),
             cst::Children::NodeVec(self.parse_exprs(
-                &vec!["from", ";", "limit", ")", "union", "intersect", "except"],
+                &vec!["from", ";", "limit", ")", "union", "intersect", "except", "where"],
                 true,
             )),
         );
@@ -1305,6 +1305,22 @@ impl Parser {
                 ),
             );
             left.push_node("for_system_time_as_of", for_);
+        }
+        if self.peek_token_is("tablesample") { // TODO check when it becomes GA
+            self.next_token(); // -> tablesample
+            let mut tablesample = self.construct_node();
+            self.next_token(); // -> system
+            tablesample.push_node("system", self.construct_node());
+            self.next_token(); // -> (
+            let mut group = self.construct_node();
+            self.next_token(); // -> expr
+            group.push_node("expr", self.parse_expr(999, &vec!["percent"], false));
+            self.next_token(); // -> percent
+            group.push_node("percent", self.construct_node());
+            self.next_token(); // -> )
+            group.push_node("rparen", self.construct_node());
+            tablesample.push_node("group", group);
+            left.push_node("tablesample", tablesample);
         }
         if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
             self.next_token(); // unnest() -> with
