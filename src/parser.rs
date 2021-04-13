@@ -160,6 +160,7 @@ impl Parser {
                     "MATERIALIZED" => self.parse_create_table_statement(),
                     "EXTERNAL" => self.parse_create_table_statement(),
                     "PROCEDURE" => self.parse_create_procedure_statement(),
+                    "SCHEMA" => self.parse_create_table_statement(),
                     _ => panic!(),
                 }
             }
@@ -208,6 +209,10 @@ impl Parser {
         }
         self.next_token(); // -> ident
         drop.push_node("ident", self.parse_identifier());
+        if self.peek_token_in(&vec!["cascade", "restrict"]) {
+            self.next_token(); // -> cascade, restrict
+            drop.push_node("cascade_or_restrict", self.construct_node());
+        }
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             drop.push_node("semicolon", self.construct_node());

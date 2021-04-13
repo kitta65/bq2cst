@@ -190,12 +190,14 @@ fn test_parse_exprs() {
             );
             CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
             CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
+            create schema dataset_name;create schema if not exists project_name.dataset_name options();
             alter table example set options(dummy='dummy');
             alter view example set options(dummy='dummy',description='abc');
             alter materialized view example set options(dummy='dummy');
             alter table example add column x int64;
             alter table example add column if not exists x int64 options(description='dummy'),add column y struct<z int64 not null>;
             drop table example;drop external table if exists example;drop materialized view example;
+            drop schema dataset_name cascade;
             -- end comment
 "
             .to_string();
@@ -3602,6 +3604,36 @@ stmt:
       self: ;
 what:
   self: PROCEDURE",
+  "\
+self: create
+ident:
+  self: dataset_name
+semicolon:
+  self: ;
+what:
+  self: schema",
+  "\
+self: create
+ident:
+  self: .
+  left:
+    self: project_name
+  right:
+    self: dataset_name
+if_not_exists:
+- self: if
+- self: not
+- self: exists
+options:
+  self: options
+  group:
+    self: (
+    rparen:
+      self: )
+semicolon:
+  self: ;
+what:
+  self: schema",
         // alter
         "\
 self: alter
@@ -3778,6 +3810,16 @@ semicolon:
   self: ;
 what:
   self: view",
+  "\
+self: drop
+cascade_or_restrict:
+  self: cascade
+ident:
+  self: dataset_name
+semicolon:
+  self: ;
+what:
+  self: schema",
   // EOF
   "\
 self: None
