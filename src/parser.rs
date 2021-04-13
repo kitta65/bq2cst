@@ -274,6 +274,31 @@ impl Parser {
         if 0 < add_columns.len() {
             alter.push_node_vec("add_columns", add_columns);
         }
+        let mut drop_columns = Vec::new();
+        // TODO check when it becomes GA
+        while self.peek_token_is("drop") {
+            self.next_token(); // -> drop
+            let mut drop_column = self.construct_node();
+            self.next_token();
+            drop_column.push_node("column", self.construct_node());
+            if self.peek_token_is("if") {
+                self.next_token(); // -> if
+                let if_ = self.construct_node();
+                self.next_token(); // -> exists
+                let exists = self.construct_node();
+                drop_column.push_node_vec("if_exists", vec![if_, exists]);
+            }
+            self.next_token(); // -> column_name
+            drop_column.push_node("column_name", self.construct_node());
+            if self.peek_token_is(",") {
+                self.next_token(); // -> ,
+                drop_column.push_node("comma", self.construct_node());
+            }
+            drop_columns.push(drop_column);
+        }
+        if 0 < drop_columns.len() {
+            alter.push_node_vec("drop_columns", drop_columns);
+        }
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node());
@@ -1124,7 +1149,16 @@ impl Parser {
         node.children.insert(
             "exprs".to_string(),
             cst::Children::NodeVec(self.parse_exprs(
-                &vec!["from", ";", "limit", ")", "union", "intersect", "except", "where"],
+                &vec![
+                    "from",
+                    ";",
+                    "limit",
+                    ")",
+                    "union",
+                    "intersect",
+                    "except",
+                    "where",
+                ],
                 true,
             )),
         );
@@ -1201,7 +1235,10 @@ impl Parser {
             self.next_token(); // order -> by
             order.push_node("by", self.construct_node());
             self.next_token(); // by -> expr
-            order.push_node_vec("exprs", self.parse_exprs(&vec!["limit", ",", ";", ")"], false));
+            order.push_node_vec(
+                "exprs",
+                self.parse_exprs(&vec!["limit", ",", ";", ")"], false),
+            );
             node.push_node("orderby", order);
         }
         // limit
@@ -1264,7 +1301,7 @@ impl Parser {
         false
     }
     fn parse_table(&mut self, root: bool) -> cst::Node {
-        let mut left:cst::Node;
+        let mut left: cst::Node;
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 let mut group = self.construct_node();
@@ -1280,7 +1317,7 @@ impl Parser {
                     999,
                     &vec![
                         "where", "group", "having", "limit", ";", "on", ",", "left", "right",
-                        "cross", "inner", "join", ")"
+                        "cross", "inner", "join", ")",
                     ],
                     true,
                 );
@@ -1304,14 +1341,15 @@ impl Parser {
                     999,
                     &vec![
                         "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";", ")"
+                        "group", "having", ";", ")",
                     ],
                     false,
                 ),
             );
             left.push_node("for_system_time_as_of", for_);
         }
-        if self.peek_token_is("tablesample") { // TODO check when it becomes GA
+        if self.peek_token_is("tablesample") {
+            // TODO check when it becomes GA
             self.next_token(); // -> tablesample
             let mut tablesample = self.construct_node();
             self.next_token(); // -> system
@@ -1337,7 +1375,7 @@ impl Parser {
                     999,
                     &vec![
                         "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";",")"
+                        "group", "having", ";", ")",
                     ],
                     true,
                 ),
@@ -1375,7 +1413,7 @@ impl Parser {
                         999,
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
-                            "group", "having", ";",")"
+                            "group", "having", ";", ")",
                         ],
                         false,
                     ),
@@ -1389,7 +1427,7 @@ impl Parser {
                         999,
                         &vec![
                             "left", "right", "cross", "inner", ",", "full", "join", "where",
-                            "group", "having", ";",")"
+                            "group", "having", ";", ")",
                         ],
                         false,
                     ),
@@ -1446,7 +1484,6 @@ impl Parser {
                         left.push_node("replace", replace);
                     }
                     "EXCEPT" => {
-                        // TODO check except is not set operator
                         self.next_token(); // * -> except
                         let mut except = self.construct_node();
                         self.next_token(); // except -> (

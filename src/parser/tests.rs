@@ -196,6 +196,7 @@ fn test_parse_exprs() {
             alter materialized view example set options(dummy='dummy');
             alter table example add column x int64;
             alter table example add column if not exists x int64 options(description='dummy'),add column y struct<z int64 not null>;
+            alter table example drop column if exists x,drop column y;
             drop table example;drop external table if exists example;drop materialized view example;
             drop schema dataset_name cascade;
             -- end comment
@@ -3772,6 +3773,30 @@ add_columns:
             - self: null
         rparen:
           self: >
+ident:
+  self: example
+semicolon:
+  self: ;
+what:
+  self: table",
+  "\
+self: alter
+drop_columns:
+- self: drop
+  column:
+    self: column
+  column_name:
+    self: x
+  comma:
+    self: ,
+  if_exists:
+  - self: if
+  - self: exists
+- self: drop
+  column:
+    self: column
+  column_name:
+    self: y
 ident:
   self: example
 semicolon:
