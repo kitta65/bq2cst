@@ -1,25 +1,20 @@
 # bq2ast
-not ready to use. don't use!
+Parse standard SQL, which is a dialect of [BigQuery](https://cloud.google.com/bigquery), into a concrete syntax tree.
 
-## memo
+This parser is designed to be used via [prettier-plugin-bq](https://github.com/dr666m1/project_prettier_bq).
 
-```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template
-wasm-pack build --target nodejs --scope dr666m1
-#cd pkg
-npm publish --access public
-```
+## Features
+- forcused on standard SQL (in other words, other SQL dialects are out of scope)
+- developed in Rust, using [wasm-pack](https://github.com/rustwasm/wasm-pack)
 
-## usage
-### installation
+## Install
 ```
 npm install @dr666m1/bq2cst
 ```
 
+## Usage
 ```
 const parser = require("@dr666m1/bq2cst");
-parser.parse(`
-select -- comment
-*;`)
+parser.parse("select *;")
 ```
 
