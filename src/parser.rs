@@ -646,7 +646,9 @@ impl Parser {
             if_.push_node("else", else_);
         }
         self.next_token(); // -> end
-        if_.push_node("end", self.construct_node());
+        let end = self.construct_node();
+        self.next_token(); // -> if
+        if_.push_node_vec("end_if", vec![end, self.construct_node()]);
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             if_.push_node("semicolon", self.construct_node());

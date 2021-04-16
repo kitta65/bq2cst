@@ -148,12 +148,12 @@ fn test_parse_exprs() {
             set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
             execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
             begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
-            if true then end;
-            if true then select 1; select 2;end;
-            if true then select 1; elseif true then end;
-            if true then elseif true then select 1; elseif true then select 2; select 3; else end;
-            if true then else select 1; end;
-            if true then else select 1;select 2; end;
+            if true then end if;
+            if true then select 1; select 2;end if;
+            if true then select 1; elseif true then end if;
+            if true then elseif true then select 1; elseif true then select 2; select 3; else end if;
+            if true then else select 1; end if;
+            if true then else select 1;select 2; end if;
             loop select 1; end loop;loop select 1;break; end loop;
             while true do select 1; end while;
             while true do iterate;leave;continue; end while;
@@ -2953,8 +2953,9 @@ semicolon:
 self: if
 condition:
   self: true
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
@@ -2963,8 +2964,9 @@ then:
 self: if
 condition:
   self: true
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
@@ -2990,8 +2992,9 @@ elseifs:
     self: true
   then:
     self: then
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
@@ -3036,8 +3039,9 @@ elseifs:
       - self: 3
       semicolon:
         self: ;
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
@@ -3054,8 +3058,9 @@ else:
     - self: 1
     semicolon:
       self: ;
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
@@ -3077,8 +3082,9 @@ else:
     - self: 2
     semicolon:
       self: ;
-end:
-  self: end
+end_if:
+- self: end
+- self: if
 semicolon:
   self: ;
 then:
