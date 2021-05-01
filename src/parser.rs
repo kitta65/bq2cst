@@ -1179,7 +1179,11 @@ impl Parser {
             self.next_token(); // limit -> expr
             where_.push_node(
                 "expr",
-                self.parse_expr(999, &vec!["group", "having", ";", ","], false),
+                self.parse_expr(
+                    999,
+                    &vec!["group", "having", ";", "order", ",", "window"],
+                    false,
+                ),
             );
             //self.next_token(); // parse_expr needs next_token()
             node.push_node("where", where_);
@@ -1193,7 +1197,7 @@ impl Parser {
             self.next_token(); // by -> expr
             groupby.push_node_vec(
                 "exprs",
-                self.parse_exprs(&vec!["having", "limit", ";", "order", ")"], false),
+                self.parse_exprs(&vec!["having", "limit", ";", "order", ")", "window"], false),
             );
             node.push_node("groupby", groupby);
         }
@@ -1204,7 +1208,7 @@ impl Parser {
             self.next_token(); // by -> expr
             having.push_node(
                 "expr",
-                self.parse_expr(999, &vec!["LIMIT", ";", "order", ")"], false),
+                self.parse_expr(999, &vec!["LIMIT", ";", "order", ")", "window"], false),
             );
             //self.next_token(); // expr -> limit
             node.push_node("having", having);
