@@ -83,13 +83,21 @@ impl Lexer {
                 }
             }
             Some(_) => (), // \n, \t, ...
-            None => panic!(),
+            None => panic!("reached EOF in `skip_escaped_char()`"),
         }
         self.read_char();
     }
     fn read_identifier(&mut self) -> String {
         let first_position = self.position;
-        while is_letter_or_digit(&self.get_char(0)) {
+        let first_char = self.get_char(0);
+        if !is_valid_1st_char_of_ident(&first_char) {
+            panic!(
+                "Calling `read_identifier()` is not allowed here: {:?}",
+                first_char
+            );
+        }
+        self.read_char();
+        while is_valid_char_of_ident(&self.get_char(0)) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -122,16 +130,16 @@ impl Lexer {
         let line = self.line;
         let column = self.column;
         let token = match ch {
-            '.' => {
-                let next_ch = self.get_char(1).unwrap();
-                if next_ch == '`' || next_ch.is_alphabetic() {
-                    self.read_char();
-                    self.construct_token(line, column, ch.to_string())
-                } else {
+            '.' => match self.get_char(1) {
+                Some('0'..='9') => {
                     let literal = self.read_number();
                     self.construct_token(line, column, literal)
                 }
-            }
+                _ => {
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
+                }
+            },
             '#' => {
                 let literal = self.read_comment();
                 self.construct_token(line, column, literal)
@@ -260,7 +268,7 @@ impl Lexer {
             }
             // other
             _ => {
-                if is_valid_1st_char_of_ident(&self.get_char(0)) {
+                if is_valid_1st_char_of_ident(&Some(ch)) {
                     let literal = self.read_identifier();
                     self.construct_token(line, column, literal)
                 } else {
@@ -300,7 +308,7 @@ impl Lexer {
                 self.read_char();
             }
         }
-        self.read_char();
+        self.read_char(); // ' -> next_ch
         self.input[first_position..self.position]
             .into_iter()
             .collect()
@@ -312,8 +320,23 @@ impl Lexer {
     }
     fn read_number(&mut self) -> String {
         let first_position = self.position;
-        while is_digit_or_period(&self.get_char(0)) {
+        while is_digit(&self.get_char(0)) {
             self.read_char();
+        } // 9 -> .
+        if self.get_char(0) == Some('.') {
+            self.read_char();
+            while is_digit(&self.get_char(0)) {
+                self.read_char();
+            }
+        }
+        if let Some('E') | Some('e') = self.get_char(0) {
+            self.read_char(); // e -> 9, +, -
+            if let Some('+') | Some('-') = self.get_char(0) {
+                self.read_char(); // +, - -> 9
+            }
+            while is_digit(&self.get_char(0)) {
+                self.read_char();
+            }
         }
         self.input[first_position..self.position]
             .into_iter()
@@ -341,7 +364,14 @@ impl Lexer {
     }
 }
 
-fn is_letter_or_digit(ch: &Option<char>) -> bool {
+fn is_digit(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_digit(10),
+        None => false,
+    }
+}
+
+fn is_valid_char_of_ident(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch.is_alphabetic() || ch.is_digit(10) || ch == &'_',
         None => false,
@@ -355,13 +385,6 @@ fn is_valid_1st_char_of_ident(ch: &Option<char>) -> bool {
     }
 }
 
-fn is_digit_or_period(ch: &Option<char>) -> bool {
-    match ch {
-        Some(ch) => ch.is_digit(10) || ch == &'.' || ch == &'E' || ch == &'e',
-        None => false,
-    }
-}
-
 fn is_end_of_line(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch == &'\n',
@@ -371,7 +394,7 @@ fn is_end_of_line(ch: &Option<char>) -> bool {
 
 fn is_whitespace(ch: &Option<char>) -> bool {
     match ch {
-        Some(ch) => ch.is_whitespace(),
+        Some(ch) => ch.is_whitespace(), // specified in the Unicode Character Database
         None => false, // EOF is treated as end of line
     }
 }
