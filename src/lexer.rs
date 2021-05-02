@@ -33,9 +33,9 @@ impl Lexer {
         self.tokens.push(Token::new(usize::MAX, usize::MAX, "")); // EOF token
         &self.tokens
     }
-    fn get_curr_char(&self) -> Option<char> {
-        if self.position < self.input.len() {
-            return Some(self.input[self.position]);
+    fn get_char(&self, offset: usize) -> Option<char> {
+        if self.position + offset < self.input.len() {
+            return Some(self.input[self.position + offset]);
         } else {
             return None; // EOF
         }
@@ -55,7 +55,7 @@ impl Lexer {
     }
     fn skip_escaped_char(&mut self) {
         self.read_char(); // '\\' -> ?
-        match self.get_curr_char() {
+        match self.get_char(0) {
             // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#literals
             Some('x') => {
                 for _ in 0..2 {
@@ -89,7 +89,7 @@ impl Lexer {
     }
     fn read_identifier(&mut self) -> String {
         let first_position = self.position;
-        while is_letter_or_digit(&self.get_curr_char()) {
+        while is_letter_or_digit(&self.get_char(0)) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -98,7 +98,7 @@ impl Lexer {
     }
     fn read_parameter(&mut self) -> String {
         let first_position = self.position;
-        while self.get_curr_char() == Some('@') {
+        while self.get_char(0) == Some('@') {
             self.read_char();
         }
         self.read_identifier();
@@ -113,7 +113,7 @@ impl Lexer {
     }
     fn next_token(&mut self) -> Option<&Token> {
         self.skip_whitespace();
-        let ch = match self.get_curr_char() {
+        let ch = match self.get_char(0) {
             Some(ch) => ch,
             None => {
                 return None; // EOF
@@ -123,7 +123,7 @@ impl Lexer {
         let column = self.column;
         let token = match ch {
             '.' => {
-                let next_ch = self.peek_char(1).unwrap();
+                let next_ch = self.get_char(1).unwrap();
                 if next_ch == '`' || next_ch.is_alphabetic() {
                     self.read_char();
                     self.construct_token(line, column, ch.to_string())
@@ -142,7 +142,7 @@ impl Lexer {
                 self.construct_token(line, column, literal)
             }
             '"' => {
-                if self.peek_char(1) == Some('"') && self.peek_char(2) == Some('"') {
+                if self.get_char(1) == Some('"') && self.get_char(2) == Some('"') {
                     let literal = self.read_multiline_string();
                     self.construct_token(line, column, literal)
                 } else {
@@ -151,7 +151,7 @@ impl Lexer {
                 }
             }
             '\'' => {
-                if self.peek_char(1) == Some('\'') && self.peek_char(2) == Some('\'') {
+                if self.get_char(1) == Some('\'') && self.get_char(2) == Some('\'') {
                     let literal = self.read_multiline_string();
                     self.construct_token(line, column, literal)
                 } else {
@@ -160,7 +160,7 @@ impl Lexer {
                 }
             }
             '-' => {
-                if self.peek_char(1) == Some('-') {
+                if self.get_char(1) == Some('-') {
                     let literal = self.read_comment();
                     self.construct_token(line, column, literal)
                 } else {
@@ -169,7 +169,7 @@ impl Lexer {
                 }
             }
             '/' => {
-                if self.peek_char(1) == Some('*') {
+                if self.get_char(1) == Some('*') {
                     let literal = self.read_multiline_comment();
                     self.construct_token(line, column, literal)
                 } else {
@@ -178,7 +178,7 @@ impl Lexer {
                 }
             }
             '|' => {
-                if self.peek_char(1) == Some('|') {
+                if self.get_char(1) == Some('|') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "||".to_string())
@@ -188,15 +188,15 @@ impl Lexer {
                 }
             }
             '<' => {
-                if self.peek_char(1) == Some('<') {
+                if self.get_char(1) == Some('<') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "<<".to_string())
-                } else if self.peek_char(1) == Some('=') {
+                } else if self.get_char(1) == Some('=') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "<=".to_string())
-                } else if self.peek_char(1) == Some('>') {
+                } else if self.get_char(1) == Some('>') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "<>".to_string())
@@ -215,11 +215,11 @@ impl Lexer {
                     self.type_declaration_depth -= 1;
                     self.read_char();
                     self.construct_token(line, column, ch.to_string())
-                } else if self.peek_char(1) == Some('>') {
+                } else if self.get_char(1) == Some('>') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, ">>".to_string())
-                } else if self.peek_char(1) == Some('=') {
+                } else if self.get_char(1) == Some('=') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, ">=".to_string())
@@ -229,7 +229,7 @@ impl Lexer {
                 }
             }
             '=' => {
-                if self.peek_char(1) == Some('>') {
+                if self.get_char(1) == Some('>') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "=>".to_string())
@@ -239,7 +239,7 @@ impl Lexer {
                 }
             }
             '!' => {
-                if self.peek_char(1) == Some('=') {
+                if self.get_char(1) == Some('=') {
                     self.read_char();
                     self.read_char();
                     self.construct_token(line, column, "!=".to_string())
@@ -260,7 +260,7 @@ impl Lexer {
             }
             // other
             _ => {
-                if is_valid_1st_char_of_ident(&self.get_curr_char()) {
+                if is_valid_1st_char_of_ident(&self.get_char(0)) {
                     let literal = self.read_identifier();
                     self.construct_token(line, column, literal)
                 } else {
@@ -273,10 +273,10 @@ impl Lexer {
     }
     fn read_multiline_string(&mut self) -> String {
         let first_position = self.position;
-        let ch = self.get_curr_char();
+        let ch = self.get_char(0);
         self.read_char(); // first ' -> second '
-        while !(self.get_curr_char() == ch && self.peek_char(1) == ch && self.peek_char(2) == ch) {
-            if self.get_curr_char() == Some('\\') {
+        while !(self.get_char(0) == ch && self.get_char(1) == ch && self.get_char(2) == ch) {
+            if self.get_char(0) == Some('\\') {
                 self.skip_escaped_char();
             } else {
                 self.read_char();
@@ -290,11 +290,11 @@ impl Lexer {
             .collect()
     }
     fn read_quoted(&mut self) -> String {
-        let quote = self.get_curr_char();
+        let quote = self.get_char(0);
         let first_position = self.position;
         self.read_char();
-        while self.get_curr_char() != quote {
-            if self.get_curr_char() == Some('\\') {
+        while self.get_char(0) != quote {
+            if self.get_char(0) == Some('\\') {
                 self.skip_escaped_char();
             } else {
                 self.read_char();
@@ -306,20 +306,13 @@ impl Lexer {
             .collect()
     }
     fn skip_whitespace(&mut self) {
-        while is_whitespace(&self.get_curr_char()) {
+        while is_whitespace(&self.get_char(0)) {
             self.read_char();
-        }
-    }
-    fn peek_char(&mut self, offset: usize) -> Option<char> {
-        if self.input.len() <= self.position + 1 {
-            None
-        } else {
-            Some(self.input[self.position + offset])
         }
     }
     fn read_number(&mut self) -> String {
         let first_position = self.position;
-        while is_digit_or_period(&self.get_curr_char()) {
+        while is_digit_or_period(&self.get_char(0)) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -328,7 +321,7 @@ impl Lexer {
     }
     fn read_comment(&mut self) -> String {
         let first_position = self.position;
-        while !is_end_of_line(&self.get_curr_char()) {
+        while !is_end_of_line(&self.get_char(0)) {
             self.read_char();
         }
         self.input[first_position..self.position]
@@ -337,7 +330,7 @@ impl Lexer {
     }
     fn read_multiline_comment(&mut self) -> String {
         let first_position = self.position;
-        while !(self.get_curr_char() == Some('*') && self.peek_char(1) == Some('/')) {
+        while !(self.get_char(0) == Some('*') && self.get_char(1) == Some('/')) {
             self.read_char();
         }
         self.read_char(); // * -> /
