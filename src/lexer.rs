@@ -111,7 +111,7 @@ impl Lexer {
         self.tokens.push(token);
         &self.tokens.last().unwrap()
     }
-    fn next_token(&mut self) -> Option<Token> {
+    fn next_token(&mut self) -> Option<&Token> {
         self.skip_whitespace();
         let ch = match self.get_curr_char() {
             Some(ch) => ch,
@@ -125,269 +125,150 @@ impl Lexer {
             '.' => {
                 let next_ch = self.peek_char(1).unwrap();
                 if next_ch == '`' || next_ch.is_alphabetic() {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 } else {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_number(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_number();
+                    self.construct_token(line, column, literal)
                 }
             }
             '#' => {
-                let token = Some(Token {
-                    line: self.line,
-                    column: self.column,
-                    literal: self.read_comment(),
-                });
-                self.tokens.push(token.clone().unwrap());
-                return token;
+                let literal = self.read_comment();
+                self.construct_token(line, column, literal)
             }
             // quotation
             '`' => {
-                let token = Some(Token {
-                    line: self.line,
-                    column: self.column,
-                    literal: self.read_quoted(self.get_curr_char()),
-                });
-                self.tokens.push(token.clone().unwrap());
-                return token;
+                let literal = self.read_quoted(self.get_curr_char());
+                self.construct_token(line, column, literal)
             }
             '"' => {
                 if self.peek_char(1) == Some('"') && self.peek_char(2) == Some('"') {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_multiline_string(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_multiline_string();
+                    self.construct_token(line, column, literal)
                 } else {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_quoted(self.get_curr_char()),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_quoted(self.get_curr_char());
+                    self.construct_token(line, column, literal)
                 }
             }
             '\'' => {
                 if self.peek_char(1) == Some('\'') && self.peek_char(2) == Some('\'') {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_multiline_string(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_multiline_string();
+                    self.construct_token(line, column, literal)
                 } else {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_quoted(self.get_curr_char()),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_quoted(self.get_curr_char());
+                    self.construct_token(line, column, literal)
                 }
             }
             '-' => {
                 if self.peek_char(1) == Some('-') {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_comment(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_comment();
+                    self.construct_token(line, column, literal)
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '/' => {
                 if self.peek_char(1) == Some('*') {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_multiline_comment(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                    let literal = self.read_multiline_comment();
+                    self.construct_token(line, column, literal)
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '|' => {
                 if self.peek_char(1) == Some('|') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "||".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "||".to_string())
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '<' => {
                 if self.peek_char(1) == Some('<') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "<<".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "<<".to_string())
                 } else if self.peek_char(1) == Some('=') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "<=".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "<=".to_string())
                 } else if self.peek_char(1) == Some('>') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "<>".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "<>".to_string())
                 } else {
                     if self.tokens.last().unwrap().literal.to_uppercase() == "ARRAY"
                         || self.tokens.last().unwrap().literal.to_uppercase() == "STRUCT"
                     {
                         self.type_declaration_depth += 1;
                     }
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '>' => {
                 if 0 < self.type_declaration_depth {
                     self.type_declaration_depth -= 1;
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 } else if self.peek_char(1) == Some('>') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: ">>".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ">>".to_string())
                 } else if self.peek_char(1) == Some('=') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: ">=".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ">=".to_string())
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '=' => {
                 if self.peek_char(1) == Some('>') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "=>".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "=>".to_string())
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             '!' => {
                 if self.peek_char(1) == Some('=') {
                     self.read_char();
-                    Token {
-                        line: self.line,
-                        column: self.column - 1,
-                        literal: "!=".to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, "!=".to_string())
                 } else {
-                    Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: ch.to_string(),
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
             // parameter
-            '?' => Token {
-                line: self.line,
-                column: self.column,
-                literal: ch.to_string(),
-            },
             '@' => {
-                let token = Some(Token {
-                    line: self.line,
-                    column: self.column,
-                    literal: self.read_parameter(),
-                });
-                self.tokens.push(token.clone().unwrap());
-                return token;
+                let literal = self.read_parameter();
+                self.construct_token(line, column, literal)
+            }
+            // int64 or float64 literal
+            '0'..='9' => {
+                let literal = self.read_number();
+                self.construct_token(line, column, literal)
             }
             // other
             _ => {
-                if ch.is_digit(10) {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_number(),
-                    });
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
-                } else if is_valid_1st_char_of_ident(&self.get_curr_char()) {
-                    let token = Some(Token {
-                        line: self.line,
-                        column: self.column,
-                        literal: self.read_identifier(),
-                    }); // note: the ownerwhip moves
-                    self.tokens.push(token.clone().unwrap());
-                    return token;
+                if is_valid_1st_char_of_ident(&self.get_curr_char()) {
+                    let literal = self.read_identifier();
+                    self.construct_token(line, column, literal)
                 } else {
-                    Token {
-                        literal: ch.to_string(),
-                        line: self.line,
-                        column: self.column,
-                    }
+                    self.read_char();
+                    self.construct_token(line, column, ch.to_string())
                 }
             }
         };
-        self.read_char();
-        self.tokens.push(token.clone());
         Some(token)
     }
     fn read_multiline_string(&mut self) -> String {
