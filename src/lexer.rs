@@ -138,7 +138,7 @@ impl Lexer {
             }
             // quotation
             '`' => {
-                let literal = self.read_quoted(self.get_curr_char());
+                let literal = self.read_quoted();
                 self.construct_token(line, column, literal)
             }
             '"' => {
@@ -146,7 +146,7 @@ impl Lexer {
                     let literal = self.read_multiline_string();
                     self.construct_token(line, column, literal)
                 } else {
-                    let literal = self.read_quoted(self.get_curr_char());
+                    let literal = self.read_quoted();
                     self.construct_token(line, column, literal)
                 }
             }
@@ -155,7 +155,7 @@ impl Lexer {
                     let literal = self.read_multiline_string();
                     self.construct_token(line, column, literal)
                 } else {
-                    let literal = self.read_quoted(self.get_curr_char());
+                    let literal = self.read_quoted();
                     self.construct_token(line, column, literal)
                 }
             }
@@ -289,7 +289,8 @@ impl Lexer {
             .into_iter()
             .collect()
     }
-    fn read_quoted(&mut self, quote: Option<char>) -> String {
+    fn read_quoted(&mut self) -> String {
+        let quote = self.get_curr_char();
         let first_position = self.position;
         self.read_char();
         while self.get_curr_char() != quote {
