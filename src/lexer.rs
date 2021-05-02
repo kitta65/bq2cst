@@ -30,7 +30,7 @@ impl Lexer {
             self.next_token();
             token = self.next_token();
         }
-        self.tokens.push(Token::new(usize::MAX, usize::MAX, "")); // EOF token
+        self.tokens.push(Token::eof());
         &self.tokens
     }
     fn get_char(&self, offset: usize) -> Option<char> {

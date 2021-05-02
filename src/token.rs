@@ -15,6 +15,15 @@ impl Token {
             literal: literal.to_string(),
         }
     }
+    pub fn eof() -> Token {
+        // `const EOF` is not allowed
+        // because of `"".to_string()`
+        Token{
+            line: usize::MAX,
+            column: usize::MAX,
+            literal: "".to_string(),
+        }
+    }
     pub fn is_string(&self) -> bool {
         if self.quoted_by('"') {
             true
