@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use crate::cst;
 use crate::lexer;
 use crate::token;
@@ -2275,5 +2278,3 @@ impl Parser {
     }
 }
 
-#[cfg(test)]
-mod tests;

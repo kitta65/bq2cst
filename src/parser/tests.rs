@@ -1,5 +1,5 @@
 use super::*;
-//use serde_json;
+
 #[test]
 fn test_next_token() {
     let input = "select *;".to_string();
