@@ -6,25 +6,20 @@ use crate::token;
 pub struct Lexer {
     input: Vec<char>,
     position: usize,
-    read_position: usize,
-    ch: Option<char>,
+    ch: Option<char>, // TODO delete
     line: usize,
     column: usize,
-    previous_token: Option<crate::token::Token>,
+    previous_token: Option<crate::token::Token>, // TODO delete
     type_declaration_depth: usize,
 }
 
 impl Lexer {
     pub fn new(input: String) -> Lexer {
-        let mut chars: Vec<char> = Vec::new();
-        for i in input.chars() {
-            chars.push(i)
-        }
+        let chars: Vec<char> = input.chars().collect();
         let first_char = chars[0];
         Lexer {
             input: chars,
             position: 0,
-            read_position: 1,
             ch: Some(first_char),
             line: 0,
             column: 0,
@@ -33,10 +28,10 @@ impl Lexer {
         }
     }
     fn read_char(&mut self) {
-        if self.input.len() <= self.read_position {
+        if self.input.len() <= self.position + 1 {
             self.ch = None;
         } else {
-            self.ch = Some(self.input[self.read_position]);
+            self.ch = Some(self.input[self.position + 1]);
             if self.input[self.position] == '\n' {
                 self.column = 0;
                 self.line += 1;
@@ -44,8 +39,7 @@ impl Lexer {
                 self.column += 1;
             }
         }
-        self.position = self.read_position;
-        self.read_position += 1;
+        self.position += 1;
     }
     fn read_escaped_char(&mut self) {
         self.read_char(); // '\\' -> ?
@@ -166,7 +160,7 @@ impl Lexer {
                 }
             }
             '#' => {
-                let token =  Some(token::Token {
+                let token = Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_comment(),
@@ -176,7 +170,7 @@ impl Lexer {
             }
             // quotation
             '`' => {
-                let token =  Some(token::Token {
+                let token = Some(token::Token {
                     line: self.line,
                     column: self.column,
                     literal: self.read_quoted(self.ch),
@@ -186,7 +180,7 @@ impl Lexer {
             }
             '"' => {
                 if self.peek_char(1) == Some('"') && self.peek_char(2) == Some('"') {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_multiline_string(),
@@ -194,7 +188,7 @@ impl Lexer {
                     self.previous_token = token.clone();
                     return token;
                 } else {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_quoted(self.ch),
@@ -205,7 +199,7 @@ impl Lexer {
             }
             '\'' => {
                 if self.peek_char(1) == Some('\'') && self.peek_char(2) == Some('\'') {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_multiline_string(),
@@ -213,7 +207,7 @@ impl Lexer {
                     self.previous_token = token.clone();
                     return token;
                 } else {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_quoted(self.ch),
@@ -230,7 +224,7 @@ impl Lexer {
             //},
             '-' => {
                 if self.peek_char(1) == Some('-') {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_comment(),
@@ -306,7 +300,9 @@ impl Lexer {
                         literal: "<>".to_string(),
                     }
                 } else {
-                    if self.previous_token.clone().unwrap().literal.to_uppercase() == "ARRAY" || self.previous_token.clone().unwrap().literal.to_uppercase() == "STRUCT" {
+                    if self.previous_token.clone().unwrap().literal.to_uppercase() == "ARRAY"
+                        || self.previous_token.clone().unwrap().literal.to_uppercase() == "STRUCT"
+                    {
                         self.type_declaration_depth += 1;
                     }
                     token::Token {
@@ -404,7 +400,7 @@ impl Lexer {
                     self.previous_token = token.clone();
                     return token;
                 } else if is_letter_or_digit(&self.ch) {
-                    let token =  Some(token::Token {
+                    let token = Some(token::Token {
                         line: self.line,
                         column: self.column,
                         literal: self.read_identifier(),
@@ -463,10 +459,10 @@ impl Lexer {
         }
     }
     fn peek_char(&mut self, offset: usize) -> Option<char> {
-        if self.input.len() <= self.read_position {
+        if self.input.len() <= self.position + 1 {
             None
         } else {
-            Some(self.input[self.read_position - 1 + offset])
+            Some(self.input[self.position + offset])
         }
     }
     fn read_number(&mut self) -> String {
@@ -527,4 +523,3 @@ fn is_whitespace(ch: &Option<char>) -> bool {
         None => false, // EOF is treated as end of line
     }
 }
-
