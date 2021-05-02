@@ -11,6 +11,7 @@ pub struct Lexer {
     column: usize,
     previous_token: Option<crate::token::Token>, // TODO delete
     type_declaration_depth: usize,
+    tokens: Vec<token::Token>
 }
 
 impl Lexer {
@@ -25,7 +26,16 @@ impl Lexer {
             column: 0,
             previous_token: None,
             type_declaration_depth: 0,
+            tokens: Vec::new()
         }
+    }
+    fn tokenize_code(&mut self) -> &Vec<token::Token> {
+        let mut token = self.next_token();
+        while !token.is_none() {
+            self.next_token();
+            token = self.next_token();
+        }
+        &self.tokens
     }
     fn read_char(&mut self) {
         if self.input.len() <= self.position + 1 {
@@ -156,6 +166,7 @@ impl Lexer {
                         literal: self.read_number(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 }
             }
@@ -166,6 +177,7 @@ impl Lexer {
                     literal: self.read_comment(),
                 });
                 self.previous_token = token.clone();
+                self.tokens.push(token.clone().unwrap());
                 return token;
             }
             // quotation
@@ -176,6 +188,7 @@ impl Lexer {
                     literal: self.read_quoted(self.ch),
                 });
                 self.previous_token = token.clone();
+                self.tokens.push(token.clone().unwrap());
                 return token;
             }
             '"' => {
@@ -186,6 +199,7 @@ impl Lexer {
                         literal: self.read_multiline_string(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else {
                     let token = Some(token::Token {
@@ -194,6 +208,7 @@ impl Lexer {
                         literal: self.read_quoted(self.ch),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 }
             }
@@ -205,6 +220,7 @@ impl Lexer {
                         literal: self.read_multiline_string(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else {
                     let token = Some(token::Token {
@@ -213,6 +229,7 @@ impl Lexer {
                         literal: self.read_quoted(self.ch),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 }
             }
@@ -230,6 +247,7 @@ impl Lexer {
                         literal: self.read_comment(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else {
                     token::Token {
@@ -252,6 +270,7 @@ impl Lexer {
                         literal: self.read_multiline_comment(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else {
                     token::Token {
@@ -387,6 +406,7 @@ impl Lexer {
                     literal: self.read_parameter(),
                 });
                 self.previous_token = token.clone();
+                self.tokens.push(token.clone().unwrap());
                 return token;
             }
             // other
@@ -398,6 +418,7 @@ impl Lexer {
                         literal: self.read_number(),
                     });
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else if is_letter_or_digit(&self.ch) {
                     let token = Some(token::Token {
@@ -406,6 +427,7 @@ impl Lexer {
                         literal: self.read_identifier(),
                     }); // note: the ownerwhip moves
                     self.previous_token = token.clone();
+                    self.tokens.push(token.clone().unwrap());
                     return token;
                 } else {
                     token::Token {
@@ -418,6 +440,7 @@ impl Lexer {
         };
         self.read_char();
         self.previous_token = Some(token.clone());
+        self.tokens.push(token.clone());
         Some(token)
     }
     fn read_multiline_string(&mut self) -> String {

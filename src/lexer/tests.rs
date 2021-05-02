@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn test_next_token() {
+fn test_tokenize_code() {
     let input = "#standardSQL
 SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,'''abc''',arr[offset(1)],ARRAY<INT64>[1],
 From `data`; -- comment
@@ -10,9 +10,9 @@ From `data`; -- comment
 e
 o
 f
-*/select '\\'','''\\'''',\"\\x00\""
-        .to_string();
+*/select '\\'','''\\'''',\"\\x00\"".to_string();
     let mut l = Lexer::new(input);
+    let tokens = l.tokenize_code();
     let expected_tokens: Vec<token::Token> = vec![
         // line 0
         token::Token {
@@ -400,8 +400,8 @@ f
             literal: "\"\\x00\"".to_string(),
         },
     ];
-    for t in expected_tokens {
-        assert_eq!(l.next_token().unwrap(), t);
+    for (i,t) in expected_tokens.iter().enumerate() {
+        assert_eq!(tokens[i], *t);
     }
-    assert_eq!(l.ch, None);
+    assert_eq!(tokens.len(), expected_tokens.len());
 }
