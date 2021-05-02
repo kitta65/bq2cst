@@ -7,7 +7,7 @@ use crate::token;
 use std::collections::HashMap;
 
 pub struct Parser {
-    tokens: Vec<token::Token>,
+    lexer: lexer::Lexer,
     position: usize,
     leading_comment_indices: Vec<usize>,
     following_comment_indices: Vec<usize>,
@@ -15,25 +15,19 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(mut l: lexer::Lexer) -> Parser {
-        let mut tokens = Vec::new();
-        let mut token = l.next_token();
-        while !token.is_none() {
-            tokens.push(token.unwrap());
-            token = l.next_token();
-        }
-        tokens.push(token::Token::new(usize::MAX, usize::MAX, "")); // EOF token
+        l.tokenize_code();
         let mut p = Parser {
-            tokens,
+            lexer: l,
             position: 0,
             leading_comment_indices: Vec::new(),
             following_comment_indices: Vec::new(),
         };
-        while p.tokens[p.position].is_comment() {
+        while p.lexer.tokens[p.position].is_comment() {
             p.leading_comment_indices.push(p.position);
             p.position += 1;
         }
         let mut following_comment_idx = p.position + 1;
-        while p.tokens[following_comment_idx].is_comment() {
+        while p.lexer.tokens[following_comment_idx].is_comment() {
             p.following_comment_indices.push(following_comment_idx);
             following_comment_idx += 1;
         }
@@ -45,8 +39,8 @@ impl Parser {
         }
         let mut cnt = 0;
         let mut idx = self.position + 1;
-        while cnt < offset && idx < self.tokens.len() {
-            while self.tokens[idx].is_comment() {
+        while cnt < offset && idx < self.lexer.tokens.len() {
+            while self.lexer.tokens[idx].is_comment() {
                 idx += 1;
             }
             cnt += 1;
@@ -71,9 +65,9 @@ impl Parser {
         // following comments
         self.following_comment_indices = Vec::new();
         let mut following_comment_idx = self.position + 1;
-        while following_comment_idx < self.tokens.len()
-            && self.tokens[following_comment_idx].is_comment()
-            && self.get_token(0).line == self.tokens[following_comment_idx].line
+        while following_comment_idx < self.lexer.tokens.len()
+            && self.lexer.tokens[following_comment_idx].is_comment()
+            && self.get_token(0).line == self.lexer.tokens[following_comment_idx].line
         {
             self.following_comment_indices.push(following_comment_idx);
             following_comment_idx += 1;
@@ -81,18 +75,18 @@ impl Parser {
     }
     fn get_token(&self, offset: usize) -> token::Token {
         let idx = self.get_offset_index(offset);
-        if idx < self.tokens.len() {
-            return self.tokens[idx].clone();
+        if idx < self.lexer.tokens.len() {
+            return self.lexer.tokens[idx].clone();
         }
         token::Token::new(usize::MAX, usize::MAX, "") // eof token
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);
-        self.tokens.len() - 1 <= idx
+        self.lexer.tokens.len() - 1 <= idx
     }
     pub fn parse_code(&mut self) -> Vec<cst::Node> {
         let mut code: Vec<cst::Node> = Vec::new();
-        while self.position < self.tokens.len() - 1 {
+        while self.position < self.lexer.tokens.len() - 1 {
             let stmt = self.parse_statement();
             code.push(stmt);
             self.next_token();
@@ -108,7 +102,7 @@ impl Parser {
         // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
+            leading_comment_nodes.push(cst::Node::new(self.lexer.tokens[*idx].clone()))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -116,7 +110,7 @@ impl Parser {
         // following comments
         let mut following_comment_nodes = Vec::new();
         for idx in &self.following_comment_indices {
-            following_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
+            following_comment_nodes.push(cst::Node::new(self.lexer.tokens[*idx].clone()))
         }
         if 0 < following_comment_nodes.len() {
             node.push_node_vec("following_comments", following_comment_nodes);

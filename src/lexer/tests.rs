@@ -399,6 +399,7 @@ f
             column: 23,
             literal: "\"\\x00\"".to_string(),
         },
+        token::Token::new(usize::MAX, usize::MAX, ""),
     ];
     for (i,t) in expected_tokens.iter().enumerate() {
         assert_eq!(tokens[i], *t);
