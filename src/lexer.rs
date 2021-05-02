@@ -53,9 +53,10 @@ impl Lexer {
             panic!("`read_char()` is called at EOF");
         }
     }
-    fn read_escaped_char(&mut self) {
+    fn skip_escaped_char(&mut self) {
         self.read_char(); // '\\' -> ?
         match self.get_curr_char() {
+            // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#literals
             Some('x') => {
                 for _ in 0..2 {
                     self.read_char();
@@ -105,25 +106,22 @@ impl Lexer {
             .into_iter()
             .collect()
     }
+    fn construct_token(&mut self, line: usize, column: usize, literal: String) -> &Token {
+        let token = Token::new(line, column, literal.as_str());
+        self.tokens.push(token);
+        &self.tokens.last().unwrap()
+    }
     fn next_token(&mut self) -> Option<Token> {
         self.skip_whitespace();
         let ch = match self.get_curr_char() {
             Some(ch) => ch,
             None => {
-                return None;
+                return None; // EOF
             }
         };
+        let line = self.line;
+        let column = self.column;
         let token = match ch {
-            ',' => Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
-            ';' => Token {
-                literal: ch.to_string(),
-                line: self.line,
-                column: self.column,
-            },
             '.' => {
                 let next_ch = self.peek_char(1).unwrap();
                 if next_ch == '`' || next_ch.is_alphabetic() {
@@ -371,7 +369,7 @@ impl Lexer {
                     });
                     self.tokens.push(token.clone().unwrap());
                     return token;
-                } else if is_letter_or_digit(&self.get_curr_char()) {
+                } else if is_valid_1st_char_of_ident(&self.get_curr_char()) {
                     let token = Some(Token {
                         line: self.line,
                         column: self.column,
@@ -398,7 +396,7 @@ impl Lexer {
         self.read_char(); // first ' -> second '
         while !(self.get_curr_char() == ch && self.peek_char(1) == ch && self.peek_char(2) == ch) {
             if self.get_curr_char() == Some('\\') {
-                self.read_escaped_char();
+                self.skip_escaped_char();
             } else {
                 self.read_char();
             }
@@ -415,7 +413,7 @@ impl Lexer {
         self.read_char();
         while self.get_curr_char() != quote {
             if self.get_curr_char() == Some('\\') {
-                self.read_escaped_char();
+                self.skip_escaped_char();
             } else {
                 self.read_char();
             }
@@ -471,6 +469,13 @@ impl Lexer {
 fn is_letter_or_digit(ch: &Option<char>) -> bool {
     match ch {
         Some(ch) => ch.is_alphabetic() || ch.is_digit(10) || ch == &'_',
+        None => false,
+    }
+}
+
+fn is_valid_1st_char_of_ident(ch: &Option<char>) -> bool {
+    match ch {
+        Some(ch) => ch.is_alphabetic() || ch == &'_',
         None => false,
     }
 }
