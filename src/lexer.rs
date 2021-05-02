@@ -30,8 +30,7 @@ impl Lexer {
             self.next_token();
             token = self.next_token();
         }
-        // EOF token
-        self.tokens.push(Token::new(usize::MAX, usize::MAX, ""));
+        self.tokens.push(Token::new(usize::MAX, usize::MAX, "")); // EOF token
         &self.tokens
     }
     fn get_curr_char(&self) -> Option<char> {
@@ -51,15 +50,16 @@ impl Lexer {
             }
             self.position += 1;
         } else {
-            panic!("you called `read_char()` at EOF");
+            panic!("`read_char()` is called at EOF");
         }
     }
     fn read_escaped_char(&mut self) {
         self.read_char(); // '\\' -> ?
         match self.get_curr_char() {
             Some('x') => {
-                self.read_char();
-                self.read_char();
+                for _ in 0..2 {
+                    self.read_char();
+                }
             }
             Some('u') => {
                 for _ in 0..4 {
@@ -76,42 +76,12 @@ impl Lexer {
                     self.read_char();
                 }
             }
-            Some('1') => {
+            Some('1'..='7') => {
                 for _ in 0..3 {
                     self.read_char();
                 }
             }
-            Some('2') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some('3') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some('4') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some('5') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some('6') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some('7') => {
-                for _ in 0..3 {
-                    self.read_char();
-                }
-            }
-            Some(_) => (),
+            Some(_) => (), // \n, \t, ...
             None => panic!(),
         }
         self.read_char();
