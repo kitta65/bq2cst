@@ -1,4 +1,6 @@
 #!/bin/bash
 cd $(dirname $0)
-wasm-pack build --target nodejs --scope dr666m1
-npm publish pkg --access public
+cargo test && \
+wasm-pack test --node && \
+wasm-pack build --target nodejs --scope dr666m1 && \
+wasm-pack publish --access public

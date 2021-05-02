@@ -1,13 +1,12 @@
-//! Test suite for the Web and headless browsers.
+// to run the following tests
+// you have to run `wasm-pack test --node`
 
 #![cfg(target_arch = "wasm32")]
 
-extern crate wasm_bindgen_test;
+use bq2cst;
 use wasm_bindgen_test::*;
-
-wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 fn pass() {
-    assert_eq!(1 + 1, 2);
+    bq2cst::parse("select 1;".to_string());
 }
