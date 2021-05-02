@@ -78,7 +78,7 @@ impl Parser {
         if idx < self.lexer.tokens.len() {
             return self.lexer.tokens[idx].clone();
         }
-        token::Token::new(usize::MAX, usize::MAX, "") // eof token
+        token::Token::new(usize::MAX, usize::MAX, "") // EOF token
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);

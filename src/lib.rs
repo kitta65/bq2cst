@@ -1,7 +1,7 @@
-mod token;
 mod cst;
 mod lexer;
 mod parser;
+mod token;
 mod utils;
 
 use wasm_bindgen::prelude::*;
@@ -12,6 +12,8 @@ pub fn parse(code: String) -> JsValue {
     let l = lexer::Lexer::new(code);
     let mut p = parser::Parser::new(l);
     let stmts = p.parse_code();
-    JsValue::from_serde(&stmts).unwrap()
+    match JsValue::from_serde(&stmts) {
+        Ok(json) => json,
+        Err(error) => panic!("Probrem converting struct to json: {:?}", error),
+    }
 }
-
