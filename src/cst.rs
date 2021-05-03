@@ -91,7 +91,7 @@ mod tests {
         // this function is only used in test_to_string.
         // so line and column are 0.
         Node {
-            token: Some(token::Token::new(0, 0, literal)),
+            token: Some(token::Token::from_str(0, 0, literal)),
             children: HashMap::new(),
         }
     }

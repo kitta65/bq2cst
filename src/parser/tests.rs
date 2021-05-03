@@ -47,19 +47,10 @@ fn test_next_token() {
             literal: ";".to_string(),
         }
     );
-    assert_eq!(
-        p.get_token(1),
-        token::Token::new(usize::MAX, usize::MAX, "")
-    );
+    assert_eq!(p.get_token(1), token::Token::eof());
     p.next_token();
-    assert_eq!(
-        p.get_token(0),
-        token::Token::new(usize::MAX, usize::MAX, "")
-    );
-    assert_eq!(
-        p.get_token(1),
-        token::Token::new(usize::MAX, usize::MAX, "")
-    );
+    assert_eq!(p.get_token(0), token::Token::eof());
+    assert_eq!(p.get_token(1), token::Token::eof());
 }
 #[test]
 fn test_parse_exprs() {
@@ -1215,7 +1206,7 @@ right:
   - self: 3
 semicolon:
   self: ;",
-  // with
+        // with
         "\
 self: select
 exprs:
@@ -1569,7 +1560,7 @@ from:
       self: table2
 semicolon:
   self: ;",
-// nulls first, last
+        // nulls first, last
         "\
 self: select
 exprs:
@@ -3611,7 +3602,7 @@ stmt:
       self: ;
 what:
   self: PROCEDURE",
-  "\
+        "\
 self: create
 ident:
   self: dataset_name
@@ -3619,7 +3610,7 @@ semicolon:
   self: ;
 what:
   self: schema",
-  "\
+        "\
 self: create
 ident:
   self: .
@@ -3785,7 +3776,7 @@ semicolon:
   self: ;
 what:
   self: table",
-  "\
+        "\
 self: alter
 drop_columns:
 - self: drop
@@ -3809,8 +3800,8 @@ semicolon:
   self: ;
 what:
   self: table",
-  // drop
-  "\
+        // drop
+        "\
 self: drop
 ident:
   self: example
@@ -3818,7 +3809,7 @@ semicolon:
   self: ;
 what:
   self: table",
-  "\
+        "\
 self: drop
 external:
   self: external
@@ -3831,7 +3822,7 @@ semicolon:
   self: ;
 what:
   self: table",
-  "\
+        "\
 self: drop
 ident:
   self: example
@@ -3841,7 +3832,7 @@ semicolon:
   self: ;
 what:
   self: view",
-  "\
+        "\
 self: drop
 cascade_or_restrict:
   self: cascade
@@ -3851,8 +3842,8 @@ semicolon:
   self: ;
 what:
   self: schema",
-  // EOF
-  "\
+        // EOF
+        "\
 self: None
 leading_comments:
 - self: -- end comment",

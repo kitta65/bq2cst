@@ -115,7 +115,7 @@ impl Lexer {
             .collect()
     }
     fn construct_token(&mut self, line: usize, column: usize, literal: String) -> &Token {
-        let token = Token::new(line, column, literal.as_str());
+        let token = Token::new(line, column, literal);
         self.tokens.push(token);
         &self.tokens.last().unwrap()
     }

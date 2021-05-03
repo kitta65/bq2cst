@@ -3,6 +3,7 @@ mod lexer;
 mod parser;
 mod token;
 mod utils;
+mod constants;
 
 use wasm_bindgen::prelude::*;
 

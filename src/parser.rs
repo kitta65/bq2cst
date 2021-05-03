@@ -10,7 +10,7 @@ pub struct Parser {
     position: usize,
     leading_comment_indices: Vec<usize>,
     following_comment_indices: Vec<usize>,
-    tokens: Vec<token::Token>
+    tokens: Vec<token::Token>,
 }
 
 impl Parser {
@@ -78,7 +78,7 @@ impl Parser {
         if idx < self.tokens.len() {
             return self.tokens[idx].clone();
         }
-        token::Token::new(usize::MAX, usize::MAX, "") // EOF token
+        token::Token::eof() // EOF token
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);
@@ -2271,4 +2271,3 @@ impl Parser {
         }
     }
 }
-

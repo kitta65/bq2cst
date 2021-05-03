@@ -1,3 +1,7 @@
+#[cfg(test)]
+mod tests;
+
+use crate::constants;
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
@@ -8,17 +12,17 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(line: usize, column: usize, literal: &str) -> Token {
+    pub fn new(line: usize, column: usize, literal: String) -> Token {
         Token {
             line,
             column,
-            literal: literal.to_string(),
+            literal,
         }
     }
     pub fn eof() -> Token {
         // `const EOF` is not allowed
         // because of `"".to_string()`
-        Token{
+        Token {
             line: usize::MAX,
             column: usize::MAX,
             literal: "".to_string(),
@@ -37,145 +41,43 @@ impl Token {
         if self.quoted_by('`') {
             return true;
         }
-        !vec![
-            "ALL",
-            "AND",
-            "ANY",
-            "ARRAY",
-            "AS",
-            "ASC",
-            "ASSERT_ROWS_MODIFIED",
-            "AT",
-            "BETWEEN",
-            "BY",
-            "CASE",
-            "CAST",
-            "COLLATE",
-            "CONTAINS",
-            "CREATE",
-            "CROSS",
-            "CUBE",
-            "CURRENT",
-            "DEFAULT",
-            "DEFINE",
-            "DESC",
-            "DISTINCT",
-            "ELSE",
-            "END",
-            "ENUM",
-            "ESCAPE",
-            "EXCEPT",
-            "EXCLUDE",
-            "EXISTS",
-            "EXTRACT",
-            "FALSE",
-            "FETCH",
-            "FOLLOWING",
-            "FOR",
-            "FROM",
-            "FULL",
-            "GROUP",
-            "GROUPING",
-            "GROUPS",
-            "HASH",
-            "HAVING",
-            "IF",
-            "IGNORE",
-            "IN",
-            "INNER",
-            "INTERSECT",
-            "INTERVAL",
-            "INTO",
-            "IS",
-            "JOIN",
-            "LATERAL",
-            "LEFT",
-            "LIKE",
-            "LIMIT",
-            "LOOKUP",
-            "MERGE",
-            "NATURAL",
-            "NEW",
-            "NO",
-            "NOT",
-            "NULL",
-            "NULLS",
-            "OF",
-            "ON",
-            "OR",
-            "ORDER",
-            "OUTER",
-            "OVER",
-            "PARTITION",
-            "PRECEDING",
-            "PROTO",
-            "RANGE",
-            "RECURSIVE",
-            "RESPECT",
-            "RIGHT",
-            "ROLLUP",
-            "ROWS",
-            "SELECT",
-            "SET",
-            "SOME",
-            "STRUCT",
-            "TABLESAMPLE",
-            "THEN",
-            "TO",
-            "TREAT",
-            "TRUE",
-            "UNBOUNDED",
-            "UNION",
-            "UNNEST",
-            "USING",
-            "WHEN",
-            "WHERE",
-            "WINDOW",
-            "WITH",
-            "WITHIN",
-            ";",
-            ")",
-            "]",
-            ">",
-            ",",
-            "",
-        ]
-        .contains(&self.literal.to_uppercase().as_str())
+        for kw in constants::KEYWORDS.iter() {
+            // `PartialEq<&str>` is implemented for String
+            if self.literal.to_uppercase() == *kw {
+                return false;
+            }
+        }
+        let mut iterator = self.literal.chars();
+        match iterator.next() {
+            Some('a'..='z') | Some('A'..='Z') | Some('_') => (),
+            _ => return false, // "", ";", ...
+        }
+        for i in iterator {
+            match i {
+                'a'..='z' | 'A'..='Z' | '0'..='9' | '_' => (),
+                _ => return false,
+            }
+        }
+        true
     }
     pub fn is_comment(&self) -> bool {
         let mut iter = self.literal.chars();
         let first_char = match iter.next() {
             Some(c) => match c {
-                '#' => {
-                    return true;
-                }
-                '-' => c,
-                '/' => c,
-                _ => {
-                    return false;
-                }
+                '-' | '/' => c,
+                '#' => return true,
+                _ => return false,
             },
-            None => {
-                return false;
-            }
+            None => return false,
         };
         let second_char = match iter.next() {
             Some(c) => c,
-            None => {
-                return false;
-            }
+            None => return false,
         };
         if first_char == '-' && second_char == '-' || first_char == '/' && second_char == '*' {
             true
         } else {
             false
-        }
-    }
-    pub fn is_prefix(&self) -> bool {
-        match self.literal.as_str() {
-            "-" => true,
-            "!" => true,
-            _ => false,
         }
     }
     fn quoted_by(&self, ch: char) -> bool {
@@ -188,21 +90,19 @@ impl Token {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    fn str2token(s: &str) -> Token {
+impl Token {
+    pub fn from_str(line: usize, column: usize, literal: &str) -> Token {
+        Token {
+            line,
+            column,
+            literal: literal.to_string(),
+        }
+    }
+    pub fn from_str0(literal: &str) -> Token {
         Token {
             line: 0,
             column: 0,
-            literal: s.to_string(),
+            literal: literal.to_string(),
         }
-    }
-    #[test]
-    fn test_is_string() {
-        assert!(str2token("'abc'").is_string());
-        assert!(str2token("\"abc\"").is_string());
-        assert!(str2token("`SELECT`").is_identifier());
-        assert!(!str2token("SELECT").is_identifier());
-        assert!(str2token("-- comment").is_comment());
     }
 }
