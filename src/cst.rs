@@ -1,4 +1,4 @@
-use crate::token;
+use crate::token::Token;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -6,16 +6,18 @@ use std::collections::HashMap;
 pub enum Children {
     Node(Node),
     NodeVec(Vec<Node>),
+    Literal(Token),
+    Type(Option<String>),
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    pub token: Option<token::Token>,
+    pub token: Option<Token>,
     pub children: HashMap<String, Children>,
 }
 
 impl Node {
-    pub fn new(token: token::Token) -> Node {
+    pub fn new(token: Token) -> Node {
         Node {
             token: Some(token),
             children: HashMap::new(),
@@ -70,6 +72,8 @@ impl Node {
                     }
                     children.join("\n")
                 }
+                Children::Literal(_) => "".to_string(),
+                Children::Type(_) => "".to_string(),
             };
             res.push(child_string);
         }
@@ -91,7 +95,7 @@ mod tests {
         // this function is only used in test_to_string.
         // so line and column are 0.
         Node {
-            token: Some(token::Token::from_str(0, 0, literal)),
+            token: Some(Token::from_str(0, 0, literal)),
             children: HashMap::new(),
         }
     }
