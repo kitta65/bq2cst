@@ -14,7 +14,8 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(mut l: Lexer) -> Parser {
+    pub fn new(code: String) -> Parser {
+        let mut l = Lexer::new(code);
         l.tokenize_code();
         let mut p = Parser {
             position: 0,
@@ -33,27 +34,31 @@ impl Parser {
         }
         p
     }
-    fn get_offset_index(&self, offset: usize) -> usize {
+    fn get_offset_index(&self, offset: usize) -> Option<usize> {
         if offset == 0 {
-            return self.position;
+            return Some(self.position);
         }
         let mut cnt = 0;
-        let mut idx = self.position + 1;
-        while cnt < offset && idx < self.tokens.len() {
-            while self.tokens[idx].is_comment() {
+        let mut idx = self.position;
+        while cnt < offset {
+            if idx + 1 < self.tokens.len() {
+                if !self.tokens[idx + 1].is_comment() {
+                    cnt += 1;
+                }
                 idx += 1;
-            }
-            cnt += 1;
-            if cnt < offset {
-                idx += 1;
+            } else {
+                return None;
             }
         }
-        idx
+        Some(idx)
     }
     fn next_token(&mut self) {
         // leading comments
         self.leading_comment_indices = Vec::new();
-        let idx = self.get_offset_index(1);
+        let idx = match self.get_offset_index(1) {
+            Some(i) => i,
+            None => panic!("next token is not found"),
+        };
         let from_idx = match self.following_comment_indices.iter().rev().next() {
             Some(n) => *n,
             None => self.position,
@@ -74,15 +79,21 @@ impl Parser {
         }
     }
     fn get_token(&self, offset: usize) -> Token {
-        let idx = self.get_offset_index(offset);
+        let idx = match self.get_offset_index(offset) {
+            Some(i) => i,
+            None => panic!("next token is not found"),
+        };
         if idx < self.tokens.len() {
             return self.tokens[idx].clone();
         }
         Token::eof() // EOF token
     }
     fn is_eof(&self, offset: usize) -> bool {
-        let idx = self.get_offset_index(offset);
-        self.tokens.len() - 1 <= idx
+        let idx = match self.get_offset_index(offset) {
+            Some(i) => i,
+            None => return true,
+        };
+        self.tokens.len() < idx
     }
     pub fn parse_code(&mut self) -> Vec<Node> {
         let mut code: Vec<Node> = Vec::new();
@@ -98,11 +109,6 @@ impl Parser {
     }
     fn construct_node(&self) -> Node {
         let mut node = Node::new(self.get_token(0).clone(), NodeType::Unknown);
-        node.push_node(
-            "self",
-            Node::new(self.get_token(0).clone(), NodeType::Unknown),
-        );
-        // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
             leading_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
@@ -113,8 +119,7 @@ impl Parser {
         // following comments
         let mut following_comment_nodes = Vec::new();
         for idx in &self.following_comment_indices {
-            following_comment_nodes
-                .push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
+            following_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
         if 0 < following_comment_nodes.len() {
             node.push_node_vec("following_comments", following_comment_nodes);

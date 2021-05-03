@@ -13,8 +13,7 @@ impl TestCase {
         }
     }
     pub fn test(&self) {
-        let l = Lexer::new(self.code.clone());
-        let mut p = Parser::new(l);
+        let mut p = Parser::new(self.code.clone());
         let stmts = p.parse_code();
         println!(
             "========== testing ==========\n{}\n=============================",
@@ -33,21 +32,21 @@ fn test_parse_code() {
             "\
 SELECT 1;",
             "\
-self: SELECT (SelectStatement)
+self: SELECT (Unknown)
 exprs:
-- 1
+- self: 1 (Unknown)
 semicolon:
-  self: ;",
+  self: ; (Unknown)",
         ),
         TestCase::new(
             "\
 SELECT 1;",
             "\
-self: SELECT (SelectStatement)
+self: SELECT (Unknown)
 exprs:
-- 1
+- self: 1 (Unknown)
 semicolon:
-  self: ;",
+  self: ; (Unknown)",
         ),
     ];
     for t in test_cases {
