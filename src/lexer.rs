@@ -18,8 +18,8 @@ impl Lexer {
         Lexer {
             input: chars,
             position: 0,
-            line: 0,
-            column: 0,
+            line: 1,
+            column: 1,
             type_declaration_depth: 0,
             tokens: Vec::new(),
         }
@@ -43,7 +43,7 @@ impl Lexer {
     fn read_char(&mut self) {
         if self.position < self.input.len() {
             if self.input[self.position] == '\n' {
-                self.column = 0;
+                self.column = 1;
                 self.line += 1;
             } else {
                 self.column += 1;

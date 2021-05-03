@@ -8,16 +8,16 @@ fn test_next_token() {
     assert_eq!(
         p.get_token(0),
         token::Token {
-            line: 0,
-            column: 0,
+            line: 1,
+            column: 1,
             literal: "select".to_string(),
         }
     );
     assert_eq!(
         p.get_token(1),
         token::Token {
-            line: 0,
-            column: 7,
+            line: 1,
+            column: 8,
             literal: "*".to_string(),
         }
     );
@@ -25,16 +25,16 @@ fn test_next_token() {
     assert_eq!(
         p.get_token(0),
         token::Token {
-            line: 0,
-            column: 7,
+            line: 1,
+            column: 8,
             literal: "*".to_string(),
         }
     );
     assert_eq!(
         p.get_token(1),
         token::Token {
-            line: 0,
-            column: 8,
+            line: 1,
+            column: 9,
             literal: ";".to_string(),
         }
     );
@@ -42,8 +42,8 @@ fn test_next_token() {
     assert_eq!(
         p.get_token(0),
         token::Token {
-            line: 0,
-            column: 8,
+            line: 1,
+            column: 9,
             literal: ";".to_string(),
         }
     );
