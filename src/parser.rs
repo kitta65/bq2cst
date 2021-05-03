@@ -1,10 +1,9 @@
-#[cfg(test)]
-mod tests;
+//#[cfg(test)]
+//mod tests;
 
 use crate::cst;
 use crate::lexer;
 use crate::token;
-use std::collections::HashMap;
 
 pub struct Parser {
     position: usize,
@@ -92,17 +91,17 @@ impl Parser {
             self.next_token();
         }
         let mut eof = self.construct_node();
-        eof.token.take();
+        //eof.token.take(); // TODO refactoring
         code.push(eof);
         code
     }
     fn construct_node(&self) -> cst::Node {
-        let mut node = cst::Node::new(self.get_token(0).clone());
-        node.push_node("self", cst::Node::new(self.get_token(0).clone()));
+        let mut node = cst::Node::new(self.get_token(0).clone(), "");
+        node.push_node("self", cst::Node::new(self.get_token(0).clone(), ""));
         // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
+            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), ""))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -110,7 +109,7 @@ impl Parser {
         // following comments
         let mut following_comment_nodes = Vec::new();
         for idx in &self.following_comment_indices {
-            following_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone()))
+            following_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), ""))
         }
         if 0 < following_comment_nodes.len() {
             node.push_node_vec("following_comments", following_comment_nodes);
@@ -1145,9 +1144,9 @@ impl Parser {
         self.next_token(); // -> expr
 
         // columns
-        node.children.insert(
+        node.0.insert(
             "exprs".to_string(),
-            cst::Children::NodeVec(self.parse_exprs(
+            cst::ContentType::NodeVec(self.parse_exprs(
                 &vec![
                     "from",
                     ";",
@@ -1690,7 +1689,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::new_none();
+                            type_declaration = cst::Node::empty();
                         }
                         type_declaration.push_node("type", self.parse_type(false));
                         self.next_token(); // type -> , or next_declaration
@@ -2002,10 +2001,7 @@ impl Parser {
         }
         if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 && alias {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node {
-                token: None,
-                children: HashMap::new(),
-            };
+            let mut as_ = cst::Node::empty();
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
@@ -2099,10 +2095,7 @@ impl Parser {
             node.push_node("as", as_);
         } else if self.get_token(1).is_identifier() && !self.is_eof(1) {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node {
-                token: None,
-                children: HashMap::new(),
-            };
+            let mut as_ = cst::Node::empty();
             as_.push_node("alias", self.construct_node());
             node.push_node("as", as_);
         }
@@ -2168,7 +2161,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::new_none();
+                            type_declaration = cst::Node::empty();
                         }
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
