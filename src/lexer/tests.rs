@@ -21,7 +21,10 @@ impl TestCase {
         }
     }
     fn test(&self) {
-        println!("testing: \n{:?}\n", self.code);
+        println!(
+            "========== testing ==========\n{:?}\n=============================",
+            self.code
+        );
         assert_eq!(self.expected_tokens.len(), self.result_tokens.len());
         for i in 0..self.expected_tokens.len() {
             assert_eq!(self.expected_tokens[i], self.result_tokens[i]);

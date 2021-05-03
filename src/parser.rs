@@ -1,20 +1,20 @@
-//#[cfg(test)]
-//mod tests;
+#[cfg(test)]
+mod tests;
 
-use crate::cst;
+use crate::cst::Node;
 use crate::cst::NodeType;
-use crate::lexer;
-use crate::token;
+use crate::lexer::Lexer;
+use crate::token::Token;
 
 pub struct Parser {
     position: usize,
     leading_comment_indices: Vec<usize>,
     following_comment_indices: Vec<usize>,
-    tokens: Vec<token::Token>,
+    tokens: Vec<Token>,
 }
 
 impl Parser {
-    pub fn new(mut l: lexer::Lexer) -> Parser {
+    pub fn new(mut l: Lexer) -> Parser {
         l.tokenize_code();
         let mut p = Parser {
             position: 0,
@@ -73,19 +73,19 @@ impl Parser {
             following_comment_idx += 1;
         }
     }
-    fn get_token(&self, offset: usize) -> token::Token {
+    fn get_token(&self, offset: usize) -> Token {
         let idx = self.get_offset_index(offset);
         if idx < self.tokens.len() {
             return self.tokens[idx].clone();
         }
-        token::Token::eof() // EOF token
+        Token::eof() // EOF token
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = self.get_offset_index(offset);
         self.tokens.len() - 1 <= idx
     }
-    pub fn parse_code(&mut self) -> Vec<cst::Node> {
-        let mut code: Vec<cst::Node> = Vec::new();
+    pub fn parse_code(&mut self) -> Vec<Node> {
+        let mut code: Vec<Node> = Vec::new();
         while self.position < self.tokens.len() - 1 {
             let stmt = self.parse_statement();
             code.push(stmt);
@@ -96,16 +96,16 @@ impl Parser {
         code.push(eof);
         code
     }
-    fn construct_node(&self) -> cst::Node {
-        let mut node = cst::Node::new(self.get_token(0).clone(), NodeType::Unknown);
+    fn construct_node(&self) -> Node {
+        let mut node = Node::new(self.get_token(0).clone(), NodeType::Unknown);
         node.push_node(
             "self",
-            cst::Node::new(self.get_token(0).clone(), NodeType::Unknown),
+            Node::new(self.get_token(0).clone(), NodeType::Unknown),
         );
         // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
+            leading_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -114,14 +114,14 @@ impl Parser {
         let mut following_comment_nodes = Vec::new();
         for idx in &self.following_comment_indices {
             following_comment_nodes
-                .push(cst::Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
+                .push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
         if 0 < following_comment_nodes.len() {
             node.push_node_vec("following_comments", following_comment_nodes);
         }
         node
     }
-    fn parse_statement(&mut self) -> cst::Node {
+    fn parse_statement(&mut self) -> Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             // SELECT
             "WITH" => self.parse_select_statement(true),
@@ -189,7 +189,7 @@ impl Parser {
         };
         node
     }
-    fn parse_drop_statement(&mut self) -> cst::Node {
+    fn parse_drop_statement(&mut self) -> Node {
         let mut drop = self.construct_node();
         if self.peek_token_is("external") {
             self.next_token(); // -> external
@@ -220,7 +220,7 @@ impl Parser {
         }
         drop
     }
-    fn parse_alter_statement(&mut self) -> cst::Node {
+    fn parse_alter_statement(&mut self) -> Node {
         let mut alter = self.construct_node();
         if self.peek_token_is("materialized") {
             self.next_token(); // -> materialized
@@ -306,7 +306,7 @@ impl Parser {
         }
         alter
     }
-    fn parse_create_procedure_statement(&mut self) -> cst::Node {
+    fn parse_create_procedure_statement(&mut self) -> Node {
         let mut create = self.construct_node();
         if self.peek_token_is("or") {
             self.next_token(); // -> or
@@ -382,7 +382,7 @@ impl Parser {
         }
         create
     }
-    fn parse_create_table_statement(&mut self) -> cst::Node {
+    fn parse_create_table_statement(&mut self) -> Node {
         let mut create = self.construct_node();
         if self.peek_token_is("or") {
             self.next_token(); // -> or
@@ -516,7 +516,7 @@ impl Parser {
         }
         create
     }
-    fn parse_call_statement(&mut self) -> cst::Node {
+    fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node();
         self.next_token(); // -> procedure_name
         call.push_node("expr", self.parse_expr(999, &vec![";"], false));
@@ -526,7 +526,7 @@ impl Parser {
         }
         call
     }
-    fn parse_raise_statement(&mut self) -> cst::Node {
+    fn parse_raise_statement(&mut self) -> Node {
         let mut raise = self.construct_node();
         if self.peek_token_is("using") {
             self.next_token(); // -> using
@@ -541,7 +541,7 @@ impl Parser {
         }
         raise
     }
-    fn parse_loop_statement(&mut self) -> cst::Node {
+    fn parse_loop_statement(&mut self) -> Node {
         let mut loop_ = self.construct_node();
         let mut stmts = Vec::new();
         while !self.peek_token_is("end") {
@@ -561,7 +561,7 @@ impl Parser {
         }
         loop_
     }
-    fn parse_while_statement(&mut self) -> cst::Node {
+    fn parse_while_statement(&mut self) -> Node {
         let mut while_ = self.construct_node();
         self.next_token(); // -> boolean_expression
         while_.push_node("condition", self.parse_expr(999, &vec!["do"], false));
@@ -585,7 +585,7 @@ impl Parser {
         }
         while_
     }
-    fn parse_break_statement(&mut self) -> cst::Node {
+    fn parse_break_statement(&mut self) -> Node {
         let mut break_ = self.construct_node();
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
@@ -593,7 +593,7 @@ impl Parser {
         }
         break_
     }
-    fn parse_if_statement(&mut self) -> cst::Node {
+    fn parse_if_statement(&mut self) -> Node {
         let mut if_ = self.construct_node();
         self.next_token(); // -> cond
         if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
@@ -656,7 +656,7 @@ impl Parser {
         }
         if_
     }
-    fn parse_begin_statement(&mut self, root: bool) -> cst::Node {
+    fn parse_begin_statement(&mut self, root: bool) -> Node {
         let mut begin = self.construct_node();
         let mut stmts = Vec::new();
         while !self.peek_token_in(&vec!["end", "exception"]) {
@@ -696,7 +696,7 @@ impl Parser {
         }
         begin
     }
-    fn parse_execute_statement(&mut self) -> cst::Node {
+    fn parse_execute_statement(&mut self) -> Node {
         let mut execute = self.construct_node();
         self.next_token(); // execute -> immediate
         execute.push_node("immediate", self.construct_node());
@@ -737,7 +737,7 @@ impl Parser {
         }
         execute
     }
-    fn parse_set_statement(&mut self) -> cst::Node {
+    fn parse_set_statement(&mut self) -> Node {
         let mut set = self.construct_node();
         self.next_token(); // set -> expr
         set.push_node("expr", self.parse_expr(999, &vec![";"], false));
@@ -747,7 +747,7 @@ impl Parser {
         }
         set
     }
-    fn parse_declare_statement(&mut self) -> cst::Node {
+    fn parse_declare_statement(&mut self) -> Node {
         let mut declare = self.construct_node();
         let mut idents = Vec::new();
         loop {
@@ -780,7 +780,7 @@ impl Parser {
         }
         declare
     }
-    fn parse_merge_statement(&mut self, root: bool) -> cst::Node {
+    fn parse_merge_statement(&mut self, root: bool) -> Node {
         let mut merge = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // merge -> into
@@ -846,7 +846,7 @@ impl Parser {
         }
         merge
     }
-    fn parse_update_statement(&mut self, root: bool) -> cst::Node {
+    fn parse_update_statement(&mut self, root: bool) -> Node {
         let mut update = self.construct_node();
         if !self.peek_token_is("set") {
             self.next_token(); // -> target_name
@@ -880,7 +880,7 @@ impl Parser {
         }
         update
     }
-    fn parse_truncate_statement(&mut self) -> cst::Node {
+    fn parse_truncate_statement(&mut self) -> Node {
         let mut truncate = self.construct_node();
         self.next_token(); // truncate -> table
         truncate.push_node("table", self.construct_node());
@@ -892,7 +892,7 @@ impl Parser {
         }
         truncate
     }
-    fn parse_delete_statement(&mut self) -> cst::Node {
+    fn parse_delete_statement(&mut self) -> Node {
         let mut delete = self.construct_node();
         if self.peek_token_is("from") {
             self.next_token(); // delete -> from
@@ -915,7 +915,7 @@ impl Parser {
         }
         delete
     }
-    fn parse_insert_statement(&mut self, root: bool) -> cst::Node {
+    fn parse_insert_statement(&mut self, root: bool) -> Node {
         let mut insert = self.construct_node();
         if self.peek_token_is("into") {
             self.next_token(); // insert -> into
@@ -966,7 +966,7 @@ impl Parser {
         }
         insert
     }
-    fn parse_create_function_statement(&mut self) -> cst::Node {
+    fn parse_create_function_statement(&mut self) -> Node {
         let mut node = self.construct_node();
         if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
             let mut or_replace = Vec::new();
@@ -1073,7 +1073,7 @@ impl Parser {
         }
         node
     }
-    fn parse_identifier(&mut self) -> cst::Node {
+    fn parse_identifier(&mut self) -> Node {
         let mut left = self.construct_node();
         while self.peek_token_is(".") {
             self.next_token(); // ident -> .
@@ -1085,7 +1085,7 @@ impl Parser {
         }
         left
     }
-    fn parse_select_statement(&mut self, root: bool) -> cst::Node {
+    fn parse_select_statement(&mut self, root: bool) -> Node {
         if self.get_token(0).literal.as_str() == "(" {
             let mut node = self.construct_node();
             self.next_token(); // ( -> select
@@ -1307,8 +1307,8 @@ impl Parser {
         }
         false
     }
-    fn parse_table(&mut self, root: bool) -> cst::Node {
-        let mut left: cst::Node;
+    fn parse_table(&mut self, root: bool) -> Node {
+        let mut left: Node;
         match self.get_token(0).literal.to_uppercase().as_str() {
             "(" => {
                 let mut group = self.construct_node();
@@ -1446,8 +1446,8 @@ impl Parser {
         }
         left
     }
-    fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<cst::Node> {
-        let mut exprs: Vec<cst::Node> = Vec::new();
+    fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> Vec<Node> {
+        let mut exprs: Vec<Node> = Vec::new();
         // first expr
         let mut expr = self.parse_expr(999, until, alias);
         if self.peek_token_is(",") {
@@ -1467,7 +1467,7 @@ impl Parser {
         }
         exprs
     }
-    fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>, alias: bool) -> cst::Node {
+    fn parse_expr(&mut self, precedence: usize, until: &Vec<&str>, alias: bool) -> Node {
         // prefix or literal
         let mut left = self.construct_node();
         match self.get_token(0).literal.to_uppercase().as_str() {
@@ -1694,7 +1694,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::empty(NodeType::Unknown);
+                            type_declaration = Node::empty(NodeType::Unknown);
                         }
                         type_declaration.push_node("type", self.parse_type(false));
                         self.next_token(); // type -> , or next_declaration
@@ -2006,7 +2006,7 @@ impl Parser {
         }
         if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 && alias {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node::empty(NodeType::Unknown);
+            let mut as_ = Node::empty(NodeType::Unknown);
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
@@ -2024,7 +2024,7 @@ impl Parser {
         }
         left
     }
-    fn parse_window_expr(&mut self) -> cst::Node {
+    fn parse_window_expr(&mut self) -> Node {
         if self.cur_token_is("(") {
             let mut window = self.construct_node();
             if self.get_token(1).is_identifier() {
@@ -2090,7 +2090,7 @@ impl Parser {
             self.construct_node()
         }
     }
-    fn parse_alias(&mut self, node: cst::Node) -> cst::Node {
+    fn parse_alias(&mut self, node: Node) -> Node {
         let mut node = node.clone();
         if self.peek_token_is("as") {
             self.next_token(); // expr -> as
@@ -2100,13 +2100,13 @@ impl Parser {
             node.push_node("as", as_);
         } else if self.get_token(1).is_identifier() && !self.is_eof(1) {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node::empty(NodeType::Unknown);
+            let mut as_ = Node::empty(NodeType::Unknown);
             as_.push_node("alias", self.construct_node());
             node.push_node("as", as_);
         }
         node
     }
-    fn parse_binary_operator(&mut self, left: cst::Node, until: &Vec<&str>) -> cst::Node {
+    fn parse_binary_operator(&mut self, left: Node, until: &Vec<&str>) -> Node {
         let precedence = self.get_precedence(0);
         let mut node = self.construct_node();
         if self.peek_token_is("not") {
@@ -2118,7 +2118,7 @@ impl Parser {
         node.push_node("right", self.parse_expr(precedence, until, false));
         node
     }
-    fn parse_in_operator(&mut self, left: cst::Node) -> cst::Node {
+    fn parse_in_operator(&mut self, left: Node) -> Node {
         let mut node = self.construct_node();
         self.next_token(); // in -> (
         node.push_node("left", left);
@@ -2136,7 +2136,7 @@ impl Parser {
     fn cur_token_is(&self, s: &str) -> bool {
         self.get_token(0).literal.to_uppercase() == s.to_uppercase()
     }
-    fn parse_type(&mut self, schema: bool) -> cst::Node {
+    fn parse_type(&mut self, schema: bool) -> Node {
         let mut res = match self.get_token(0).literal.to_uppercase().as_str() {
             "ARRAY" => {
                 let mut res = self.construct_node();
@@ -2166,7 +2166,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::empty(NodeType::Unknown);
+                            type_declaration = Node::empty(NodeType::Unknown);
                         }
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
