@@ -2,6 +2,7 @@
 //mod tests;
 
 use crate::cst;
+use crate::cst::NodeType;
 use crate::lexer;
 use crate::token;
 
@@ -96,12 +97,15 @@ impl Parser {
         code
     }
     fn construct_node(&self) -> cst::Node {
-        let mut node = cst::Node::new(self.get_token(0).clone(), "");
-        node.push_node("self", cst::Node::new(self.get_token(0).clone(), ""));
+        let mut node = cst::Node::new(self.get_token(0).clone(), NodeType::Unknown);
+        node.push_node(
+            "self",
+            cst::Node::new(self.get_token(0).clone(), NodeType::Unknown),
+        );
         // leading comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), ""))
+            leading_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -109,7 +113,8 @@ impl Parser {
         // following comments
         let mut following_comment_nodes = Vec::new();
         for idx in &self.following_comment_indices {
-            following_comment_nodes.push(cst::Node::new(self.tokens[*idx].clone(), ""))
+            following_comment_nodes
+                .push(cst::Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
         if 0 < following_comment_nodes.len() {
             node.push_node_vec("following_comments", following_comment_nodes);
@@ -1144,9 +1149,9 @@ impl Parser {
         self.next_token(); // -> expr
 
         // columns
-        node.0.insert(
-            "exprs".to_string(),
-            cst::ContentType::NodeVec(self.parse_exprs(
+        node.push_node_vec(
+            "exprs",
+            self.parse_exprs(
                 &vec![
                     "from",
                     ";",
@@ -1158,7 +1163,7 @@ impl Parser {
                     "where",
                 ],
                 true,
-            )),
+            ),
         );
         // from
         if self.peek_token_is("FROM") {
@@ -1689,7 +1694,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::empty();
+                            type_declaration = cst::Node::empty(NodeType::Unknown);
                         }
                         type_declaration.push_node("type", self.parse_type(false));
                         self.next_token(); // type -> , or next_declaration
@@ -2001,7 +2006,7 @@ impl Parser {
         }
         if self.get_token(1).is_identifier() && !self.is_eof(1) && precedence == 999 && alias {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node::empty();
+            let mut as_ = cst::Node::empty(NodeType::Unknown);
             as_.push_node("alias", self.construct_node());
             left.push_node("as", as_);
         }
@@ -2095,7 +2100,7 @@ impl Parser {
             node.push_node("as", as_);
         } else if self.get_token(1).is_identifier() && !self.is_eof(1) {
             self.next_token(); // expr -> alias
-            let mut as_ = cst::Node::empty();
+            let mut as_ = cst::Node::empty(NodeType::Unknown);
             as_.push_node("alias", self.construct_node());
             node.push_node("as", as_);
         }
@@ -2161,7 +2166,7 @@ impl Parser {
                             type_declaration = self.construct_node();
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = cst::Node::empty();
+                            type_declaration = cst::Node::empty(NodeType::Unknown);
                         }
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
