@@ -1,449 +1,240 @@
 use super::*;
 
-//#[test]
-//fn test_tokenize_code_old() {
-//    let input = "#standardSQL
-//SELECT 10, 1.1, 'aaa' || \"bbb\", .9, 1-1+2/2*3, date '2000-01-01', timestamp '2000-01-01',col1,date_add(col1, interval 9 hour),.1E4,?,@@param,'''abc''',arr[offset(1)],ARRAY<INT64>[1],
-//From `data`; -- comment
-//-- 
-///*
-//e
-//o
-//f
-//*/select '\\'','''\\'''',\"\\x00\"".to_string();
-//    let mut l = Lexer::new(input);
-//    let tokens = l.tokenize_code();
-//    let expected_tokens: Vec<Token> = vec![
-//        // line 0
-//        Token {
-//            line: 0,
-//            column: 0,
-//            literal: "#standardSQL".to_string(),
-//        },
-//        // line 1
-//        Token {
-//            line: 1,
-//            column: 0,
-//            literal: "SELECT".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 7,
-//            literal: "10".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 9,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 11,
-//            literal: "1.1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 14,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 16,
-//            literal: "'aaa'".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 22,
-//            literal: "||".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 25,
-//            literal: "\"bbb\"".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 30,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 32,
-//            literal: ".9".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 34,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 36,
-//            literal: "1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 37,
-//            literal: "-".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 38,
-//            literal: "1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 39,
-//            literal: "+".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 40,
-//            literal: "2".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 41,
-//            literal: "/".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 42,
-//            literal: "2".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 43,
-//            literal: "*".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 44,
-//            literal: "3".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 45,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 47,
-//            literal: "date".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 52,
-//            literal: "'2000-01-01'".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 64,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 66,
-//            literal: "timestamp".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 76,
-//            literal: "'2000-01-01'".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 88,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 89,
-//            literal: "col1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 93,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 94,
-//            literal: "date_add".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 102,
-//            literal: "(".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 103,
-//            literal: "col1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 107,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 109,
-//            literal: "interval".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 118,
-//            literal: "9".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 120,
-//            literal: "hour".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 124,
-//            literal: ")".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 125,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 126,
-//            literal: ".1E4".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 130,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 131,
-//            literal: "?".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 132,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 133,
-//            literal: "@@param".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 140,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 141,
-//            literal: "'''abc'''".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 150,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 151,
-//            literal: "arr".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 154,
-//            literal: "[".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 155,
-//            literal: "offset".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 161,
-//            literal: "(".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 162,
-//            literal: "1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 163,
-//            literal: ")".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 164,
-//            literal: "]".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 165,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 166,
-//            literal: "ARRAY".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 171,
-//            literal: "<".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 172,
-//            literal: "INT64".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 177,
-//            literal: ">".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 178,
-//            literal: "[".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 179,
-//            literal: "1".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 180,
-//            literal: "]".to_string(),
-//        },
-//        Token {
-//            line: 1,
-//            column: 181,
-//            literal: ",".to_string(),
-//        },
-//        // line2
-//        Token {
-//            line: 2,
-//            column: 0,
-//            literal: "From".to_string(),
-//        },
-//        Token {
-//            line: 2,
-//            column: 5,
-//            literal: "`data`".to_string(),
-//        },
-//        Token {
-//            line: 2,
-//            column: 11,
-//            literal: ";".to_string(),
-//        },
-//        Token {
-//            line: 2,
-//            column: 13,
-//            literal: "-- comment".to_string(),
-//        },
-//        // line3
-//        Token {
-//            line: 3,
-//            column: 0,
-//            literal: "-- ".to_string(),
-//        },
-//        // line4
-//        Token {
-//            line: 4,
-//            column: 0,
-//            literal: "/*
-//e
-//o
-//f
-//*/"
-//            .to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 2,
-//            literal: "select".to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 9,
-//            literal: "'\\''".to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 13,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 14,
-//            literal: "'''\\''''".to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 22,
-//            literal: ",".to_string(),
-//        },
-//        Token {
-//            line: 8,
-//            column: 23,
-//            literal: "\"\\x00\"".to_string(),
-//        },
-//        Token::new(usize::MAX, usize::MAX, ""),
-//    ];
-//    for (i, t) in expected_tokens.iter().enumerate() {
-//        assert_eq!(tokens[i], *t);
-//    }
-//    assert_eq!(tokens.len(), expected_tokens.len());
-//}
-
 struct TestCase {
-    result_tokens: Vec<Token>,
+    code: String,
     expected_tokens: Vec<Token>,
+    result_tokens: Vec<Token>,
 }
 
 impl TestCase {
     fn new(code: &str, expected_tokens_without_eof: Vec<Token>) -> TestCase {
-        let mut l = Lexer::new(code.to_string());
+        let code = code.to_string();
+        let mut l = Lexer::new(code.clone());
         l.tokenize_code();
         let result_tokens = l.tokens;
         let mut expected_tokens = expected_tokens_without_eof;
-        expected_tokens.push(Token::new(usize::MAX,usize::MAX,""));
+        expected_tokens.push(Token::new(usize::MAX, usize::MAX, ""));
         TestCase {
-            result_tokens,
+            code,
             expected_tokens,
+            result_tokens,
         }
     }
     fn test(&self) {
-        assert_eq!(self.result_tokens.len(), self.expected_tokens.len());
-        for i in 0..self.result_tokens.len() {
-            assert_eq!(self.result_tokens[i], self.expected_tokens[i]);
+        println!("testing: \n{:?}\n", self.code);
+        assert_eq!(self.expected_tokens.len(), self.result_tokens.len());
+        for i in 0..self.expected_tokens.len() {
+            assert_eq!(self.expected_tokens[i], self.result_tokens[i]);
         }
-
     }
 }
 
 #[test]
 fn test_tokenize_code() {
-    let test_cases = vec![TestCase::new(
-        "\
-select 1;",
-        vec![
-            Token::new(1, 1, "select"),
-            Token::new(1, 8, "1"),
-            Token::new(1, 9, ";"),
-        ],
-    )];
+    let test_cases = vec![
+        TestCase::new(
+            "\
+SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "c1"),
+                Token::new(1, 11, "FROM"),
+                Token::new(1, 16, "t"),
+                Token::new(1, 18, "WHERE"),
+                Token::new(1, 24, "true"),
+                Token::new(1, 29, "GROUP"),
+                Token::new(1, 35, "BY"),
+                Token::new(1, 38, "1"),
+                Token::new(1, 40, "ORDER"),
+                Token::new(1, 46, "BY"),
+                Token::new(1, 49, "1"),
+                Token::new(1, 50, ";"),
+            ],
+        ),
+        // comment
+        TestCase::new(
+            "\
+#standardSQL
+SELECT 1 /*
+  comment
+*/
+; -- comment",
+            vec![
+                Token::new(1, 1, "#standardSQL"),
+                Token::new(2, 1, "SELECT"),
+                Token::new(2, 8, "1"),
+                Token::new(2, 10, "/*\n  comment\n*/"),
+                Token::new(5, 1, ";"),
+                Token::new(5, 3, "-- comment"),
+            ],
+        ),
+        // string literal
+        TestCase::new(
+            "\
+SELECT
+  'xxx',
+  r'xxx',
+  \"xxx\",
+  '''
+xxx
+  ''',
+  \"\"\"
+xxx
+  \"\"\",",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(2, 3, "'xxx'"),
+                Token::new(2, 8, ","),
+                Token::new(3, 3, "r"),
+                Token::new(3, 4, "'xxx'"),
+                Token::new(3, 9, ","),
+                Token::new(4, 3, "\"xxx\""),
+                Token::new(4, 8, ","),
+                Token::new(5, 3, "'''\nxxx\n  '''"),
+                Token::new(7, 6, ","),
+                Token::new(8, 3, "\"\"\"\nxxx\n  \"\"\""),
+                Token::new(10, 6, ","),
+            ],
+        ),
+        // numeric literal
+        TestCase::new(
+            "\
+SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "1"),
+                Token::new(1, 9, ","),
+                Token::new(1, 11, "01"),
+                Token::new(1, 13, ","),
+                Token::new(1, 15, "1.1"),
+                Token::new(1, 18, ","),
+                Token::new(1, 20, ".1"),
+                Token::new(1, 22, ","),
+                Token::new(1, 24, "1.1e+1"),
+                Token::new(1, 30, ","),
+                Token::new(1, 32, "1.1E-1"),
+                Token::new(1, 38, ","),
+                Token::new(1, 40, ".1e10"),
+            ],
+        ),
+        // timestamp, date literal
+        TestCase::new(
+            "\
+SELECT date '2000-01-01', timestamp '2000-01-01'",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "date"),
+                Token::new(1, 13, "'2000-01-01'"),
+                Token::new(1, 25, ","),
+                Token::new(1, 27, "timestamp"),
+                Token::new(1, 37, "'2000-01-01'"),
+            ],
+        ),
+        // array literal
+        TestCase::new(
+            "\
+SELECT
+  ARRAY<INT64>[1],
+  ARRAY<STRUCT<INT64,INT64>>[(0,0)]",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(2, 3, "ARRAY"),
+                Token::new(2, 8, "<"),
+                Token::new(2, 9, "INT64"),
+                Token::new(2, 14, ">"),
+                Token::new(2, 15, "["),
+                Token::new(2, 16, "1"),
+                Token::new(2, 17, "]"),
+                Token::new(2, 18, ","),
+                Token::new(3, 3, "ARRAY"),
+                Token::new(3, 8, "<"),
+                Token::new(3, 9, "STRUCT"),
+                Token::new(3, 15, "<"),
+                Token::new(3, 16, "INT64"),
+                Token::new(3, 21, ","),
+                Token::new(3, 22, "INT64"),
+                Token::new(3, 27, ">"),
+                Token::new(3, 28, ">"),
+                Token::new(3, 29, "["),
+                Token::new(3, 30, "("),
+                Token::new(3, 31, "0"),
+                Token::new(3, 32, ","),
+                Token::new(3, 33, "0"),
+                Token::new(3, 34, ")"),
+                Token::new(3, 35, "]"),
+            ],
+        ),
+        // identifier
+        TestCase::new(
+            "\
+SELECT _c1, `c-1`
+FROM t",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "_c1"),
+                Token::new(1, 11, ","),
+                Token::new(1, 13, "`c-1`"),
+                Token::new(2, 1, "FROM"),
+                Token::new(2, 6, "t"),
+            ],
+        ),
+        // parameter
+        TestCase::new(
+            "\
+SELECT ?;
+SELECT @param;",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "?"),
+                Token::new(1, 9, ";"),
+                Token::new(2, 1, "SELECT"),
+                Token::new(2, 8, "@param"),
+                Token::new(2, 14, ";"),
+            ],
+        ),
+        // operator
+        TestCase::new(
+            "\
+SELECT
+  1-1+2/2*3,
+  'a'||'b',
+  2>>1",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(2, 3, "1"),
+                Token::new(2, 4, "-"),
+                Token::new(2, 5, "1"),
+                Token::new(2, 6, "+"),
+                Token::new(2, 7, "2"),
+                Token::new(2, 8, "/"),
+                Token::new(2, 9, "2"),
+                Token::new(2, 10, "*"),
+                Token::new(2, 11, "3"),
+                Token::new(2, 12, ","),
+                Token::new(3, 3, "'a'"),
+                Token::new(3, 6, "||"),
+                Token::new(3, 8, "'b'"),
+                Token::new(3, 11, ","),
+                Token::new(4, 3, "2"),
+                Token::new(4, 4, ">>"),
+                Token::new(4, 6, "1"),
+            ],
+        ),
+        // function
+        TestCase::new(
+            "\
+SELECT f(a1, a2)",
+            vec![
+                Token::new(1, 1, "SELECT"),
+                Token::new(1, 8, "f"),
+                Token::new(1, 9, "("),
+                Token::new(1, 10, "a1"),
+                Token::new(1, 12, ","),
+                Token::new(1, 14, "a2"),
+                Token::new(1, 16, ")"),
+            ],
+        ),
+    ];
     for t in test_cases {
         t.test();
     }
