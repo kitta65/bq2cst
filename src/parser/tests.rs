@@ -1,4 +1,5 @@
 use super::*;
+use difference::Changeset;
 
 struct TestCase {
     code: String,
@@ -19,9 +20,11 @@ impl TestCase {
             "========== testing ==========\n{}\n=============================\n",
             self.code.trim()
         );
-        println!("{}\n", stmts[0].to_string());
+        let result = stmts[0].to_string();
+        let changeset = Changeset::new(self.expected_output.as_str(), result.as_str(), "\n");
+        println!("{}\n", changeset.to_string());
         assert_eq!(2, stmts.len());
-        assert_eq!(self.expected_output, stmts[0].to_string());
+        assert_eq!(self.expected_output, result);
     }
     pub fn test_eof(&self) {
         let mut p = Parser::new(self.code.clone());
@@ -30,9 +33,11 @@ impl TestCase {
             "========== testing ==========\n{}\n=============================\n",
             self.code.trim()
         );
-        println!("{}\n", stmts[1].to_string());
+        let result = stmts[1].to_string();
+        let changeset = Changeset::new(self.expected_output.as_str(), result.as_str(), "\n");
+        println!("{}\n", changeset.to_string());
         assert_eq!(2, stmts.len());
-        assert_eq!(self.expected_output, stmts[1].to_string());
+        assert_eq!(self.expected_output, result);
     }
 }
 
@@ -310,7 +315,7 @@ leading_comments:
 //              if(true, 'true'), (1+1)*1, ((2)), (select info limit 1)
 //              10 between 1 and 2 and true,
 //              1<2,
-//            from data 
+//            from data
 //            ;
 //            select not true or a and b,;
 //            select
