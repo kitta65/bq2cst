@@ -56,7 +56,24 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
-        // comment
+        // ----- grouped statement -----
+        TestCase::new(
+            "\
+(SELECT 1);
+",
+            "\
+self: ( (GroupedStatement)
+rparen:
+  self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+stmt:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (Unknown)
+",
+        ),
+        // ----- comment -----
         TestCase::new(
             "\
 #standardSQL
@@ -77,7 +94,7 @@ trailing_comments:
 - self: /* */ (Comment)
 ",
         ),
-        // alias
+        // ----- alias -----
         TestCase::new(
             "\
 SELECT 1 AS one, 2 two
@@ -106,7 +123,7 @@ from:
       self: AS (Keyword)
 ",
         ),
-        // unary operator
+        // ----- unary operator -----
         TestCase::new(
             "\
 SELECT
@@ -115,7 +132,7 @@ SELECT
   r'xxx',
   DATE '2020-01-01',
   TIMESTAMP r'2020-01-01',
-  NOT true,
+  NOT TRUE,
 ",
             "\
 self: SELECT (SelectStatement)
@@ -151,10 +168,10 @@ exprs:
   comma:
     self: , (Symbol)
   right:
-    self: true (Unknown)
+    self: TRUE (Unknown)
 ",
         ),
-        // binary operator
+        // ----- binary operator -----
         TestCase::new(
             "\
 SELECT
@@ -209,14 +226,13 @@ exprs:
     self: '%x%' (Unknown)
 ",
         ),
-        // binary operator (NOT)
         TestCase::new(
             "\
 SELECT
   1 NOT BETWEEN 0 AND 3,
   1 NOT IN (1, 2, 3),
   'x' NOT LIKE '%x%',
-  true IS NOT false,
+  TRUE IS NOT FALSE,
 ",
             "\
 self: SELECT (SelectStatement)
@@ -265,11 +281,374 @@ exprs:
   comma:
     self: , (Symbol)
   left:
-    self: true (Unknown)
+    self: TRUE (Unknown)
   not:
     self: NOT (Keyword)
   right:
-    self: false (Unknown)
+    self: FALSE (Unknown)
+",
+        ),
+        // ----- precedence -----
+        TestCase::new(
+            "\
+SELECT (1+(-2)) * 3 IN (9)
+
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IN (InOperator)
+  left:
+    self: * (BinaryOperator)
+    left:
+      self: ( (GroupedExpr)
+      expr:
+        self: + (BinaryOperator)
+        left:
+          self: 1 (Unknown)
+        right:
+          self: ( (GroupedExpr)
+          expr:
+            self: - (UnaryOperator)
+            right:
+              self: 2 (Unknown)
+          rparen:
+            self: ) (Symbol)
+      rparen:
+        self: ) (Symbol)
+    right:
+      self: 3 (Unknown)
+  right:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: 9 (Unknown)
+    rparen:
+      self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT (1+2) * 3 NOT BETWEEN 10 + 0 AND 11 + 2 OR TRUE
+
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: OR (BinaryOperator)
+  left:
+    self: BETWEEN (BetweenOperator)
+    and:
+      self: AND (Keyword)
+    left:
+      self: * (BinaryOperator)
+      left:
+        self: ( (GroupedExpr)
+        expr:
+          self: + (BinaryOperator)
+          left:
+            self: 1 (Unknown)
+          right:
+            self: 2 (Unknown)
+        rparen:
+          self: ) (Symbol)
+      right:
+        self: 3 (Unknown)
+    not:
+      self: NOT (Keyword)
+    right:
+    - self: + (BinaryOperator)
+      left:
+        self: 10 (Unknown)
+      right:
+        self: 0 (Unknown)
+    - self: + (BinaryOperator)
+      left:
+        self: 11 (Unknown)
+      right:
+        self: 2 (Unknown)
+  right:
+    self: TRUE (Unknown)
+",
+        ),
+        // ----- case expr -----
+        TestCase::new(
+            "\
+SELECT
+  CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE NULL END,
+  CASE WHEN c1 = 1 THEN 'one' ELSE NULL END,
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: CASE (Unknown)
+  arms:
+  - self: WHEN (CaseArm)
+    expr:
+      self: 1 (Unknown)
+    result:
+      self: 'one' (Unknown)
+    then:
+      self: THEN (Keyword)
+  - self: WHEN (CaseArm)
+    expr:
+      self: 2 (Unknown)
+    result:
+      self: 'two' (Unknown)
+    then:
+      self: THEN (Keyword)
+  - self: ELSE (CaseArm)
+    result:
+      self: NULL (Unknown)
+  comma:
+    self: , (Symbol)
+  end:
+    self: END (Keyword)
+  expr:
+    self: c1 (Unknown)
+- self: CASE (Unknown)
+  arms:
+  - self: WHEN (CaseArm)
+    expr:
+      self: = (BinaryOperator)
+      left:
+        self: c1 (Unknown)
+      right:
+        self: 1 (Unknown)
+    result:
+      self: 'one' (Unknown)
+    then:
+      self: THEN (Keyword)
+  - self: ELSE (CaseArm)
+    result:
+      self: NULL (Unknown)
+  comma:
+    self: , (Symbol)
+  end:
+    self: END (Keyword)
+",
+        ),
+        // ----- calling function -----
+        TestCase::new(
+            "\
+SELECT f(c1, c2)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: c1 (Unknown)
+    comma:
+      self: , (Symbol)
+  - self: c2 (Unknown)
+  func:
+    self: f (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        // ----- irregular function -----
+        TestCase::new(
+            "\
+SELECT CAST('1' AS INT64),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: AS (CastArgument)
+    cast_from:
+      self: '1' (Unknown)
+    cast_to:
+      self: INT64 (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: CAST (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+    EXTRACT(DAY FROM ts),
+    EXTRACT(WEEK(SUNDAY) FROM ts),
+    EXTRACT(DAY FROM ts AT TIME ZONE 'UTC'),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: FROM (ExtractArgument)
+    extract_datepart:
+      self: DAY (Unknown)
+    extract_from:
+      self: ts (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: EXTRACT (Unknown)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: FROM (ExtractArgument)
+    extract_datepart:
+      self: ( (CallingFunction)
+      args:
+      - self: SUNDAY (Unknown)
+      func:
+        self: WEEK (Unknown)
+      rparen:
+        self: ) (Symbol)
+    extract_from:
+      self: ts (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: EXTRACT (Unknown)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: FROM (ExtractArgument)
+    at_time_zone:
+    - self: AT (Keyword)
+    - self: TIME (Keyword)
+    - self: ZONE (Keyword)
+    extract_datepart:
+      self: DAY (Unknown)
+    extract_from:
+      self: ts (Unknown)
+    time_zone:
+      self: 'UTC' (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: EXTRACT (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT STRING_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z LIMIT 100),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: x (Unknown)
+    comma:
+      self: , (Symbol)
+  - self: y (Unknown)
+  comma:
+    self: , (Symbol)
+  distinct:
+    self: DISTINCT (Keyword)
+  func:
+    self: STRING_AGG (Unknown)
+  ignore_nulls:
+  - self: IGNORE (Keyword)
+  - self: NULLS (Keyword)
+  limit:
+    self: LIMIT (KeywordWithExpr)
+    expr:
+      self: 100 (Unknown)
+  orderby:
+    self: ORDER (XXXByExprs)
+    by:
+      self: BY (Keyword)
+    exprs:
+    - self: z (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT ARRAY(SELECT 1 UNION ALL SELECT 2),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: UNION (SetOperator)
+    distinct_or_all:
+      self: ALL (Keyword)
+    left:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (Unknown)
+    right:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: ARRAY (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT ST_GEOGFROMTEXT(p, oriented => TRUE),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: p (Unknown)
+    comma:
+      self: , (Symbol)
+  - self: => (BinaryOperator)
+    left:
+      self: oriented (Unknown)
+    right:
+      self: TRUE (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: ST_GEOGFROMTEXT (Unknown)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT DATE_ADD(dt, INTERVAL 1 + 1 DAY),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: dt (Unknown)
+    comma:
+      self: , (Symbol)
+  - self: INTERVAL (Unknown)
+    date_part:
+      self: DAY (Unknown)
+    right:
+      self: + (BinaryOperator)
+      left:
+        self: 1 (Unknown)
+      right:
+        self: 1 (Unknown)
+  comma:
+    self: , (Symbol)
+  func:
+    self: DATE_ADD (Unknown)
+  rparen:
+    self: ) (Symbol)
 ",
         ),
     ];
@@ -311,19 +690,6 @@ leading_comments:
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
 //            select
-//              interval 9 year,
-//              if(true, 'true'), (1+1)*1, ((2)), (select info limit 1)
-//              10 between 1 and 2 and true,
-//              1<2,
-//            from data
-//            ;
-//            select not true or a and b,;
-//            select
-//              case num when 1 then '1' else '0' end,
-//              case when true then '1' else '0' end,
-//              case when 1=1 then current_date() else null end,
-//            ;
-//            select
 //              sum() over (),
 //              sum() over named_clause,
 //              sum() over (named_clause),
@@ -332,15 +698,12 @@ leading_comments:
 //              sum() over (partition by a order by b, c),
 //              sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
 //              sum() over (rows 1 + 1 preceding),
-//            ;
 //            select last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
 //            FROM table
 //            WINDOW
 //              a AS (PARTITION BY col1),
 //              b AS (a ORDER BY col2),
 //              c AS b;
-//            select r'abc', B'abc', rB'abc', bR'abc', date r'2020-01-01';
-//            select decimal '00', timestamp r'2020-01-01';
 //            select (t.struct_col.num + 1) as result from `dataset`.table as t;
 //            select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],array<struct<array<int64>>>[struct([1])];
 //            select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
@@ -356,16 +719,10 @@ leading_comments:
 //            select * from data1 as one inner join data2 two ON true;
 //            select * from data1 as one inner join data2 two using(col) left outer join data3 on true;
 //            select * from data1 as one , data2 two join (data3 full outer join data4 on col1=col2) on true;
-//            select
 //              cast(abc as string),string_agg(distinct x, y ignore nulls order by z limit 100),array(select 1 union all select 2),
 //              extract(day from ts),extract(day from ts at time zone 'UTC'),extract(week(sunday) from ts),
 //              st_geogfromtext(p, oriented => true),
-//            ;
-//            select
-//              aaa.bbb.ccc,x[offset(1)],-+1,~1,1*2/3,'a'||'b',1+2-3,1<<3>>2,1|2^3&4,
-//              1<2,3>4,1<=2,3>=4,1!=2,1<>2,
-//              a is null,a is not null,true is true,true or true is not true,not true is true,true or false not in (true),
-//            ;
+
 //            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
 //            create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
 //            create function abc() returns int64 language js options() as '''return 1''';

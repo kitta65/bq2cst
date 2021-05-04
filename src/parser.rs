@@ -376,7 +376,7 @@ impl Parser {
             self.next_token(); // LIMIT -> expr
             limit.push_node(
                 "expr",
-                self.parse_expr(999, &vec![";", ",", "offset", ")"], false),
+                self.parse_expr(999, &vec![";", ",", "offset", ")"], false), // NOTE offset is not reserved
             );
             if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
                 self.next_token(); // expr -> OFFSET
@@ -393,9 +393,9 @@ impl Parser {
         // UNION
         while self.get_token(1).in_(&vec!["UNION", "INTERSECT", "EXCEPT"]) && root {
             self.next_token(); // stmt -> UNION
-            let mut operator = self.construct_node(NodeType::Unknown);
+            let mut operator = self.construct_node(NodeType::SetOperator);
             self.next_token(); // UNION -> DISTINCT
-            operator.push_node("distinct_or_all", self.construct_node(NodeType::Unknown));
+            operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword));
             operator.push_node("left", node);
             self.next_token(); // DISTINCT -> stmt
             operator.push_node("right", self.parse_select_statement(false));
@@ -675,7 +675,7 @@ impl Parser {
             self.next_token(); // -> by
             clusterby.push_node("by", self.construct_node(NodeType::Unknown));
             self.next_token(); // -> expr
-            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false));
+            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false)); // NOTE options is not reservved
             create.push_node("clusterby", clusterby);
         }
         if self.get_token(1).is("with") {
@@ -1088,7 +1088,7 @@ impl Parser {
     fn parse_while_statement(&mut self) -> Node {
         let mut while_ = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> boolean_expression
-        while_.push_node("condition", self.parse_expr(999, &vec!["do"], false));
+        while_.push_node("condition", self.parse_expr(999, &vec!["do"], false)); // NOTE do is not reserved
         self.next_token(); // -> do
         while_.push_node("do", self.construct_node(NodeType::Unknown));
         let mut stmts = Vec::new();
@@ -1384,7 +1384,7 @@ impl Parser {
             self.next_token(); // -> (
             let mut group = self.construct_node(NodeType::Unknown);
             self.next_token(); // -> expr
-            group.push_node("expr", self.parse_expr(999, &vec!["percent"], false));
+            group.push_node("expr", self.parse_expr(999, &vec!["percent"], false)); // NOTE percent is not reserved
             self.next_token(); // -> percent
             group.push_node("percent", self.construct_node(NodeType::Unknown));
             self.next_token(); // -> )
@@ -1482,8 +1482,11 @@ impl Parser {
             if self.get_token(1).is(",") {
                 self.next_token(); // expr -> ,
                 expr.push_node("comma", self.construct_node(NodeType::Symbol));
+                exprs.push(expr);
+            } else {
+                exprs.push(expr);
+                break;
             }
-            exprs.push(expr);
         }
         exprs
     }
@@ -1530,8 +1533,10 @@ impl Parser {
                 let mut exprs = self.parse_exprs(&vec![")"], false);
                 if exprs.len() == 1 {
                     left.push_node("expr", exprs.pop().unwrap());
+                    left.node_type = NodeType::GroupedExpr;
                 } else {
                     left.push_node_vec("exprs", exprs);
+                    left.node_type = NodeType::GroupedExprs;
                 }
                 self.next_token(); // expr -> )
                 left.push_node("rparen", self.construct_node(NodeType::Symbol));
@@ -1562,7 +1567,7 @@ impl Parser {
             }
             "INTERVAL" => {
                 self.next_token(); // INTERVAL -> expr
-                let right = self.parse_expr(001, &vec!["hour", "month", "year"], false);
+                let right = self.parse_expr(999, &vec!["hour", "day", "month", "year"], false); // NOTE hour, month, year is not reserved
                 self.next_token(); // expr -> HOUR
                 left.push_node("date_part", self.construct_node(NodeType::Unknown));
                 left.push_node("right", right);
@@ -1654,13 +1659,13 @@ impl Parser {
                     self.next_token(); // WHEN -> expr
                     arm.push_node("expr", self.parse_expr(999, &vec!["then"], false));
                     self.next_token(); // expr ->THEN
-                    arm.push_node("then", self.construct_node(NodeType::KeywordWithExpr));
+                    arm.push_node("then", self.construct_node(NodeType::Keyword));
                     self.next_token(); // THEN -> result_expr
                     arm.push_node("result", self.parse_expr(999, &vec!["else", "when"], false));
                     self.next_token(); // result_expr -> ELSE, result_expr -> WHEN
                     arms.push(arm)
                 }
-                let mut else_ = self.construct_node(NodeType::KeywordWithExpr);
+                let mut else_ = self.construct_node(NodeType::CaseArm);
                 self.next_token(); // ELSE -> result_expr
                 else_.push_node("result", self.construct_node(NodeType::Unknown));
                 arms.push(else_);
@@ -1672,7 +1677,7 @@ impl Parser {
         };
         // infix
         while !self.get_token(1).in_(until) && self.get_precedence(1) < precedence {
-            // actually, until is not needed
+            // actually, `until` is not needed
             match self.get_token(1).literal.to_uppercase().as_str() {
                 "(" => {
                     let func = self.get_token(0).literal.to_uppercase();
@@ -1735,10 +1740,12 @@ impl Parser {
                         }
                         if self.get_token(1).in_(&vec!["respect", "ignore"]) {
                             self.next_token(); // expr -> RESPECT, IGNORE
-                            let mut ignore_nulls = self.construct_node(NodeType::Keyword);
+                            let ignore_or_respect = self.construct_node(NodeType::Keyword);
                             self.next_token(); // RESPECT, IGNORE -> NULLS
-                            ignore_nulls.push_node("nulls", self.construct_node(NodeType::Keyword));
-                            node.push_node("ignore_nulls", ignore_nulls);
+                            node.push_node_vec(
+                                "ignore_nulls",
+                                vec![ignore_or_respect, self.construct_node(NodeType::Keyword)],
+                            );
                         }
                         if self.get_token(1).is("order") {
                             self.next_token(); // expr -> ORDER
@@ -2059,8 +2066,8 @@ impl Parser {
     }
     fn get_precedence(&self, offset: usize) -> usize {
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
-        // 001... date, timestamp, r'', b'' (literal)
-        // 101... [], ., ( (call expression. it's not mentioned in documentation)
+        // 001... DATE, TIMESTAMP, r'', b'' (literal)
+        // 101... [], ., ( (calling function. it's not mentioned in documentation)
         // 102... +, - , ~ (unary operator)
         // 103... *, / , ||
         // 104... +, - (binary operator)
@@ -2069,9 +2076,9 @@ impl Parser {
         // 107... ^ (bit operator)
         // 108... | (bit operator)
         // 109... =, <, >, like, between, in
-        // 110... not
-        // 111... and
-        // 112... or
+        // 110... NOT
+        // 111... AND
+        // 112... OR
         // 200... => (ST_GEOGFROMGEOJSON)
         // 999... LOWEST
         match self.get_token(offset).literal.to_uppercase().as_str() {
