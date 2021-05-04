@@ -103,22 +103,24 @@ impl Parser {
             Some(i) => i,
             None => return true,
         };
-        self.tokens.len() < idx
+        self.tokens.len() - 1 <= idx
     }
     pub fn parse_code(&mut self) -> Vec<Node> {
-        let mut code: Vec<Node> = Vec::new();
-        while self.position < self.tokens.len() - 1 {
+        let mut stmts: Vec<Node> = Vec::new();
+        while !self.is_eof(0) {
             let stmt = self.parse_statement();
-            code.push(stmt);
+            stmts.push(stmt);
             self.next_token();
         }
-        let mut eof = self.construct_node(NodeType::Unknown);
-        eof.token.take(); // TODO refactoring
-        code.push(eof);
-        code
+        stmts.push(self.construct_node(NodeType::EOF));
+        stmts
     }
     fn construct_node(&self, node_type: NodeType) -> Node {
-        let mut node = Node::new(self.get_token(0).clone(), node_type);
+        let mut node = match node_type {
+            NodeType::EOF => Node::empty(node_type),
+            _ => Node::new(self.get_token(0).clone(), node_type),
+        };
+        // leading_comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
             leading_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Comment))

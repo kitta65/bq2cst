@@ -19,6 +19,7 @@ pub enum NodeType {
     Comment,
     Keyword,
     Symbol,
+    EOF,
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
