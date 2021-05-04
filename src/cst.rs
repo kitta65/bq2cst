@@ -17,9 +17,33 @@ pub enum NodeType {
     Unknown, // TODO develop only
     SelectStatement,
     GroupedStatement,
+    WithClause,
+    WithQuery,
+    WindowClause,
+    WindowExpr,          // xxx AS (PARTITION BY c1 ORDER BY c2)
+    WindowSpecification, // PARTITION BY c1 ORDER BY c2
+    WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
+    LimitClause,
     SetOperator,
     Comment,
     Keyword,
+    Identifier,
+    CallingFunction,
+    ArrayAccessing,
+    BinaryOperator,
+    BetweenOperator,
+    CastArgument,
+    ExtractArgument,
+    KeywordWithExpr,
+    KeywordWithGroupedExprs,
+    GroupedType, // <INT64>
+    TypeDeclaration, // x INT64
+    GroupedTypeDeclarations, // <x INT64, y FLOAT64>
+    GroupedExpr,
+    GroupedExprs,
+    CaseArm,
+    XXXByExprs,
+    StructLiteral,
     Symbol,
     EOF,
 }
