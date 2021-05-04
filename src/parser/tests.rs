@@ -23,6 +23,17 @@ impl TestCase {
         assert_eq!(2, stmts.len());
         assert_eq!(self.expected_output, stmts[0].to_string());
     }
+    pub fn test_eof(&self) {
+        let mut p = Parser::new(self.code.clone());
+        let stmts = p.parse_code();
+        println!(
+            "========== testing ==========\n{}\n=============================\n",
+            self.code.trim()
+        );
+        println!("{}\n", stmts[1].to_string());
+        assert_eq!(2, stmts.len());
+        assert_eq!(self.expected_output, stmts[1].to_string());
+    }
 }
 
 #[test]
@@ -46,7 +57,6 @@ semicolon:
 #standardSQL
 SELECT /* */ 1
 ; -- end of statement
--- EOF
 ",
             "\
 self: SELECT (SelectStatement)
@@ -67,58 +77,35 @@ trailing_comments:
         t.test();
     }
 }
-//#[test]
-//fn test_next_token() {
-//    let input = "select *;".to_string();
-//    let l = lexer::Lexer::new(input);
-//    let mut p = Parser::new(l);
-//    assert_eq!(
-//        p.get_token(0),
-//        token::Token {
-//            line: 1,
-//            column: 1,
-//            literal: "select".to_string(),
-//        }
-//    );
-//    assert_eq!(
-//        p.get_token(1),
-//        token::Token {
-//            line: 1,
-//            column: 8,
-//            literal: "*".to_string(),
-//        }
-//    );
-//    p.next_token();
-//    assert_eq!(
-//        p.get_token(0),
-//        token::Token {
-//            line: 1,
-//            column: 8,
-//            literal: "*".to_string(),
-//        }
-//    );
-//    assert_eq!(
-//        p.get_token(1),
-//        token::Token {
-//            line: 1,
-//            column: 9,
-//            literal: ";".to_string(),
-//        }
-//    );
-//    p.next_token();
-//    assert_eq!(
-//        p.get_token(0),
-//        token::Token {
-//            line: 1,
-//            column: 9,
-//            literal: ";".to_string(),
-//        }
-//    );
-//    assert_eq!(p.get_token(1), token::Token::eof());
-//    p.next_token();
-//    assert_eq!(p.get_token(0), token::Token::eof());
-//    assert_eq!(p.get_token(1), token::Token::eof());
-//}
+
+#[test]
+fn test_parse_code_eof() {
+    let test_cases = vec![
+        TestCase::new(
+            "\
+SELECT 1;
+",
+            "\
+self: None (EOF)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1;
+-- EOF
+",
+            "\
+self: None (EOF)
+leading_comments:
+- self: -- EOF (Comment)
+",
+        ),
+    ];
+    for t in test_cases {
+        t.test_eof();
+    }
+}
+
 //#[test]
 //fn test_parse_exprs() {
 //    let input = "\
