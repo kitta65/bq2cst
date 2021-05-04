@@ -139,7 +139,7 @@ impl Parser {
         node
     }
     fn parse_statement(&mut self) -> Node {
-        let node = match self.get_token(0).as_uppercase_str() {
+        let node = match self.get_token(0).literal.to_uppercase().as_str() {
             // SELECT
             "WITH" | "SELECT" | "(" => self.parse_select_statement(true),
             // DML
@@ -151,26 +151,26 @@ impl Parser {
             // DDL
             "CREATE" => {
                 let mut offset = 1;
-                let mut target = self.get_token(offset).as_uppercase_str();
+                let mut target = self.get_token(offset).literal.to_uppercase();
                 loop {
-                    match target {
+                    match target.as_str() {
                         "TEMP" => {
                             offset += 1;
-                            target = self.get_token(offset).as_uppercase_str();
+                            target = self.get_token(offset).literal.to_uppercase();
                         }
                         "TEMPORARY" => {
                             offset += 1;
-                            target = self.get_token(offset).as_uppercase_str();
+                            target = self.get_token(offset).literal.to_uppercase();
                         }
                         "OR" => {
                             offset += 2;
-                            target = self.get_token(offset).as_uppercase_str();
+                            target = self.get_token(offset).literal.to_uppercase();
                         }
                         _ => break,
                     }
                 }
                 // TODO separete functions
-                match target {
+                match target.as_str() {
                     "SCHEMA" | "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
                         self.parse_create_table_statement()
                     }
@@ -206,14 +206,14 @@ impl Parser {
         node
     }
     fn parse_select_statement(&mut self, root: bool) -> Node {
-        if self.get_token(0).as_uppercase_str() == "(" {
+        if self.get_token(0).literal.to_uppercase().as_str() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement);
             self.next_token(); // ( -> SELECT
             node.push_node("stmt", self.parse_select_statement(true));
             self.next_token(); // stmt -> )
             node.push_node("rparen", self.construct_node(NodeType::Symbol));
             while self.get_token(1).in_(&vec!["union", "intersect", "except"]) && root {
-                self.next_token(); // stmt -> UNION 
+                self.next_token(); // stmt -> UNION
                 let mut operator = self.construct_node(NodeType::SetOperator);
                 self.next_token(); // UNION -> DISTINCT
                 operator.push_node("distinct", self.construct_node(NodeType::Keyword));

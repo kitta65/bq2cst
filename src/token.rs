@@ -48,9 +48,6 @@ impl Token {
     pub fn is(&self, literal: &str) -> bool {
         self.literal.to_uppercase() == literal.to_uppercase()
     }
-    pub fn as_uppercase_str(&self) -> &str {
-        self.literal.as_str()
-    }
     pub fn is_identifier(&self) -> bool {
         if self.quoted_by('`') {
             return true;
