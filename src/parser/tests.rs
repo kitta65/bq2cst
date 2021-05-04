@@ -56,6 +56,110 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- asterisk -----
+        TestCase::new(
+            "\
+SELECT
+  * EXCEPT (col1),
+  t.* EXCEPT(col1, col2),
+FROM t
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Unknown)
+  comma:
+    self: , (Symbol)
+  except:
+    self: EXCEPT (KeywordWithGroupedExprs)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: col1 (Unknown)
+      rparen:
+        self: ) (Symbol)
+- self: . (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: t (Unknown)
+  right:
+    self: * (Unknown)
+    except:
+      self: EXCEPT (KeywordWithGroupedExprs)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: col1 (Unknown)
+          comma:
+            self: , (Symbol)
+        - self: col2 (Unknown)
+        rparen:
+          self: ) (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Unknown)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  * REPLACE (col1 * 2 AS _col1),
+  t.* REPLACE (col2 * 2 AS _col2),
+FROM t
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Unknown)
+  comma:
+    self: , (Symbol)
+  replace:
+    self: REPLACE (KeywordWithGroupedExprs)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: * (BinaryOperator)
+        alias:
+          self: _col1 (Identifier)
+        as:
+          self: AS (Keyword)
+        left:
+          self: col1 (Unknown)
+        right:
+          self: 2 (Unknown)
+      rparen:
+        self: ) (Symbol)
+- self: . (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: t (Unknown)
+  right:
+    self: * (Unknown)
+    replace:
+      self: REPLACE (KeywordWithGroupedExprs)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: * (BinaryOperator)
+          alias:
+            self: _col2 (Identifier)
+          as:
+            self: AS (Keyword)
+          left:
+            self: col2 (Unknown)
+          right:
+            self: 2 (Unknown)
+        rparen:
+          self: ) (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Unknown)
+",
+        ),
         // ----- grouped statement -----
         TestCase::new(
             "\
@@ -711,7 +815,7 @@ leading_comments:
 //            select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
 //            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
 //            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
-//            select as struct 1;select distinct 1;select all 1;select t.* except (col1), * except(col1, col2), * replace (col1 * 2 as col2), from t;
+//            select as struct 1;select distinct 1;select all 1;
 //            select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
 //            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
 //            select * from (select 1 from table1) inner join table2;
