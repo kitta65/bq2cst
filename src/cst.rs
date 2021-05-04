@@ -16,6 +16,8 @@ pub enum ContentType {
 pub enum NodeType {
     Unknown, // TODO develop only
     SelectStatement,
+    GroupedStatement,
+    SetOperator,
     Comment,
     Keyword,
     Symbol,

@@ -37,6 +37,17 @@ impl Token {
             false
         }
     }
+    pub fn in_(&self, vec: &Vec<&str>) -> bool {
+        for v in vec {
+            if self.literal.to_uppercase() == v.to_uppercase() {
+                return true;
+            };
+        }
+        false
+    }
+    pub fn is(&self, literal: &str) -> bool {
+        self.literal.to_uppercase() == literal.to_uppercase()
+    }
     pub fn as_uppercase_str(&self) -> &str {
         self.literal.as_str()
     }
