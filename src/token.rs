@@ -84,8 +84,9 @@ impl Token {
         if self.literal.len() < 2 {
             return false;
         }
+        // unwrap is safe because the length is longer then 2
         self.literal.chars().next().unwrap() == ch
-            && self.literal.chars().rev().next().unwrap() == ch
+            && self.literal.chars().last().unwrap() == ch
     }
 }
 

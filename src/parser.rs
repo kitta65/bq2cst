@@ -58,23 +58,29 @@ impl Parser {
     fn next_token(&mut self) {
         // leading comments
         self.leading_comment_indices = Vec::new();
-        let idx = match self.get_offset_index(1) {
+        let next_token_idx = match self.get_offset_index(1) {
             Some(i) => i,
-            None => panic!("Next token was not found. Current token is: {:?}", self.get_token(0)),
+            None => panic!(
+                "Next token was not found. Current token is: {:?}",
+                self.get_token(0)
+            ),
         };
-        let from_idx = match self.trailing_comment_indices.iter().rev().next() {
-            Some(n) => *n,
-            None => self.position,
+        let from_idx = match self.trailing_comment_indices.last() {
+            Some(n) => *n + 1,
+            None => self.position + 1,
         };
-        for i in from_idx + 1..idx {
+        for i in from_idx..next_token_idx {
             self.leading_comment_indices.push(i);
         }
-        self.position = idx;
+        self.position = next_token_idx;
         // trailing comments
         self.trailing_comment_indices = Vec::new();
+        let next_token_idx = match self.get_offset_index(1) {
+            Some(i) => i,
+            None => return (), // already reached EOF
+        };
         let mut trailing_comment_idx = self.position + 1;
-        while trailing_comment_idx < self.tokens.len()
-            && self.tokens[trailing_comment_idx].is_comment()
+        while trailing_comment_idx < next_token_idx
             && self.get_token(0).line == self.tokens[trailing_comment_idx].line
         {
             self.trailing_comment_indices.push(trailing_comment_idx);
@@ -84,7 +90,10 @@ impl Parser {
     fn get_token(&self, offset: usize) -> Token {
         let idx = match self.get_offset_index(offset) {
             Some(i) => i,
-            None => panic!("Next token was not found. Current token is: {:?}", self.get_token(0)),
+            None => panic!(
+                "Next token was not found. Current token is: {:?}",
+                self.get_token(0)
+            ),
         };
         if idx < self.tokens.len() {
             return self.tokens[idx].clone();
@@ -220,7 +229,10 @@ impl Parser {
         drop.push_node("ident", self.parse_identifier());
         if self.peek_token_in(&vec!["cascade", "restrict"]) {
             self.next_token(); // -> cascade, restrict
-            drop.push_node("cascade_or_restrict", self.construct_node(NodeType::Unknown));
+            drop.push_node(
+                "cascade_or_restrict",
+                self.construct_node(NodeType::Unknown),
+            );
         }
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
@@ -562,7 +574,10 @@ impl Parser {
         self.next_token(); // -> end
         let end = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> loop
-        loop_.push_node_vec("end_loop", vec![end, self.construct_node(NodeType::Unknown)]);
+        loop_.push_node_vec(
+            "end_loop",
+            vec![end, self.construct_node(NodeType::Unknown)],
+        );
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             loop_.push_node("semicolon", self.construct_node(NodeType::Symbol));
@@ -586,7 +601,10 @@ impl Parser {
         self.next_token(); // -> end
         let end = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> while
-        while_.push_node_vec("end_while", vec![end, self.construct_node(NodeType::Unknown)]);
+        while_.push_node_vec(
+            "end_while",
+            vec![end, self.construct_node(NodeType::Unknown)],
+        );
         if self.peek_token_is(";") {
             self.next_token(); // -> ;
             while_.push_node("semicolon", self.construct_node(NodeType::Symbol));
@@ -1708,7 +1726,8 @@ impl Parser {
                         type_declaration.push_node("type", self.parse_type(false));
                         self.next_token(); // type -> , or next_declaration
                         if self.cur_token_is(",") {
-                            type_declaration.push_node("comma", self.construct_node(NodeType::Unknown));
+                            type_declaration
+                                .push_node("comma", self.construct_node(NodeType::Unknown));
                             self.next_token(); // , -> next_declaration
                         }
                         type_declarations.push(type_declaration);
@@ -2180,7 +2199,8 @@ impl Parser {
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
                         if self.cur_token_is(",") {
-                            type_declaration.push_node("comma", self.construct_node(NodeType::Unknown));
+                            type_declaration
+                                .push_node("comma", self.construct_node(NodeType::Unknown));
                             self.next_token(); // , -> next_declaration
                         }
                         type_declarations.push(type_declaration);
