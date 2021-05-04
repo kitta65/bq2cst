@@ -1540,6 +1540,7 @@ impl Parser {
                 self.next_token(); // - -> expr
                 let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
+                left.node_type = NodeType::UnaryOperator;
             }
             "[" => {
                 self.next_token(); // [ -> exprs
@@ -1556,6 +1557,7 @@ impl Parser {
                     self.next_token(); // -> expr
                     let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
+                    left.node_type = NodeType::UnaryOperator;
                 }
             }
             "INTERVAL" => {
@@ -1565,11 +1567,12 @@ impl Parser {
                 left.push_node("date_part", self.construct_node(NodeType::Unknown));
                 left.push_node("right", right);
             }
-            "R" | "B" | "BR" | "RB" => {
+            "B" | "R" | "BR" | "RB" => {
                 if self.get_token(1).is_string() {
                     self.next_token(); // R -> 'string'
                     let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
+                    left.node_type = NodeType::UnaryOperator;
                 }
             }
             "SELECT" => {
@@ -1579,6 +1582,7 @@ impl Parser {
                 self.next_token(); // NOT -> boolean
                 let right = self.parse_expr(110, until, false);
                 left.push_node("right", right);
+                left.node_type = NodeType::UnaryOperator;
             }
             "ARRAY" => {
                 if self.get_token(1).literal.as_str() == "<" {
@@ -1951,25 +1955,26 @@ impl Parser {
     }
     fn parse_binary_operator(&mut self, left: Node, until: &Vec<&str>) -> Node {
         let precedence = self.get_precedence(0);
-        let mut node = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("not") {
-            self.next_token(); // is -> not
-            node.push_node("not", self.construct_node(NodeType::Unknown));
+        let mut node = self.construct_node(NodeType::BinaryOperator);
+        if self.get_token(1).is("NOT") {
+            self.next_token(); // IS -> NOT
+            node.push_node("not", self.construct_node(NodeType::Keyword));
         }
         self.next_token(); // binary_operator -> expr
         node.push_node("left", left);
         node.push_node("right", self.parse_expr(precedence, until, false));
+        node.node_type = NodeType::BinaryOperator;
         node
     }
     fn parse_in_operator(&mut self, left: Node) -> Node {
-        let mut node = self.construct_node(NodeType::Unknown);
-        self.next_token(); // in -> (
+        let mut node = self.construct_node(NodeType::InOperator);
+        self.next_token(); // IN -> (
         node.push_node("left", left);
-        let mut right = self.construct_node(NodeType::Unknown);
+        let mut right = self.construct_node(NodeType::GroupedExprs);
         self.next_token(); // ( -> expr
         right.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
         self.next_token(); // expr -> )
-        right.push_node("rparen", self.construct_node(NodeType::Unknown));
+        right.push_node("rparen", self.construct_node(NodeType::Symbol));
         node.push_node("right", right);
         node
     }

@@ -14,44 +14,46 @@ pub enum ContentType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
-    Unknown, // TODO develop only
-    SelectStatement,
-    GroupedStatement,
-    WithClause,
-    WithQuery,
-    WindowClause,
-    WindowExpr,          // xxx AS (PARTITION BY c1 ORDER BY c2)
-    WindowSpecification, // PARTITION BY c1 ORDER BY c2
-    WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-    LimitClause,
-    SetOperator,
-    Comment,
-    Keyword,
-    Identifier,
-    CallingFunction,
     ArrayAccessing,
     BinaryOperator,
     BetweenOperator,
+    CallingFunction,
+    CaseArm,
     CastArgument,
+    Comment,
+    EOF,
     ExtractArgument,
-    KeywordWithExpr,
-    KeywordWithGroupedExprs,
-    GroupedType, // <INT64>
-    TypeDeclaration, // x INT64
-    GroupedTypeDeclarations, // <x INT64, y FLOAT64>
     GroupedExpr,
     GroupedExprs,
-    CaseArm,
-    XXXByExprs,
+    GroupedStatement,
+    GroupedType, // <INT64>
+    GroupedTypeDeclarations, // <x INT64, y FLOAT64>
+    Keyword,
+    KeywordWithExpr,
+    KeywordWithGroupedExprs,
+    Identifier,
+    InOperator,
+    LimitClause,
+    SelectStatement,
+    SetOperator,
     StructLiteral,
     Symbol,
-    EOF,
+    TypeDeclaration, // x INT64
+    UnaryOperator,
+    Unknown, // TODO develop only
+    WindowClause,
+    WindowExpr,          // xxx AS (PARTITION BY c1 ORDER BY c2)
+    WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
+    WindowSpecification, // PARTITION BY c1 ORDER BY c2
+    WithClause,
+    WithQuery,
+    XXXByExprs,
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
     pub token: Option<Token>,
-    node_type: NodeType,
+    pub node_type: NodeType,
     children: HashMap<String, ContentType>,
 }
 
