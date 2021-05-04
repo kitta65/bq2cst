@@ -139,11 +139,9 @@ impl Parser {
         node
     }
     fn parse_statement(&mut self) -> Node {
-        let node = match self.get_token(0).literal.to_uppercase().as_str() {
+        let node = match self.get_token(0).as_uppercase_str() {
             // SELECT
-            "WITH" => self.parse_select_statement(true),
-            "SELECT" => self.parse_select_statement(true),
-            "(" => self.parse_select_statement(true),
+            "WITH" | "SELECT" | "(" => self.parse_select_statement(true),
             // DML
             "INSERT" => self.parse_insert_statement(true),
             "DELETE" => self.parse_delete_statement(),
@@ -153,37 +151,40 @@ impl Parser {
             // DDL
             "CREATE" => {
                 let mut offset = 1;
-                let mut target = self.get_token(offset).literal.to_uppercase();
+                let mut target = self.get_token(offset).as_uppercase_str();
                 loop {
-                    match target.as_str() {
+                    match target {
                         "TEMP" => {
                             offset += 1;
-                            target = self.get_token(offset).literal.to_uppercase();
+                            target = self.get_token(offset).as_uppercase_str();
                         }
                         "TEMPORARY" => {
                             offset += 1;
-                            target = self.get_token(offset).literal.to_uppercase();
+                            target = self.get_token(offset).as_uppercase_str();
                         }
                         "OR" => {
                             offset += 2;
-                            target = self.get_token(offset).literal.to_uppercase();
+                            target = self.get_token(offset).as_uppercase_str();
                         }
                         _ => break,
                     }
                 }
-                match target.as_str() {
+                // TODO separete functions
+                match target {
+                    "SCHEMA" | "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
+                        self.parse_create_table_statement()
+                    }
                     "FUNCTION" => self.parse_create_function_statement(),
-                    "TABLE" => self.parse_create_table_statement(),
-                    "VIEW" => self.parse_create_table_statement(),
-                    "MATERIALIZED" => self.parse_create_table_statement(),
-                    "EXTERNAL" => self.parse_create_table_statement(),
                     "PROCEDURE" => self.parse_create_procedure_statement(),
-                    "SCHEMA" => self.parse_create_table_statement(),
-                    _ => panic!(),
+                    _ => panic!("Cannot decide what to create."),
                 }
             }
             "ALTER" => self.parse_alter_statement(),
             "DROP" => self.parse_drop_statement(),
+            // DEBUG
+            "ASSERT" => panic!("not implementd!"),
+            // other
+            "EXPORT" => panic!("not implementd!"),
             // script
             "DECLARE" => self.parse_declare_statement(),
             "SET" => self.parse_set_statement(),
@@ -192,924 +193,17 @@ impl Parser {
             "BEGIN" => self.parse_begin_statement(true),
             "LOOP" => self.parse_loop_statement(),
             "WHILE" => self.parse_while_statement(),
-            "BREAK" => self.parse_break_statement(),
-            "LEAVE" => self.parse_break_statement(),
-            "CONTINUE" => self.parse_break_statement(),
-            "ITERATE" => self.parse_break_statement(),
-            "RETURN" => self.parse_break_statement(),
+            "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" | "RETURN" => {
+                self.parse_single_token_statement()
+            }
             "RAISE" => self.parse_raise_statement(),
             "CALL" => self.parse_call_statement(),
-            _ => {
-                println!("{:?}", self.get_token(0));
-                panic!();
-            }
+            _ => panic!(
+                "Calling `parse_staement()` is not allowed here: {:?}",
+                self.get_token(0)
+            ),
         };
         node
-    }
-    fn parse_drop_statement(&mut self) -> Node {
-        let mut drop = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("external") {
-            self.next_token(); // -> external
-            drop.push_node("external", self.construct_node(NodeType::Unknown));
-        }
-        if self.peek_token_is("materialized") {
-            self.next_token(); // -> materialized
-            drop.push_node("materialized", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> table, view, function, procedure
-        drop.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.peek_token_is("if") {
-            self.next_token(); // -> if
-            let if_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> exists
-            let exists = self.construct_node(NodeType::Unknown);
-            drop.push_node_vec("if_exists", vec![if_, exists]);
-        }
-        self.next_token(); // -> ident
-        drop.push_node("ident", self.parse_identifier());
-        if self.peek_token_in(&vec!["cascade", "restrict"]) {
-            self.next_token(); // -> cascade, restrict
-            drop.push_node(
-                "cascade_or_restrict",
-                self.construct_node(NodeType::Unknown),
-            );
-        }
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            drop.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        drop
-    }
-    fn parse_alter_statement(&mut self) -> Node {
-        let mut alter = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("materialized") {
-            self.next_token(); // -> materialized
-            alter.push_node("materialized", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> table, view
-        alter.push_node("what", self.construct_node(NodeType::Unknown));
-        self.next_token(); // -> ident
-        alter.push_node("ident", self.parse_identifier());
-        if self.peek_token_is("set") {
-            self.next_token(); // -> set
-            alter.push_node("set", self.construct_node(NodeType::Unknown));
-            self.next_token(); // js -> options
-            let mut options = self.construct_node(NodeType::Unknown);
-            self.next_token(); // options -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            if !self.peek_token_is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            options.push_node("group", group);
-            alter.push_node("options", options);
-        }
-        let mut add_columns = Vec::new();
-        while self.peek_token_is("add") {
-            self.next_token(); // -> add
-            let mut add_column = self.construct_node(NodeType::Unknown);
-            self.next_token();
-            add_column.push_node("column", self.construct_node(NodeType::Unknown));
-            if self.peek_token_is("if") {
-                self.next_token(); // -> if
-                let if_ = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> not
-                let not = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> exists
-                let exists = self.construct_node(NodeType::Unknown);
-                add_column.push_node_vec("if_not_exists", vec![if_, not, exists]);
-            }
-            self.next_token(); // -> column_name
-            let mut column = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> schema
-            column.push_node("type", self.parse_type(true));
-            add_column.push_node("column_definition", column);
-            if self.peek_token_is(",") {
-                self.next_token(); // -> ,
-                add_column.push_node("comma", self.construct_node(NodeType::Unknown));
-            }
-            add_columns.push(add_column);
-        }
-        if 0 < add_columns.len() {
-            alter.push_node_vec("add_columns", add_columns);
-        }
-        let mut drop_columns = Vec::new();
-        // TODO check when it becomes GA
-        while self.peek_token_is("drop") {
-            self.next_token(); // -> drop
-            let mut drop_column = self.construct_node(NodeType::Unknown);
-            self.next_token();
-            drop_column.push_node("column", self.construct_node(NodeType::Unknown));
-            if self.peek_token_is("if") {
-                self.next_token(); // -> if
-                let if_ = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> exists
-                let exists = self.construct_node(NodeType::Unknown);
-                drop_column.push_node_vec("if_exists", vec![if_, exists]);
-            }
-            self.next_token(); // -> column_name
-            drop_column.push_node("column_name", self.construct_node(NodeType::Unknown));
-            if self.peek_token_is(",") {
-                self.next_token(); // -> ,
-                drop_column.push_node("comma", self.construct_node(NodeType::Unknown));
-            }
-            drop_columns.push(drop_column);
-        }
-        if 0 < drop_columns.len() {
-            alter.push_node_vec("drop_columns", drop_columns);
-        }
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        alter
-    }
-    fn parse_create_procedure_statement(&mut self) -> Node {
-        let mut create = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("or") {
-            self.next_token(); // -> or
-            let or_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> replace
-            let replace = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("or_replace", vec![or_, replace]);
-        }
-        self.next_token(); // -> procedure
-        create.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.peek_token_is("if") {
-            self.next_token(); // -> if
-            let if_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> not
-            let not = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> exists
-            let exists = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
-        }
-        self.next_token(); // -> ident
-        create.push_node("ident", self.parse_identifier());
-        self.next_token(); // ident -> (
-        let mut group = self.construct_node(NodeType::Unknown);
-        let mut args = Vec::new();
-        while !self.peek_token_is(")") {
-            self.next_token(); // ) -> arg, in
-            let mut arg = self.construct_node(NodeType::Unknown);
-            match self.get_token(2).literal.to_uppercase().as_str() {
-                "TYPE" => (),
-                "," => (),
-                "<" => (),
-                ")" => (),
-                _ => {
-                    self.next_token(); // -> ident
-                    let mut ident = self.construct_node(NodeType::Unknown);
-                    ident.push_node("in_out", arg);
-                    arg = ident;
-                }
-            }
-            self.next_token(); // arg -> type
-            arg.push_node("type", self.parse_type(false));
-            if self.peek_token_is(",") {
-                self.next_token(); // type -> ,
-                arg.push_node("comma", self.construct_node(NodeType::Unknown));
-            }
-            args.push(arg);
-        }
-        if args.len() > 0 {
-            group.push_node_vec("args", args);
-        }
-        self.next_token(); // -> )
-        group.push_node("rparen", self.construct_node(NodeType::Unknown));
-        create.push_node("group", group);
-        if self.peek_token_is("options") {
-            self.next_token(); // js -> options
-            let mut options = self.construct_node(NodeType::Unknown);
-            self.next_token(); // options -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            if !self.peek_token_is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            options.push_node("group", group);
-            create.push_node("options", options);
-        }
-        self.next_token(); // -> begin
-        create.push_node("stmt", self.parse_begin_statement(false));
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            create.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        create
-    }
-    fn parse_create_table_statement(&mut self) -> Node {
-        let mut create = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("or") {
-            self.next_token(); // -> or
-            let or_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> replace
-            let replace = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("or_replace", vec![or_, replace]);
-        }
-        if self.peek_token_is("materialized") {
-            self.next_token();
-            create.push_node("materialized", self.construct_node(NodeType::Unknown));
-        }
-        if self.peek_token_is("external") {
-            self.next_token();
-            create.push_node("external", self.construct_node(NodeType::Unknown));
-        }
-        if self.peek_token_in(&vec!["temp", "temporary"]) {
-            self.next_token(); // -> temporary
-            create.push_node("temp", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> table
-        create.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.peek_token_is("if") {
-            self.next_token(); // -> if
-            let if_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> not
-            let not = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> exists
-            let exists = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
-        }
-        self.next_token(); // -> ident
-        create.push_node("ident", self.parse_identifier());
-        if self.peek_token_is("(") {
-            self.next_token(); // -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            let mut column_definitions = Vec::new();
-            while !self.peek_token_is(")") {
-                self.next_token(); // -> column_identifier
-                let mut column = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> type
-                column.push_node("type", self.parse_type(true));
-                if self.peek_token_is(",") {
-                    self.next_token(); // -> ,
-                    column.push_node("comma", self.construct_node(NodeType::Unknown));
-                }
-                column_definitions.push(column);
-            }
-            group.push_node_vec("column_definitions", column_definitions);
-            self.next_token(); // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            create.push_node("column_schema_group", group);
-        }
-        if self.peek_token_is("partition") {
-            self.next_token(); // -> partition
-            let mut partitionby = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> by
-            partitionby.push_node("by", self.construct_node(NodeType::Unknown));
-            self.next_token(); // -> expr
-            partitionby.push_node(
-                "expr",
-                self.parse_expr(999, &vec!["cluster", "options", "as"], false),
-            );
-            create.push_node("partitionby", partitionby);
-        }
-        if self.peek_token_is("cluster") {
-            self.next_token(); // -> cluster
-            let mut clusterby = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> by
-            clusterby.push_node("by", self.construct_node(NodeType::Unknown));
-            self.next_token(); // -> expr
-            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false));
-            create.push_node("clusterby", clusterby);
-        }
-        if self.peek_token_is("with") {
-            self.next_token(); // -> with
-            let mut with = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> partition
-            let partition = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> columns
-            let columns = self.construct_node(NodeType::Unknown);
-            with.push_node_vec("partition_columns", vec![partition, columns]);
-            if self.peek_token_is("(") {
-                self.next_token(); // -> "("
-                let mut group = self.construct_node(NodeType::Unknown);
-                let mut column_definitions = Vec::new();
-                while !self.peek_token_is(")") {
-                    self.next_token(); // -> column_identifier
-                    let mut column = self.construct_node(NodeType::Unknown);
-                    self.next_token(); // -> type
-                    column.push_node("type", self.parse_type(true));
-                    if self.peek_token_is(",") {
-                        self.next_token(); // -> ,
-                        column.push_node("comma", self.construct_node(NodeType::Unknown));
-                    }
-                    column_definitions.push(column);
-                }
-                if 0 < column_definitions.len() {
-                    group.push_node_vec("column_definitions", column_definitions);
-                }
-                self.next_token(); // -> )
-                group.push_node("rparen", self.construct_node(NodeType::Unknown));
-                with.push_node("column_schema_group", group);
-            }
-            create.push_node("with_partition_columns", with);
-        }
-        if self.peek_token_is("options") {
-            self.next_token(); // options
-            let mut options = self.construct_node(NodeType::Unknown);
-            self.next_token(); // options -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            if !self.peek_token_is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            options.push_node("group", group);
-            create.push_node("options", options);
-        }
-        if self.peek_token_is("as") {
-            self.next_token(); // -> as
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> stmt
-            as_.push_node("stmt", self.parse_select_statement(false));
-            create.push_node("as", as_);
-        }
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            create.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        create
-    }
-    fn parse_call_statement(&mut self) -> Node {
-        let mut call = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> procedure_name
-        call.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            call.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        call
-    }
-    fn parse_raise_statement(&mut self) -> Node {
-        let mut raise = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("using") {
-            self.next_token(); // -> using
-            let mut using = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> message
-            using.push_node("expr", self.parse_expr(999, &vec![";"], false));
-            raise.push_node("using", using);
-        }
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            raise.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        raise
-    }
-    fn parse_loop_statement(&mut self) -> Node {
-        let mut loop_ = self.construct_node(NodeType::Unknown);
-        let mut stmts = Vec::new();
-        while !self.peek_token_is("end") {
-            self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
-        }
-        if 0 < stmts.len() {
-            loop_.push_node_vec("stmts", stmts);
-        }
-        self.next_token(); // -> end
-        let end = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> loop
-        loop_.push_node_vec(
-            "end_loop",
-            vec![end, self.construct_node(NodeType::Unknown)],
-        );
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            loop_.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        loop_
-    }
-    fn parse_while_statement(&mut self) -> Node {
-        let mut while_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> boolean_expression
-        while_.push_node("condition", self.parse_expr(999, &vec!["do"], false));
-        self.next_token(); // -> do
-        while_.push_node("do", self.construct_node(NodeType::Unknown));
-        let mut stmts = Vec::new();
-        while !self.peek_token_is("end") {
-            self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
-        }
-        if 0 < stmts.len() {
-            while_.push_node_vec("stmts", stmts);
-        }
-        self.next_token(); // -> end
-        let end = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> while
-        while_.push_node_vec(
-            "end_while",
-            vec![end, self.construct_node(NodeType::Unknown)],
-        );
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            while_.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        while_
-    }
-    fn parse_break_statement(&mut self) -> Node {
-        let mut break_ = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            break_.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        break_
-    }
-    fn parse_if_statement(&mut self) -> Node {
-        let mut if_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> cond
-        if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
-
-        self.next_token(); // -> then
-        let mut then = self.construct_node(NodeType::Unknown);
-        let mut then_stmts = Vec::new();
-        while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
-            self.next_token(); // -> stmt
-            then_stmts.push(self.parse_statement());
-        }
-        if 0 < then_stmts.len() {
-            then.push_node_vec("stmts", then_stmts);
-        }
-        if_.push_node("then", then);
-
-        let mut elseifs = Vec::new();
-        while self.peek_token_is("elseif") {
-            self.next_token(); // -> elseif
-            let mut elseif = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> condition
-            elseif.push_node("condition", self.parse_expr(999, &vec!["then"], false));
-            self.next_token(); // -> then
-            let mut then = self.construct_node(NodeType::Unknown);
-            let mut then_stmts = Vec::new();
-            while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
-                self.next_token(); // -> stmt
-                then_stmts.push(self.parse_statement());
-            }
-            if 0 < then_stmts.len() {
-                then.push_node_vec("stmts", then_stmts);
-            }
-            elseif.push_node("then", then);
-            elseifs.push(elseif);
-        }
-        if 0 < elseifs.len() {
-            if_.push_node_vec("elseifs", elseifs);
-        }
-
-        if self.peek_token_is("else") {
-            self.next_token(); // -> else
-            let mut else_ = self.construct_node(NodeType::Unknown);
-            let mut else_stmts = Vec::new();
-            while !self.peek_token_is("end") {
-                self.next_token(); // -> stmt
-                else_stmts.push(self.parse_statement());
-            }
-            if 0 < else_stmts.len() {
-                else_.push_node_vec("stmts", else_stmts);
-            }
-            if_.push_node("else", else_);
-        }
-        self.next_token(); // -> end
-        let end = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> if
-        if_.push_node_vec("end_if", vec![end, self.construct_node(NodeType::Unknown)]);
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            if_.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        if_
-    }
-    fn parse_begin_statement(&mut self, root: bool) -> Node {
-        let mut begin = self.construct_node(NodeType::Unknown);
-        let mut stmts = Vec::new();
-        while !self.peek_token_in(&vec!["end", "exception"]) {
-            self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
-        }
-        if 0 < stmts.len() {
-            begin.push_node_vec("stmts", stmts);
-        }
-        if self.peek_token_is("exception") {
-            self.next_token(); // ; -> exception
-            let exception = self.construct_node(NodeType::Unknown);
-            self.next_token(); // exception -> when
-            let when = self.construct_node(NodeType::Unknown);
-            self.next_token(); // exception -> error
-            let error = self.construct_node(NodeType::Unknown);
-            self.next_token(); // when -> then
-            let then = self.construct_node(NodeType::Unknown);
-            begin.push_node_vec(
-                "exception_when_error_then",
-                vec![exception, when, error, then],
-            );
-            let mut exception_stmts = Vec::new();
-            while !self.peek_token_is("end") {
-                self.next_token(); // -> stmt
-                exception_stmts.push(self.parse_statement());
-            }
-            if 0 < exception_stmts.len() {
-                begin.push_node_vec("exception_stmts", exception_stmts);
-            }
-        }
-        self.next_token(); // -> end
-        begin.push_node("end", self.construct_node(NodeType::Unknown));
-        if self.peek_token_is(";") && root {
-            self.next_token(); // -> ;
-            begin.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        begin
-    }
-    fn parse_execute_statement(&mut self) -> Node {
-        let mut execute = self.construct_node(NodeType::Unknown);
-        self.next_token(); // execute -> immediate
-        execute.push_node("immediate", self.construct_node(NodeType::Unknown));
-        self.next_token(); // immediate -> sql_expr
-        execute.push_node(
-            "sql_expr",
-            self.parse_expr(999, &vec!["into", "using", ";"], false),
-        );
-        if self.peek_token_is("into") {
-            self.next_token(); // sql_expr -> into
-            let mut into = self.construct_node(NodeType::Unknown);
-            let mut idents = Vec::new();
-            loop {
-                self.next_token(); // -> ident
-                if self.peek_token_is(",") {
-                    let mut ident = self.parse_identifier();
-                    self.next_token(); // ident -> ,
-                    ident.push_node("comma", self.construct_node(NodeType::Unknown));
-                    idents.push(ident);
-                } else {
-                    idents.push(self.parse_identifier());
-                    break;
-                }
-            }
-            into.push_node_vec("idents", idents);
-            execute.push_node("into", into);
-        }
-        if self.peek_token_is("using") {
-            self.next_token(); // -> using
-            let mut using = self.construct_node(NodeType::Unknown);
-            self.next_token(); // using -> exprs
-            using.push_node_vec("exprs", self.parse_exprs(&vec![";"], true));
-            execute.push_node("using", using);
-        }
-        if self.peek_token_is(";") {
-            self.next_token();
-            execute.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        execute
-    }
-    fn parse_set_statement(&mut self) -> Node {
-        let mut set = self.construct_node(NodeType::Unknown);
-        self.next_token(); // set -> expr
-        set.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        if self.peek_token_is(";") {
-            self.next_token();
-            set.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        set
-    }
-    fn parse_declare_statement(&mut self) -> Node {
-        let mut declare = self.construct_node(NodeType::Unknown);
-        let mut idents = Vec::new();
-        loop {
-            self.next_token(); // -> ident
-            if self.peek_token_is(",") {
-                let mut ident = self.parse_identifier();
-                self.next_token(); // ident -> comma
-                ident.push_node("comma", self.construct_node(NodeType::Unknown));
-                idents.push(ident);
-            } else {
-                idents.push(self.parse_identifier());
-                break;
-            }
-        }
-        declare.push_node_vec("idents", idents);
-        if !self.peek_token_is("default") {
-            self.next_token(); // ident -> variable_type
-            declare.push_node("variable_type", self.parse_type(false));
-        }
-        if self.peek_token_is("default") {
-            self.next_token(); // -> default
-            let mut default = self.construct_node(NodeType::Unknown);
-            self.next_token(); // default -> expr
-            default.push_node("expr", self.parse_expr(999, &vec![";"], false));
-            declare.push_node("default", default);
-        }
-        if self.peek_token_is(";") {
-            self.next_token();
-            declare.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        declare
-    }
-    fn parse_merge_statement(&mut self, root: bool) -> Node {
-        let mut merge = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("into") {
-            self.next_token(); // merge -> into
-            merge.push_node("into", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> target_table
-        merge.push_node("target_name", self.parse_table(true));
-        self.next_token(); // -> using
-        let mut using = self.construct_node(NodeType::Unknown);
-        self.next_token(); // using -> expr
-        using.push_node("expr", self.parse_expr(999, &vec!["on"], true));
-        merge.push_node("using", using);
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        self.next_token(); // -> on
-        let mut on = self.construct_node(NodeType::Unknown);
-        self.next_token(); // on -> expr
-        on.push_node("expr", self.parse_expr(999, &vec!["when"], false));
-        merge.push_node("on", on);
-        let mut whens = Vec::new();
-        while self.peek_token_is("when") {
-            self.next_token(); // -> when
-            let mut when = self.construct_node(NodeType::Unknown);
-            if self.peek_token_is("not") {
-                self.next_token(); // when -> not
-                when.push_node("not", self.construct_node(NodeType::Unknown));
-            }
-            self.next_token(); // -> matched
-            when.push_node("matched", self.construct_node(NodeType::Unknown));
-            if self.peek_token_is("by") {
-                self.next_token(); // -> by
-                let by = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> target, source
-                let target = self.construct_node(NodeType::Unknown);
-                when.push_node_vec("by_target", vec![by, target]);
-            }
-            if self.peek_token_is("and") {
-                self.next_token(); // -> and
-                let mut and = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> expr
-                let cond = self.parse_expr(999, &vec!["then"], false);
-                and.push_node("expr", cond);
-                when.push_node("and", and);
-            }
-            self.next_token(); // -> then
-            when.push_node("then", self.construct_node(NodeType::Unknown));
-            self.next_token(); // then -> stmt
-            let stmt = match self.get_token(0).literal.to_uppercase().as_str() {
-                "DELETE" => self.construct_node(NodeType::Unknown),
-                "UPDATE" => self.parse_update_statement(false),
-                "INSERT" => self.parse_insert_statement(false),
-                _ => panic!(),
-            };
-            when.push_node("stmt", stmt);
-            whens.push(when);
-        }
-        merge.push_node_vec("whens", whens);
-        if self.peek_token_is(";") && root {
-            self.next_token(); // -> ;
-            merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        merge
-    }
-    fn parse_update_statement(&mut self, root: bool) -> Node {
-        let mut update = self.construct_node(NodeType::Unknown);
-        if !self.peek_token_is("set") {
-            self.next_token(); // -> target_name
-            update.push_node("target_name", self.parse_table(true));
-        }
-        self.next_token(); // -> set
-        let mut set = self.construct_node(NodeType::Unknown);
-        self.next_token(); // set -> exprs
-        set.push_node_vec(
-            "exprs",
-            self.parse_exprs(&vec!["from", "where", "when", ";"], false),
-        );
-        if self.peek_token_is("from") {
-            self.next_token(); // exprs -> from
-            let mut from = self.construct_node(NodeType::Unknown);
-            self.next_token(); // from -> target_name
-            from.push_node("expr", self.parse_table(true));
-            update.push_node("from", from);
-        }
-        update.push_node("set", set);
-        if self.peek_token_is("where") {
-            self.next_token(); // exprs -> where
-            let mut where_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // where -> expr
-            where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
-            update.push_node("where", where_);
-        }
-        if self.peek_token_is(";") && root {
-            self.next_token(); // -> ;
-            update.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        update
-    }
-    fn parse_truncate_statement(&mut self) -> Node {
-        let mut truncate = self.construct_node(NodeType::Unknown);
-        self.next_token(); // truncate -> table
-        truncate.push_node("table", self.construct_node(NodeType::Unknown));
-        self.next_token(); // table -> ident
-        truncate.push_node("target_name", self.parse_identifier());
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            truncate.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        truncate
-    }
-    fn parse_delete_statement(&mut self) -> Node {
-        let mut delete = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("from") {
-            self.next_token(); // delete -> from
-            delete.push_node("from", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> target_name
-        let mut target_name = self.parse_identifier();
-        if !self.peek_token_is("where") {
-            target_name = self.parse_alias(target_name);
-        }
-        delete.push_node("target_name", target_name);
-        self.next_token(); // target_name -> where, alias -> where
-        let mut where_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // where -> expr
-        where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        delete.push_node("where", where_);
-        if self.peek_token_is(";") {
-            self.next_token(); // -> ;
-            delete.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        delete
-    }
-    fn parse_insert_statement(&mut self, root: bool) -> Node {
-        let mut insert = self.construct_node(NodeType::Unknown);
-        if self.peek_token_is("into") {
-            self.next_token(); // insert -> into
-            insert.push_node("into", self.construct_node(NodeType::Unknown));
-        }
-        if !self.peek_token_in(&vec!["(", "value", "row"]) {
-            self.next_token(); // insert -> identifier
-            insert.push_node("target_name", self.parse_identifier());
-        }
-        if self.peek_token_is("(") {
-            self.next_token(); // identifier -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            self.next_token(); // ( -> columns
-            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            self.next_token(); // columns -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            insert.push_node("columns", group);
-        }
-        if self.peek_token_is("values") {
-            self.next_token(); // ) -> values
-            let mut values = self.construct_node(NodeType::Unknown);
-            let mut lparens = Vec::new();
-            while self.peek_token_is("(") {
-                self.next_token(); // vlaues -> (, ',' -> (
-                let mut lparen = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> expr
-                lparen.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-                self.next_token(); // expr -> )
-                lparen.push_node("rparen", self.construct_node(NodeType::Unknown));
-                if self.peek_token_is(",") {
-                    self.next_token(); // ) -> ,
-                    lparen.push_node("comma", self.construct_node(NodeType::Unknown));
-                }
-                lparens.push(lparen);
-            }
-            values.push_node_vec("exprs", lparens);
-            insert.push_node("input", values);
-        } else if self.peek_token_is("row") {
-            self.next_token(); // -> row
-            insert.push_node("input", self.construct_node(NodeType::Unknown));
-        } else {
-            self.next_token(); // ) -> select
-            insert.push_node("input", self.parse_select_statement(false));
-        }
-        if self.peek_token_is(";") && root {
-            self.next_token(); // -> ;
-            insert.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        insert
-    }
-    fn parse_create_function_statement(&mut self) -> Node {
-        let mut node = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
-            let mut or_replace = Vec::new();
-            self.next_token(); // create -> or
-            or_replace.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // or -> replace
-            or_replace.push(self.construct_node(NodeType::Unknown));
-            node.push_node_vec("or_replace", or_replace);
-        }
-        if self.peek_token_in(&vec!["temporary", "temp"]) {
-            self.next_token(); // -> temp
-            node.push_node("temp", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> function
-        node.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.peek_token_in(&vec!["if"]) {
-            let mut if_not_exists = Vec::new();
-            self.next_token(); // function -> if
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // if -> not
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // not -> exists
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            node.push_node_vec("if_not_exists", if_not_exists);
-        }
-        self.next_token(); // -> ident
-        node.push_node("ident", self.parse_identifier());
-        self.next_token(); // ident -> (
-        let mut group = self.construct_node(NodeType::Unknown);
-        let mut args = Vec::new();
-        while !self.peek_token_is(")") {
-            self.next_token(); // ( -> arg, ',' -> arg
-            let mut arg = self.construct_node(NodeType::Unknown);
-            self.next_token(); // arg -> type
-            arg.push_node("type", self.parse_type(false));
-            if self.peek_token_is(",") {
-                self.next_token(); // type -> ,
-                arg.push_node("comma", self.construct_node(NodeType::Unknown));
-            }
-            args.push(arg);
-        }
-        if args.len() > 0 {
-            group.push_node_vec("args", args);
-        }
-        self.next_token(); // type -> )
-        group.push_node("rparen", self.construct_node(NodeType::Unknown));
-        node.push_node("group", group);
-        if self.peek_token_is("returns") {
-            self.next_token(); // ) -> return
-            let mut return_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // return -> type
-            return_.push_node("type", self.parse_type(false));
-            node.push_node("returns", return_);
-        }
-        if self.peek_token_is("as") {
-            self.next_token(); // -> as
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            self.next_token(); // ( -> expr
-            group.push_node("expr", self.parse_expr(999, &vec![")"], false));
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            as_.push_node("group", group);
-            node.push_node("as", as_);
-        } else {
-            if self.peek_token_in(&vec!["deterministic", "not"]) {
-                self.next_token(); // type -> determinism
-                let mut determinism = self.construct_node(NodeType::Unknown);
-                if self.get_token(0).literal.to_uppercase().as_str() == "NOT" {
-                    self.next_token(); // not -> deterministic
-                    determinism.push_node("right", self.construct_node(NodeType::Unknown));
-                }
-                node.push_node("determinism", determinism);
-            }
-            self.next_token(); // determinism -> language, type -> language
-            let mut language = self.construct_node(NodeType::Unknown);
-            self.next_token(); // language -> js
-            language.push_node("language", self.construct_node(NodeType::Unknown));
-            node.push_node("language", language);
-            if self.peek_token_is("options") {
-                self.next_token(); // js -> options
-                let mut options = self.construct_node(NodeType::Unknown);
-                self.next_token(); // options -> (
-                let mut group = self.construct_node(NodeType::Unknown);
-                if !self.peek_token_is(")") {
-                    self.next_token(); // ( -> expr
-                    group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-                }
-                self.next_token(); // expr -> )
-                group.push_node("rparen", self.construct_node(NodeType::Unknown));
-                options.push_node("group", group);
-                node.push_node("options", options);
-            }
-            self.next_token(); // js -> as, ) -> as
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> javascript_code
-            as_.push_node("expr", self.construct_node(NodeType::Unknown));
-            node.push_node("as", as_);
-        }
-        if self.peek_token_is(";") {
-            self.next_token(); // ) -> ;
-            node.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        node
-    }
-    fn parse_identifier(&mut self) -> Node {
-        let mut left = self.construct_node(NodeType::Unknown);
-        while self.peek_token_is(".") {
-            self.next_token(); // ident -> .
-            let mut operator = self.construct_node(NodeType::Unknown);
-            operator.push_node("left", left);
-            self.next_token(); // . -> ident
-            operator.push_node("right", self.construct_node(NodeType::Unknown));
-            left = operator;
-        }
-        left
     }
     fn parse_select_statement(&mut self, root: bool) -> Node {
         if self.get_token(0).literal.as_str() == "(" {
@@ -1317,6 +411,911 @@ impl Parser {
             node.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
         node
+    }
+    fn parse_insert_statement(&mut self, root: bool) -> Node {
+        let mut insert = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("into") {
+            self.next_token(); // insert -> into
+            insert.push_node("into", self.construct_node(NodeType::Unknown));
+        }
+        if !self.peek_token_in(&vec!["(", "value", "row"]) {
+            self.next_token(); // insert -> identifier
+            insert.push_node("target_name", self.parse_identifier());
+        }
+        if self.peek_token_is("(") {
+            self.next_token(); // identifier -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            self.next_token(); // ( -> columns
+            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            self.next_token(); // columns -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            insert.push_node("columns", group);
+        }
+        if self.peek_token_is("values") {
+            self.next_token(); // ) -> values
+            let mut values = self.construct_node(NodeType::Unknown);
+            let mut lparens = Vec::new();
+            while self.peek_token_is("(") {
+                self.next_token(); // vlaues -> (, ',' -> (
+                let mut lparen = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> expr
+                lparen.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+                self.next_token(); // expr -> )
+                lparen.push_node("rparen", self.construct_node(NodeType::Unknown));
+                if self.peek_token_is(",") {
+                    self.next_token(); // ) -> ,
+                    lparen.push_node("comma", self.construct_node(NodeType::Unknown));
+                }
+                lparens.push(lparen);
+            }
+            values.push_node_vec("exprs", lparens);
+            insert.push_node("input", values);
+        } else if self.peek_token_is("row") {
+            self.next_token(); // -> row
+            insert.push_node("input", self.construct_node(NodeType::Unknown));
+        } else {
+            self.next_token(); // ) -> select
+            insert.push_node("input", self.parse_select_statement(false));
+        }
+        if self.peek_token_is(";") && root {
+            self.next_token(); // -> ;
+            insert.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        insert
+    }
+    fn parse_delete_statement(&mut self) -> Node {
+        let mut delete = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("from") {
+            self.next_token(); // delete -> from
+            delete.push_node("from", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> target_name
+        let mut target_name = self.parse_identifier();
+        if !self.peek_token_is("where") {
+            target_name = self.parse_alias(target_name);
+        }
+        delete.push_node("target_name", target_name);
+        self.next_token(); // target_name -> where, alias -> where
+        let mut where_ = self.construct_node(NodeType::Unknown);
+        self.next_token(); // where -> expr
+        where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        delete.push_node("where", where_);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            delete.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        delete
+    }
+    fn parse_truncate_statement(&mut self) -> Node {
+        let mut truncate = self.construct_node(NodeType::Unknown);
+        self.next_token(); // truncate -> table
+        truncate.push_node("table", self.construct_node(NodeType::Unknown));
+        self.next_token(); // table -> ident
+        truncate.push_node("target_name", self.parse_identifier());
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            truncate.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        truncate
+    }
+    fn parse_update_statement(&mut self, root: bool) -> Node {
+        let mut update = self.construct_node(NodeType::Unknown);
+        if !self.peek_token_is("set") {
+            self.next_token(); // -> target_name
+            update.push_node("target_name", self.parse_table(true));
+        }
+        self.next_token(); // -> set
+        let mut set = self.construct_node(NodeType::Unknown);
+        self.next_token(); // set -> exprs
+        set.push_node_vec(
+            "exprs",
+            self.parse_exprs(&vec!["from", "where", "when", ";"], false),
+        );
+        if self.peek_token_is("from") {
+            self.next_token(); // exprs -> from
+            let mut from = self.construct_node(NodeType::Unknown);
+            self.next_token(); // from -> target_name
+            from.push_node("expr", self.parse_table(true));
+            update.push_node("from", from);
+        }
+        update.push_node("set", set);
+        if self.peek_token_is("where") {
+            self.next_token(); // exprs -> where
+            let mut where_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // where -> expr
+            where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            update.push_node("where", where_);
+        }
+        if self.peek_token_is(";") && root {
+            self.next_token(); // -> ;
+            update.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        update
+    }
+    fn parse_merge_statement(&mut self, root: bool) -> Node {
+        let mut merge = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("into") {
+            self.next_token(); // merge -> into
+            merge.push_node("into", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> target_table
+        merge.push_node("target_name", self.parse_table(true));
+        self.next_token(); // -> using
+        let mut using = self.construct_node(NodeType::Unknown);
+        self.next_token(); // using -> expr
+        using.push_node("expr", self.parse_expr(999, &vec!["on"], true));
+        merge.push_node("using", using);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        self.next_token(); // -> on
+        let mut on = self.construct_node(NodeType::Unknown);
+        self.next_token(); // on -> expr
+        on.push_node("expr", self.parse_expr(999, &vec!["when"], false));
+        merge.push_node("on", on);
+        let mut whens = Vec::new();
+        while self.peek_token_is("when") {
+            self.next_token(); // -> when
+            let mut when = self.construct_node(NodeType::Unknown);
+            if self.peek_token_is("not") {
+                self.next_token(); // when -> not
+                when.push_node("not", self.construct_node(NodeType::Unknown));
+            }
+            self.next_token(); // -> matched
+            when.push_node("matched", self.construct_node(NodeType::Unknown));
+            if self.peek_token_is("by") {
+                self.next_token(); // -> by
+                let by = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> target, source
+                let target = self.construct_node(NodeType::Unknown);
+                when.push_node_vec("by_target", vec![by, target]);
+            }
+            if self.peek_token_is("and") {
+                self.next_token(); // -> and
+                let mut and = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> expr
+                let cond = self.parse_expr(999, &vec!["then"], false);
+                and.push_node("expr", cond);
+                when.push_node("and", and);
+            }
+            self.next_token(); // -> then
+            when.push_node("then", self.construct_node(NodeType::Unknown));
+            self.next_token(); // then -> stmt
+            let stmt = match self.get_token(0).literal.to_uppercase().as_str() {
+                "DELETE" => self.construct_node(NodeType::Unknown),
+                "UPDATE" => self.parse_update_statement(false),
+                "INSERT" => self.parse_insert_statement(false),
+                _ => panic!(),
+            };
+            when.push_node("stmt", stmt);
+            whens.push(when);
+        }
+        merge.push_node_vec("whens", whens);
+        if self.peek_token_is(";") && root {
+            self.next_token(); // -> ;
+            merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        merge
+    }
+    fn parse_create_table_statement(&mut self) -> Node {
+        let mut create = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("or") {
+            self.next_token(); // -> or
+            let or_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> replace
+            let replace = self.construct_node(NodeType::Unknown);
+            create.push_node_vec("or_replace", vec![or_, replace]);
+        }
+        if self.peek_token_is("materialized") {
+            self.next_token();
+            create.push_node("materialized", self.construct_node(NodeType::Unknown));
+        }
+        if self.peek_token_is("external") {
+            self.next_token();
+            create.push_node("external", self.construct_node(NodeType::Unknown));
+        }
+        if self.peek_token_in(&vec!["temp", "temporary"]) {
+            self.next_token(); // -> temporary
+            create.push_node("temp", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> table
+        create.push_node("what", self.construct_node(NodeType::Unknown));
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> not
+            let not = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> exists
+            let exists = self.construct_node(NodeType::Unknown);
+            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        if self.peek_token_is("(") {
+            self.next_token(); // -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            let mut column_definitions = Vec::new();
+            while !self.peek_token_is(")") {
+                self.next_token(); // -> column_identifier
+                let mut column = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> type
+                column.push_node("type", self.parse_type(true));
+                if self.peek_token_is(",") {
+                    self.next_token(); // -> ,
+                    column.push_node("comma", self.construct_node(NodeType::Unknown));
+                }
+                column_definitions.push(column);
+            }
+            group.push_node_vec("column_definitions", column_definitions);
+            self.next_token(); // -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            create.push_node("column_schema_group", group);
+        }
+        if self.peek_token_is("partition") {
+            self.next_token(); // -> partition
+            let mut partitionby = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> by
+            partitionby.push_node("by", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> expr
+            partitionby.push_node(
+                "expr",
+                self.parse_expr(999, &vec!["cluster", "options", "as"], false),
+            );
+            create.push_node("partitionby", partitionby);
+        }
+        if self.peek_token_is("cluster") {
+            self.next_token(); // -> cluster
+            let mut clusterby = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> by
+            clusterby.push_node("by", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> expr
+            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false));
+            create.push_node("clusterby", clusterby);
+        }
+        if self.peek_token_is("with") {
+            self.next_token(); // -> with
+            let mut with = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> partition
+            let partition = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> columns
+            let columns = self.construct_node(NodeType::Unknown);
+            with.push_node_vec("partition_columns", vec![partition, columns]);
+            if self.peek_token_is("(") {
+                self.next_token(); // -> "("
+                let mut group = self.construct_node(NodeType::Unknown);
+                let mut column_definitions = Vec::new();
+                while !self.peek_token_is(")") {
+                    self.next_token(); // -> column_identifier
+                    let mut column = self.construct_node(NodeType::Unknown);
+                    self.next_token(); // -> type
+                    column.push_node("type", self.parse_type(true));
+                    if self.peek_token_is(",") {
+                        self.next_token(); // -> ,
+                        column.push_node("comma", self.construct_node(NodeType::Unknown));
+                    }
+                    column_definitions.push(column);
+                }
+                if 0 < column_definitions.len() {
+                    group.push_node_vec("column_definitions", column_definitions);
+                }
+                self.next_token(); // -> )
+                group.push_node("rparen", self.construct_node(NodeType::Unknown));
+                with.push_node("column_schema_group", group);
+            }
+            create.push_node("with_partition_columns", with);
+        }
+        if self.peek_token_is("options") {
+            self.next_token(); // options
+            let mut options = self.construct_node(NodeType::Unknown);
+            self.next_token(); // options -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            options.push_node("group", group);
+            create.push_node("options", options);
+        }
+        if self.peek_token_is("as") {
+            self.next_token(); // -> as
+            let mut as_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // as -> stmt
+            as_.push_node("stmt", self.parse_select_statement(false));
+            create.push_node("as", as_);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        create
+    }
+    fn parse_create_function_statement(&mut self) -> Node {
+        let mut node = self.construct_node(NodeType::Unknown);
+        if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
+            let mut or_replace = Vec::new();
+            self.next_token(); // create -> or
+            or_replace.push(self.construct_node(NodeType::Unknown));
+            self.next_token(); // or -> replace
+            or_replace.push(self.construct_node(NodeType::Unknown));
+            node.push_node_vec("or_replace", or_replace);
+        }
+        if self.peek_token_in(&vec!["temporary", "temp"]) {
+            self.next_token(); // -> temp
+            node.push_node("temp", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> function
+        node.push_node("what", self.construct_node(NodeType::Unknown));
+        if self.peek_token_in(&vec!["if"]) {
+            let mut if_not_exists = Vec::new();
+            self.next_token(); // function -> if
+            if_not_exists.push(self.construct_node(NodeType::Unknown));
+            self.next_token(); // if -> not
+            if_not_exists.push(self.construct_node(NodeType::Unknown));
+            self.next_token(); // not -> exists
+            if_not_exists.push(self.construct_node(NodeType::Unknown));
+            node.push_node_vec("if_not_exists", if_not_exists);
+        }
+        self.next_token(); // -> ident
+        node.push_node("ident", self.parse_identifier());
+        self.next_token(); // ident -> (
+        let mut group = self.construct_node(NodeType::Unknown);
+        let mut args = Vec::new();
+        while !self.peek_token_is(")") {
+            self.next_token(); // ( -> arg, ',' -> arg
+            let mut arg = self.construct_node(NodeType::Unknown);
+            self.next_token(); // arg -> type
+            arg.push_node("type", self.parse_type(false));
+            if self.peek_token_is(",") {
+                self.next_token(); // type -> ,
+                arg.push_node("comma", self.construct_node(NodeType::Unknown));
+            }
+            args.push(arg);
+        }
+        if args.len() > 0 {
+            group.push_node_vec("args", args);
+        }
+        self.next_token(); // type -> )
+        group.push_node("rparen", self.construct_node(NodeType::Unknown));
+        node.push_node("group", group);
+        if self.peek_token_is("returns") {
+            self.next_token(); // ) -> return
+            let mut return_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // return -> type
+            return_.push_node("type", self.parse_type(false));
+            node.push_node("returns", return_);
+        }
+        if self.peek_token_is("as") {
+            self.next_token(); // -> as
+            let mut as_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // as -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            self.next_token(); // ( -> expr
+            group.push_node("expr", self.parse_expr(999, &vec![")"], false));
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            as_.push_node("group", group);
+            node.push_node("as", as_);
+        } else {
+            if self.peek_token_in(&vec!["deterministic", "not"]) {
+                self.next_token(); // type -> determinism
+                let mut determinism = self.construct_node(NodeType::Unknown);
+                if self.get_token(0).literal.to_uppercase().as_str() == "NOT" {
+                    self.next_token(); // not -> deterministic
+                    determinism.push_node("right", self.construct_node(NodeType::Unknown));
+                }
+                node.push_node("determinism", determinism);
+            }
+            self.next_token(); // determinism -> language, type -> language
+            let mut language = self.construct_node(NodeType::Unknown);
+            self.next_token(); // language -> js
+            language.push_node("language", self.construct_node(NodeType::Unknown));
+            node.push_node("language", language);
+            if self.peek_token_is("options") {
+                self.next_token(); // js -> options
+                let mut options = self.construct_node(NodeType::Unknown);
+                self.next_token(); // options -> (
+                let mut group = self.construct_node(NodeType::Unknown);
+                if !self.peek_token_is(")") {
+                    self.next_token(); // ( -> expr
+                    group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+                }
+                self.next_token(); // expr -> )
+                group.push_node("rparen", self.construct_node(NodeType::Unknown));
+                options.push_node("group", group);
+                node.push_node("options", options);
+            }
+            self.next_token(); // js -> as, ) -> as
+            let mut as_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // as -> javascript_code
+            as_.push_node("expr", self.construct_node(NodeType::Unknown));
+            node.push_node("as", as_);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // ) -> ;
+            node.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        node
+    }
+    fn parse_create_procedure_statement(&mut self) -> Node {
+        let mut create = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("or") {
+            self.next_token(); // -> or
+            let or_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> replace
+            let replace = self.construct_node(NodeType::Unknown);
+            create.push_node_vec("or_replace", vec![or_, replace]);
+        }
+        self.next_token(); // -> procedure
+        create.push_node("what", self.construct_node(NodeType::Unknown));
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> not
+            let not = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> exists
+            let exists = self.construct_node(NodeType::Unknown);
+            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        self.next_token(); // ident -> (
+        let mut group = self.construct_node(NodeType::Unknown);
+        let mut args = Vec::new();
+        while !self.peek_token_is(")") {
+            self.next_token(); // ) -> arg, in
+            let mut arg = self.construct_node(NodeType::Unknown);
+            match self.get_token(2).literal.to_uppercase().as_str() {
+                "TYPE" => (),
+                "," => (),
+                "<" => (),
+                ")" => (),
+                _ => {
+                    self.next_token(); // -> ident
+                    let mut ident = self.construct_node(NodeType::Unknown);
+                    ident.push_node("in_out", arg);
+                    arg = ident;
+                }
+            }
+            self.next_token(); // arg -> type
+            arg.push_node("type", self.parse_type(false));
+            if self.peek_token_is(",") {
+                self.next_token(); // type -> ,
+                arg.push_node("comma", self.construct_node(NodeType::Unknown));
+            }
+            args.push(arg);
+        }
+        if args.len() > 0 {
+            group.push_node_vec("args", args);
+        }
+        self.next_token(); // -> )
+        group.push_node("rparen", self.construct_node(NodeType::Unknown));
+        create.push_node("group", group);
+        if self.peek_token_is("options") {
+            self.next_token(); // js -> options
+            let mut options = self.construct_node(NodeType::Unknown);
+            self.next_token(); // options -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            options.push_node("group", group);
+            create.push_node("options", options);
+        }
+        self.next_token(); // -> begin
+        create.push_node("stmt", self.parse_begin_statement(false));
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        create
+    }
+    fn parse_alter_statement(&mut self) -> Node {
+        let mut alter = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("materialized") {
+            self.next_token(); // -> materialized
+            alter.push_node("materialized", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> table, view
+        alter.push_node("what", self.construct_node(NodeType::Unknown));
+        self.next_token(); // -> ident
+        alter.push_node("ident", self.parse_identifier());
+        if self.peek_token_is("set") {
+            self.next_token(); // -> set
+            alter.push_node("set", self.construct_node(NodeType::Unknown));
+            self.next_token(); // js -> options
+            let mut options = self.construct_node(NodeType::Unknown);
+            self.next_token(); // options -> (
+            let mut group = self.construct_node(NodeType::Unknown);
+            if !self.peek_token_is(")") {
+                self.next_token(); // ( -> expr
+                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+            }
+            self.next_token(); // expr -> )
+            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            options.push_node("group", group);
+            alter.push_node("options", options);
+        }
+        let mut add_columns = Vec::new();
+        while self.peek_token_is("add") {
+            self.next_token(); // -> add
+            let mut add_column = self.construct_node(NodeType::Unknown);
+            self.next_token();
+            add_column.push_node("column", self.construct_node(NodeType::Unknown));
+            if self.peek_token_is("if") {
+                self.next_token(); // -> if
+                let if_ = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> not
+                let not = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> exists
+                let exists = self.construct_node(NodeType::Unknown);
+                add_column.push_node_vec("if_not_exists", vec![if_, not, exists]);
+            }
+            self.next_token(); // -> column_name
+            let mut column = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> schema
+            column.push_node("type", self.parse_type(true));
+            add_column.push_node("column_definition", column);
+            if self.peek_token_is(",") {
+                self.next_token(); // -> ,
+                add_column.push_node("comma", self.construct_node(NodeType::Unknown));
+            }
+            add_columns.push(add_column);
+        }
+        if 0 < add_columns.len() {
+            alter.push_node_vec("add_columns", add_columns);
+        }
+        let mut drop_columns = Vec::new();
+        // TODO check when it becomes GA
+        while self.peek_token_is("drop") {
+            self.next_token(); // -> drop
+            let mut drop_column = self.construct_node(NodeType::Unknown);
+            self.next_token();
+            drop_column.push_node("column", self.construct_node(NodeType::Unknown));
+            if self.peek_token_is("if") {
+                self.next_token(); // -> if
+                let if_ = self.construct_node(NodeType::Unknown);
+                self.next_token(); // -> exists
+                let exists = self.construct_node(NodeType::Unknown);
+                drop_column.push_node_vec("if_exists", vec![if_, exists]);
+            }
+            self.next_token(); // -> column_name
+            drop_column.push_node("column_name", self.construct_node(NodeType::Unknown));
+            if self.peek_token_is(",") {
+                self.next_token(); // -> ,
+                drop_column.push_node("comma", self.construct_node(NodeType::Unknown));
+            }
+            drop_columns.push(drop_column);
+        }
+        if 0 < drop_columns.len() {
+            alter.push_node_vec("drop_columns", drop_columns);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        alter
+    }
+    fn parse_drop_statement(&mut self) -> Node {
+        let mut drop = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("external") {
+            self.next_token(); // -> external
+            drop.push_node("external", self.construct_node(NodeType::Unknown));
+        }
+        if self.peek_token_is("materialized") {
+            self.next_token(); // -> materialized
+            drop.push_node("materialized", self.construct_node(NodeType::Unknown));
+        }
+        self.next_token(); // -> table, view, function, procedure
+        drop.push_node("what", self.construct_node(NodeType::Unknown));
+        if self.peek_token_is("if") {
+            self.next_token(); // -> if
+            let if_ = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> exists
+            let exists = self.construct_node(NodeType::Unknown);
+            drop.push_node_vec("if_exists", vec![if_, exists]);
+        }
+        self.next_token(); // -> ident
+        drop.push_node("ident", self.parse_identifier());
+        if self.peek_token_in(&vec!["cascade", "restrict"]) {
+            self.next_token(); // -> cascade, restrict
+            drop.push_node(
+                "cascade_or_restrict",
+                self.construct_node(NodeType::Unknown),
+            );
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            drop.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        drop
+    }
+    fn parse_call_statement(&mut self) -> Node {
+        let mut call = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> procedure_name
+        call.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            call.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        call
+    }
+    fn parse_raise_statement(&mut self) -> Node {
+        let mut raise = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is("using") {
+            self.next_token(); // -> using
+            let mut using = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> message
+            using.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            raise.push_node("using", using);
+        }
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            raise.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        raise
+    }
+    fn parse_loop_statement(&mut self) -> Node {
+        let mut loop_ = self.construct_node(NodeType::Unknown);
+        let mut stmts = Vec::new();
+        while !self.peek_token_is("end") {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            loop_.push_node_vec("stmts", stmts);
+        }
+        self.next_token(); // -> end
+        let end = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> loop
+        loop_.push_node_vec(
+            "end_loop",
+            vec![end, self.construct_node(NodeType::Unknown)],
+        );
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            loop_.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        loop_
+    }
+    fn parse_while_statement(&mut self) -> Node {
+        let mut while_ = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> boolean_expression
+        while_.push_node("condition", self.parse_expr(999, &vec!["do"], false));
+        self.next_token(); // -> do
+        while_.push_node("do", self.construct_node(NodeType::Unknown));
+        let mut stmts = Vec::new();
+        while !self.peek_token_is("end") {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            while_.push_node_vec("stmts", stmts);
+        }
+        self.next_token(); // -> end
+        let end = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> while
+        while_.push_node_vec(
+            "end_while",
+            vec![end, self.construct_node(NodeType::Unknown)],
+        );
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            while_.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        while_
+    }
+    fn parse_single_token_statement(&mut self) -> Node {
+        let mut node = self.construct_node(NodeType::Unknown);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            node.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        node
+    }
+    fn parse_if_statement(&mut self) -> Node {
+        let mut if_ = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> cond
+        if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
+
+        self.next_token(); // -> then
+        let mut then = self.construct_node(NodeType::Unknown);
+        let mut then_stmts = Vec::new();
+        while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
+            self.next_token(); // -> stmt
+            then_stmts.push(self.parse_statement());
+        }
+        if 0 < then_stmts.len() {
+            then.push_node_vec("stmts", then_stmts);
+        }
+        if_.push_node("then", then);
+
+        let mut elseifs = Vec::new();
+        while self.peek_token_is("elseif") {
+            self.next_token(); // -> elseif
+            let mut elseif = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> condition
+            elseif.push_node("condition", self.parse_expr(999, &vec!["then"], false));
+            self.next_token(); // -> then
+            let mut then = self.construct_node(NodeType::Unknown);
+            let mut then_stmts = Vec::new();
+            while !self.peek_token_in(&vec!["elseif", "else", "end"]) {
+                self.next_token(); // -> stmt
+                then_stmts.push(self.parse_statement());
+            }
+            if 0 < then_stmts.len() {
+                then.push_node_vec("stmts", then_stmts);
+            }
+            elseif.push_node("then", then);
+            elseifs.push(elseif);
+        }
+        if 0 < elseifs.len() {
+            if_.push_node_vec("elseifs", elseifs);
+        }
+
+        if self.peek_token_is("else") {
+            self.next_token(); // -> else
+            let mut else_ = self.construct_node(NodeType::Unknown);
+            let mut else_stmts = Vec::new();
+            while !self.peek_token_is("end") {
+                self.next_token(); // -> stmt
+                else_stmts.push(self.parse_statement());
+            }
+            if 0 < else_stmts.len() {
+                else_.push_node_vec("stmts", else_stmts);
+            }
+            if_.push_node("else", else_);
+        }
+        self.next_token(); // -> end
+        let end = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> if
+        if_.push_node_vec("end_if", vec![end, self.construct_node(NodeType::Unknown)]);
+        if self.peek_token_is(";") {
+            self.next_token(); // -> ;
+            if_.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        if_
+    }
+    fn parse_begin_statement(&mut self, root: bool) -> Node {
+        let mut begin = self.construct_node(NodeType::Unknown);
+        let mut stmts = Vec::new();
+        while !self.peek_token_in(&vec!["end", "exception"]) {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            begin.push_node_vec("stmts", stmts);
+        }
+        if self.peek_token_is("exception") {
+            self.next_token(); // ; -> exception
+            let exception = self.construct_node(NodeType::Unknown);
+            self.next_token(); // exception -> when
+            let when = self.construct_node(NodeType::Unknown);
+            self.next_token(); // exception -> error
+            let error = self.construct_node(NodeType::Unknown);
+            self.next_token(); // when -> then
+            let then = self.construct_node(NodeType::Unknown);
+            begin.push_node_vec(
+                "exception_when_error_then",
+                vec![exception, when, error, then],
+            );
+            let mut exception_stmts = Vec::new();
+            while !self.peek_token_is("end") {
+                self.next_token(); // -> stmt
+                exception_stmts.push(self.parse_statement());
+            }
+            if 0 < exception_stmts.len() {
+                begin.push_node_vec("exception_stmts", exception_stmts);
+            }
+        }
+        self.next_token(); // -> end
+        begin.push_node("end", self.construct_node(NodeType::Unknown));
+        if self.peek_token_is(";") && root {
+            self.next_token(); // -> ;
+            begin.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        begin
+    }
+    fn parse_execute_statement(&mut self) -> Node {
+        let mut execute = self.construct_node(NodeType::Unknown);
+        self.next_token(); // execute -> immediate
+        execute.push_node("immediate", self.construct_node(NodeType::Unknown));
+        self.next_token(); // immediate -> sql_expr
+        execute.push_node(
+            "sql_expr",
+            self.parse_expr(999, &vec!["into", "using", ";"], false),
+        );
+        if self.peek_token_is("into") {
+            self.next_token(); // sql_expr -> into
+            let mut into = self.construct_node(NodeType::Unknown);
+            let mut idents = Vec::new();
+            loop {
+                self.next_token(); // -> ident
+                if self.peek_token_is(",") {
+                    let mut ident = self.parse_identifier();
+                    self.next_token(); // ident -> ,
+                    ident.push_node("comma", self.construct_node(NodeType::Unknown));
+                    idents.push(ident);
+                } else {
+                    idents.push(self.parse_identifier());
+                    break;
+                }
+            }
+            into.push_node_vec("idents", idents);
+            execute.push_node("into", into);
+        }
+        if self.peek_token_is("using") {
+            self.next_token(); // -> using
+            let mut using = self.construct_node(NodeType::Unknown);
+            self.next_token(); // using -> exprs
+            using.push_node_vec("exprs", self.parse_exprs(&vec![";"], true));
+            execute.push_node("using", using);
+        }
+        if self.peek_token_is(";") {
+            self.next_token();
+            execute.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        execute
+    }
+    fn parse_set_statement(&mut self) -> Node {
+        let mut set = self.construct_node(NodeType::Unknown);
+        self.next_token(); // set -> expr
+        set.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        if self.peek_token_is(";") {
+            self.next_token();
+            set.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        set
+    }
+    fn parse_declare_statement(&mut self) -> Node {
+        let mut declare = self.construct_node(NodeType::Unknown);
+        let mut idents = Vec::new();
+        loop {
+            self.next_token(); // -> ident
+            if self.peek_token_is(",") {
+                let mut ident = self.parse_identifier();
+                self.next_token(); // ident -> comma
+                ident.push_node("comma", self.construct_node(NodeType::Unknown));
+                idents.push(ident);
+            } else {
+                idents.push(self.parse_identifier());
+                break;
+            }
+        }
+        declare.push_node_vec("idents", idents);
+        if !self.peek_token_is("default") {
+            self.next_token(); // ident -> variable_type
+            declare.push_node("variable_type", self.parse_type(false));
+        }
+        if self.peek_token_is("default") {
+            self.next_token(); // -> default
+            let mut default = self.construct_node(NodeType::Unknown);
+            self.next_token(); // default -> expr
+            default.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            declare.push_node("default", default);
+        }
+        if self.peek_token_is(";") {
+            self.next_token();
+            declare.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        declare
+    }
+    fn parse_identifier(&mut self) -> Node {
+        let mut left = self.construct_node(NodeType::Unknown);
+        while self.peek_token_is(".") {
+            self.next_token(); // ident -> .
+            let mut operator = self.construct_node(NodeType::Unknown);
+            operator.push_node("left", left);
+            self.next_token(); // . -> ident
+            operator.push_node("right", self.construct_node(NodeType::Unknown));
+            left = operator;
+        }
+        left
     }
     fn cur_token_in(&self, literals: &Vec<&str>) -> bool {
         for l in literals {
