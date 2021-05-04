@@ -39,11 +39,14 @@ impl Parser {
             return Some(self.position);
         }
         let mut cnt = 0;
-        let mut idx = self.position;
-        while cnt < offset {
-            if idx + 1 < self.tokens.len() {
-                if !self.tokens[idx + 1].is_comment() {
+        let mut idx = self.position + 1;
+        loop {
+            if idx < self.tokens.len() {
+                if !self.tokens[idx].is_comment() {
                     cnt += 1;
+                    if offset <= cnt {
+                        break;
+                    }
                 }
                 idx += 1;
             } else {
@@ -103,7 +106,7 @@ impl Parser {
             self.next_token();
         }
         let mut eof = self.construct_node();
-        //eof.token.take(); // TODO refactoring
+        eof.token.take(); // TODO refactoring
         code.push(eof);
         code
     }

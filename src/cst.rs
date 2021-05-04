@@ -20,7 +20,7 @@ pub enum NodeType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    token: Option<Token>,
+    pub token: Option<Token>,
     node_type: NodeType,
     children: HashMap<String, ContentType>,
 }
