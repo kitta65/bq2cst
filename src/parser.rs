@@ -9,7 +9,7 @@ use crate::token::Token;
 pub struct Parser {
     position: usize,
     leading_comment_indices: Vec<usize>,
-    following_comment_indices: Vec<usize>,
+    trailing_comment_indices: Vec<usize>,
     tokens: Vec<Token>,
 }
 
@@ -20,17 +20,17 @@ impl Parser {
         let mut p = Parser {
             position: 0,
             leading_comment_indices: Vec::new(),
-            following_comment_indices: Vec::new(),
+            trailing_comment_indices: Vec::new(),
             tokens: l.tokens,
         };
         while p.tokens[p.position].is_comment() {
             p.leading_comment_indices.push(p.position);
             p.position += 1;
         }
-        let mut following_comment_idx = p.position + 1;
-        while p.tokens[following_comment_idx].is_comment() {
-            p.following_comment_indices.push(following_comment_idx);
-            following_comment_idx += 1;
+        let mut trailing_comment_idx = p.position + 1;
+        while p.tokens[trailing_comment_idx].is_comment() {
+            p.trailing_comment_indices.push(trailing_comment_idx);
+            trailing_comment_idx += 1;
         }
         p
     }
@@ -60,9 +60,9 @@ impl Parser {
         self.leading_comment_indices = Vec::new();
         let idx = match self.get_offset_index(1) {
             Some(i) => i,
-            None => panic!("next token is not found"),
+            None => panic!("Next token was not found. Current token is: {:?}", self.get_token(0)),
         };
-        let from_idx = match self.following_comment_indices.iter().rev().next() {
+        let from_idx = match self.trailing_comment_indices.iter().rev().next() {
             Some(n) => *n,
             None => self.position,
         };
@@ -70,21 +70,21 @@ impl Parser {
             self.leading_comment_indices.push(i);
         }
         self.position = idx;
-        // following comments
-        self.following_comment_indices = Vec::new();
-        let mut following_comment_idx = self.position + 1;
-        while following_comment_idx < self.tokens.len()
-            && self.tokens[following_comment_idx].is_comment()
-            && self.get_token(0).line == self.tokens[following_comment_idx].line
+        // trailing comments
+        self.trailing_comment_indices = Vec::new();
+        let mut trailing_comment_idx = self.position + 1;
+        while trailing_comment_idx < self.tokens.len()
+            && self.tokens[trailing_comment_idx].is_comment()
+            && self.get_token(0).line == self.tokens[trailing_comment_idx].line
         {
-            self.following_comment_indices.push(following_comment_idx);
-            following_comment_idx += 1;
+            self.trailing_comment_indices.push(trailing_comment_idx);
+            trailing_comment_idx += 1;
         }
     }
     fn get_token(&self, offset: usize) -> Token {
         let idx = match self.get_offset_index(offset) {
             Some(i) => i,
-            None => panic!("next token is not found"),
+            None => panic!("Next token was not found. Current token is: {:?}", self.get_token(0)),
         };
         if idx < self.tokens.len() {
             return self.tokens[idx].clone();
@@ -119,13 +119,13 @@ impl Parser {
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
         }
-        // following comments
-        let mut following_comment_nodes = Vec::new();
-        for idx in &self.following_comment_indices {
-            following_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
+        // trailing comments
+        let mut trailing_comment_nodes = Vec::new();
+        for idx in &self.trailing_comment_indices {
+            trailing_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Unknown))
         }
-        if 0 < following_comment_nodes.len() {
-            node.push_node_vec("following_comments", following_comment_nodes);
+        if 0 < trailing_comment_nodes.len() {
+            node.push_node_vec("trailing_comments", trailing_comment_nodes);
         }
         node
     }
@@ -2076,8 +2076,8 @@ impl Parser {
                     frame.push_node("and", self.construct_node());
                     self.next_token(); // and -> expr
                     let mut end = self.parse_expr(999, &vec![")"], false);
-                    self.next_token(); // expr -> following
-                    end.push_node("following", self.construct_node());
+                    self.next_token(); // expr -> trailing
+                    end.push_node("trailing", self.construct_node());
                     frame.push_node("end", end);
                 } else {
                     // frame start

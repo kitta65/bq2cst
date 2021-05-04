@@ -14,7 +14,7 @@ pub enum ContentType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
-    Unknown,
+    Unknown, // TODO develop only
     SelectStatement,
 }
 
@@ -87,6 +87,6 @@ impl Node {
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.format(0, false))
+        write!(f, "{}\n", self.format(0, false))
     }
 }

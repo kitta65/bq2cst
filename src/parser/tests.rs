@@ -30,23 +30,37 @@ fn test_parse_code() {
     let test_cases = vec![
         TestCase::new(
             "\
-SELECT 1;",
+SELECT 1;
+",
             "\
 self: SELECT (Unknown)
 exprs:
 - self: 1 (Unknown)
 semicolon:
-  self: ; (Unknown)",
+  self: ; (Unknown)
+",
         ),
+        // comment
         TestCase::new(
             "\
-SELECT 1;",
+#standardSQL
+SELECT /* */ 1
+; -- end of statement
+-- EOF
+",
             "\
 self: SELECT (Unknown)
 exprs:
 - self: 1 (Unknown)
+leading_comments:
+- self: #standardSQL (Unknown)
 semicolon:
-  self: ; (Unknown)",
+  self: ; (Unknown)
+  trailing_comments:
+  - self: -- end of statement (Unknown)
+trailing_comments:
+- self: /* */ (Unknown)
+",
         ),
     ];
     for t in test_cases {
