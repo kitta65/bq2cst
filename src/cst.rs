@@ -16,6 +16,9 @@ pub enum ContentType {
 pub enum NodeType {
     Unknown, // TODO develop only
     SelectStatement,
+    Comment,
+    Keyword,
+    Symbol,
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]

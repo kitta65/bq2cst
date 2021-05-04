@@ -16,8 +16,8 @@ impl TestCase {
         let mut p = Parser::new(self.code.clone());
         let stmts = p.parse_code();
         println!(
-            "========== testing ==========\n{}\n=============================",
-            self.code
+            "========== testing ==========\n{}\n=============================\n",
+            self.code.trim()
         );
         println!("{}\n", stmts[0].to_string());
         assert_eq!(2, stmts.len());
@@ -33,11 +33,11 @@ fn test_parse_code() {
 SELECT 1;
 ",
             "\
-self: SELECT (Unknown)
+self: SELECT (SelectStatement)
 exprs:
 - self: 1 (Unknown)
 semicolon:
-  self: ; (Unknown)
+  self: ; (Symbol)
 ",
         ),
         // comment
@@ -49,17 +49,17 @@ SELECT /* */ 1
 -- EOF
 ",
             "\
-self: SELECT (Unknown)
+self: SELECT (SelectStatement)
 exprs:
 - self: 1 (Unknown)
 leading_comments:
-- self: #standardSQL (Unknown)
+- self: #standardSQL (Comment)
 semicolon:
-  self: ; (Unknown)
+  self: ; (Symbol)
   trailing_comments:
-  - self: -- end of statement (Unknown)
+  - self: -- end of statement (Comment)
 trailing_comments:
-- self: /* */ (Unknown)
+- self: /* */ (Comment)
 ",
         ),
     ];
