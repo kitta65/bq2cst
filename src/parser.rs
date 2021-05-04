@@ -87,18 +87,16 @@ impl Parser {
             trailing_comment_idx += 1;
         }
     }
-    fn get_token(&self, offset: usize) -> Token {
+    fn get_token(&self, offset: usize) -> &Token {
         let idx = match self.get_offset_index(offset) {
             Some(i) => i,
             None => panic!(
-                "Next token was not found. Current token is: {:?}",
+                "{}st token was not found. Current token is: {:?}",
+                offset,
                 self.get_token(0)
             ),
         };
-        if idx < self.tokens.len() {
-            return self.tokens[idx].clone();
-        }
-        Token::eof() // EOF token
+        return &self.tokens[idx];
     }
     fn is_eof(&self, offset: usize) -> bool {
         let idx = match self.get_offset_index(offset) {
