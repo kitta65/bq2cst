@@ -26,7 +26,24 @@ fn test_is_identifier() {
 
 #[test]
 fn test_is_numeric() {
-    assert!(Token::from_str0(".1").is_numeric());
+    // vald
+    assert!(Token::from_str0("10").is_numeric());
+    assert!(Token::from_str0("10e10").is_numeric());
+    assert!(Token::from_str0("10e+10").is_numeric());
+    assert!(Token::from_str0("10e-10").is_numeric());
+    assert!(Token::from_str0(".11").is_numeric());
+    assert!(Token::from_str0(".11e10").is_numeric());
+    assert!(Token::from_str0(".11e+10").is_numeric());
+    assert!(Token::from_str0(".11e-10").is_numeric());
+    assert!(Token::from_str0("10.11").is_numeric());
+    assert!(Token::from_str0("10.11E10").is_numeric());
+    assert!(Token::from_str0("10.11E+10").is_numeric());
+    assert!(Token::from_str0("10.11E-10").is_numeric());
+
+    // invalid
+    assert!(!Token::from_str0("e10").is_numeric());
+    assert!(!Token::from_str0("xxx").is_numeric());
+    assert!(!Token::from_str0("x01").is_numeric());
 }
 
 #[test]

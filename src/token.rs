@@ -73,7 +73,7 @@ impl Token {
         true
     }
     pub fn is_numeric(&self) -> bool {
-        let re = Regex::new(r"^(([0-9]+)|([0-9]?\.[0-9]+))([eE][\+\-]?[0-9]+)?$").unwrap();
+        let re = Regex::new(r"^([0-9]+|([0-9]*\.[0-9]+))([eE][\+\-]?[0-9]+)?$").unwrap();
         re.is_match(self.literal.as_str())
     }
     pub fn is_comment(&self) -> bool {
