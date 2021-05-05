@@ -25,6 +25,11 @@ fn test_is_identifier() {
 }
 
 #[test]
+fn test_is_numeric() {
+    assert!(Token::from_str0(".1").is_numeric());
+}
+
+#[test]
 fn test_is_comment() {
     assert!(Token::from_str0("-- comment").is_comment());
     assert!(Token::from_str0("/* xxx */").is_comment());
