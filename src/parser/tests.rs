@@ -64,6 +64,35 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- DISTINCT, ALL -----
+        TestCase::new(
+            "\
+SELECT DISTINCT 1;
+",
+            "\
+self: SELECT (SelectStatement)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+exprs:
+- self: 1 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT ALL 1;
+",
+            "\
+self: SELECT (SelectStatement)
+distinct_or_all:
+  self: ALL (Keyword)
+exprs:
+- self: 1 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
         // ----- asterisk -----
         TestCase::new(
             "\
@@ -1458,7 +1487,7 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
-        // WITH clause
+        // ----- WITH clause -----
         TestCase::new(
             "\
 WITH a AS (SELECT 1) SELECT 2;
@@ -1533,6 +1562,67 @@ with:
             self: TRUE (BooleanLiteral)
 ",
         ),
+        // ----- AS STRUCT, VALUE -----
+        TestCase::new(
+            "\
+SELECT (SELECT AS STRUCT 1 a, 2 b) ab
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (GroupedExpr)
+  alias:
+    self: ab (Identifier)
+  expr:
+    self: SELECT (SelectStatement)
+    as_struct_or_value:
+    - self: AS (Keyword)
+    - self: STRUCT (Keyword)
+    exprs:
+    - self: 1 (NumericLiteral)
+      alias:
+        self: a (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+      alias:
+        self: b (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT AS VALUE STRUCT(1 AS a, 2 AS b) xyz
+",
+            "\
+self: SELECT (SelectStatement)
+as_struct_or_value:
+- self: AS (Keyword)
+- self: VALUE (Keyword)
+exprs:
+- self: ( (StructLiteral)
+  alias:
+    self: xyz (Identifier)
+  exprs:
+  - self: 1 (NumericLiteral)
+    alias:
+      self: a (Identifier)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+    alias:
+      self: b (Identifier)
+    as:
+      self: AS (Keyword)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -1571,7 +1661,6 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            select as struct 1;select distinct 1;select all 1;
 //            select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
 //            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
 //            select * from (select 1 from table1) inner join table2;

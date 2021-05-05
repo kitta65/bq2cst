@@ -1547,7 +1547,7 @@ impl Parser {
             // STRUCT
             "(" => {
                 self.next_token(); // ( -> expr
-                let mut exprs = self.parse_exprs(&vec![")"], false);
+                let mut exprs = self.parse_exprs(&vec![")"], true); // parse alias in the case of struct
                 if exprs.len() == 1 {
                     left.node_type = NodeType::GroupedExpr;
                     left.push_node("expr", exprs.pop().unwrap());
