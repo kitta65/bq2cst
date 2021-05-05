@@ -15,7 +15,7 @@ pub enum ContentType {
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
     ArrayAccessing,
-    ArrayLiteral, // [1, 2]
+    ArrayLiteral,   // [1, 2]
     BinaryOperator, // + | - | = | ...
     BetweenOperator,
     BooleanLiteral,          // TRUE | FALSE
@@ -27,6 +27,7 @@ pub enum NodeType {
     Comment,
     EOF,
     ExtractArgument,         // DAY FROM expr
+    ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     GroupedExpr,             // (1)
     GroupedExprs,            // (1, 2, 3)
     GroupedStatement,        // (SELECT 1)
@@ -46,6 +47,8 @@ pub enum NodeType {
     StringLiteral,
     StructLiteral,
     Symbol,          // ) | ] | * | ...
+    TableSampleCaluse, // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSampleRatio, // (10 PERCENT)
     Type,            // INT64
     TypeDeclaration, // x INT64
     UnaryOperator,   // - | + | TIMESTAMP | ...

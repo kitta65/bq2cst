@@ -634,6 +634,7 @@ exprs:
 ",
         ),
         // ----- irregular function -----
+        // CAST
         TestCase::new(
             "\
 SELECT CAST('1' AS INT64),
@@ -656,12 +657,10 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // EXTRACT
         TestCase::new(
             "\
-SELECT
-    EXTRACT(DAY FROM ts),
-    EXTRACT(WEEK(SUNDAY) FROM ts),
-    EXTRACT(DAY FROM ts AT TIME ZONE 'UTC'),
+SELECT EXTRACT(DAY FROM ts)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -673,12 +672,19 @@ exprs:
       self: DAY (Keyword)
     extract_from:
       self: ts (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT EXTRACT(WEEK(SUNDAY) FROM ts)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
   args:
   - self: FROM (ExtractArgument)
@@ -692,12 +698,19 @@ exprs:
         self: ) (Symbol)
     extract_from:
       self: ts (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT EXTRACT(DAY FROM ts AT TIME ZONE 'UTC')
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
   args:
   - self: FROM (ExtractArgument)
@@ -711,17 +724,16 @@ exprs:
       self: ts (Identifier)
     time_zone:
       self: 'UTC' (StringLiteral)
-  comma:
-    self: , (Symbol)
   func:
     self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
 ",
         ),
+        // ARRAY_AGG
         TestCase::new(
             "\
-SELECT STRING_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z LIMIT 100)
+SELECT ARRAY_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z DESC LIMIT 100)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -735,7 +747,7 @@ exprs:
   distinct:
     self: DISTINCT (Keyword)
   func:
-    self: STRING_AGG (Identifier)
+    self: ARRAY_AGG (Identifier)
   ignore_nulls:
   - self: IGNORE (Keyword)
   - self: NULLS (Keyword)
@@ -749,10 +761,13 @@ exprs:
       self: BY (Keyword)
     exprs:
     - self: z (Identifier)
+      order:
+        self: DESC (Keyword)
   rparen:
     self: ) (Symbol)
 ",
         ),
+        // ARRAY
         TestCase::new(
             "\
 SELECT ARRAY(SELECT 1 UNION ALL SELECT 2),
@@ -781,6 +796,7 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // ST_GEOGFROMTEXT
         TestCase::new(
             "\
 SELECT ST_GEOGFROMTEXT(p, oriented => TRUE),
@@ -806,6 +822,7 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // INTERVAL x date_part
         TestCase::new(
             "\
 SELECT DATE_ADD(dt, INTERVAL 1 + 1 DAY),
@@ -861,10 +878,7 @@ exprs:
         // PARTITION BY, ORDER BY
         TestCase::new(
             "\
-SELECT
-  SUM(x) OVER (PARTITION BY a),
-  SUM(x) OVER (ORDER BY a),
-  SUM(x) OVER (PARTITION BY a ORDER BY b, c),
+SELECT SUM(x) OVER (PARTITION BY a)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -872,8 +886,6 @@ exprs:
 - self: ( (CallingFunction)
   args:
   - self: x (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -890,11 +902,18 @@ exprs:
         self: ) (Symbol)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT SUM(x) OVER (ORDER BY a DESC)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
   args:
   - self: x (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -907,15 +926,24 @@ exprs:
           self: BY (Keyword)
         exprs:
         - self: a (Identifier)
+          order:
+            self: DESC (Keyword)
       rparen:
         self: ) (Symbol)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT SUM(x) OVER (PARTITION BY a ORDER BY b ASC, c)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
   args:
   - self: x (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -930,6 +958,8 @@ exprs:
         - self: b (Identifier)
           comma:
             self: , (Symbol)
+          order:
+            self: ASC (Keyword)
         - self: c (Identifier)
       partitionby:
         self: PARTITION (XXXByExprs)
@@ -1623,6 +1653,129 @@ exprs:
     self: STRUCT (Type)
 ",
         ),
+        // ----- FROM clause -----
+        // FOR SYSTEM_TIME AS OF
+        TestCase::new(
+            "\
+SELECT c1 FROM t FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    for_system_time_as_of:
+      self: FOR (ForSystemTimeAsOfClause)
+      expr:
+        self: ( (CallingFunction)
+        func:
+          self: CURRENT_TIMESTAMP (Identifier)
+        rparen:
+          self: ) (Symbol)
+      system_time_as_of:
+      - self: SYSTEM_TIME (Keyword)
+      - self: AS (Keyword)
+      - self: OF (Keyword)
+",
+        ),
+        // FOR SYSTEM_TIME AS OF
+        TestCase::new(
+            "\
+SELECT *
+FROM t TABLESAMPLE SYSTEM (20 PERCENT)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    tablesample:
+      self: TABLESAMPLE (TableSampleCaluse)
+      group:
+        self: ( (TableSampleRatio)
+        expr:
+          self: 20 (NumericLiteral)
+        percent:
+          self: PERCENT (Keyword)
+        rparen:
+          self: ) (Symbol)
+      system:
+        self: SYSTEM (Keyword)
+",
+        ),
+        // ----- LIMIT clause -----
+        TestCase::new(
+            "\
+SELECT c1 FROM t LIMIT 100
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+limit:
+  self: LIMIT (LimitClause)
+  expr:
+    self: 100 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT c1 FROM t LIMIT 100 OFFSET 10
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+limit:
+  self: LIMIT (LimitClause)
+  expr:
+    self: 100 (NumericLiteral)
+  offset:
+    self: OFFSET (KeywordWithExpr)
+    expr:
+      self: 10 (NumericLiteral)
+",
+        ),
+        // ----- ORDER BY -----
+        TestCase::new(
+            "\
+SELECT c1 FROM t ORDER BY c1 ASC, c2
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+orderby:
+  self: ORDER (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: c1 (Identifier)
+    comma:
+      self: , (Symbol)
+    order:
+      self: ASC (Keyword)
+  - self: c2 (Identifier)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -1660,7 +1813,7 @@ leading_comments:
 //#[test]
 //fn test_parse_exprs() {
 //    let input = "\
-//            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
+//              where true group by 1 HAVING true order by abc DESC, def ;
 //            select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
 //            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
 //            select * from (select 1 from table1) inner join table2;

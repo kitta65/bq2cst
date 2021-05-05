@@ -1366,17 +1366,17 @@ impl Parser {
             }
         }
         if self.get_token(1).literal.to_uppercase() == "FOR" {
-            self.next_token(); // table -> for
-            let mut for_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // for -> system_time
+            self.next_token(); // TABLE -> FOR
+            let mut for_ = self.construct_node(NodeType::ForSystemTimeAsOfClause);
+            self.next_token(); // FOR -> SYSTEM_TIME
             let mut system_time_as_of = Vec::new();
-            system_time_as_of.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // system_time -> as
-            system_time_as_of.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // as -> of
-            system_time_as_of.push(self.construct_node(NodeType::Unknown));
+            system_time_as_of.push(self.construct_node(NodeType::Keyword));
+            self.next_token(); // SYSTEM_TIME -> AS
+            system_time_as_of.push(self.construct_node(NodeType::Keyword));
+            self.next_token(); // AS -> OF
+            system_time_as_of.push(self.construct_node(NodeType::Keyword));
             for_.push_node_vec("system_time_as_of", system_time_as_of);
-            self.next_token(); // of -> timestamp
+            self.next_token(); // OF -> timestamp
             for_.push_node(
                 "expr",
                 self.parse_expr(
@@ -1393,17 +1393,17 @@ impl Parser {
         if self.get_token(1).is("tablesample") {
             // TODO check when it becomes GA
             self.next_token(); // -> tablesample
-            let mut tablesample = self.construct_node(NodeType::Unknown);
+            let mut tablesample = self.construct_node(NodeType::TableSampleCaluse);
             self.next_token(); // -> system
-            tablesample.push_node("system", self.construct_node(NodeType::Unknown));
+            tablesample.push_node("system", self.construct_node(NodeType::Keyword));
             self.next_token(); // -> (
-            let mut group = self.construct_node(NodeType::Unknown);
+            let mut group = self.construct_node(NodeType::TableSampleRatio);
             self.next_token(); // -> expr
             group.push_node("expr", self.parse_expr(999, &vec!["percent"], false)); // NOTE percent is not reserved
             self.next_token(); // -> percent
-            group.push_node("percent", self.construct_node(NodeType::Unknown));
+            group.push_node("percent", self.construct_node(NodeType::Keyword));
             self.next_token(); // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            group.push_node("rparen", self.construct_node(NodeType::Symbol));
             tablesample.push_node("group", group);
             left.push_node("tablesample", tablesample);
         }
