@@ -486,6 +486,119 @@ from:
       self: AS (Keyword)
 ",
         ),
+        // sub query
+        TestCase::new(
+            "\
+SELECT * FROM (SELECT 1,2)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    expr:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+        comma:
+          self: , (Symbol)
+      - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT SUB.* FROM (SELECT 1,2) AS SUB;
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (BinaryOperator)
+  left:
+    self: SUB (Identifier)
+  right:
+    self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    alias:
+      self: SUB (Identifier)
+    as:
+      self: AS (Keyword)
+    expr:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+        comma:
+          self: , (Symbol)
+      - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT *
+FROM main m
+WHERE NOT EXISTS(SELECT 1 FROM sub s WHERE s.x = m.x);
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: main (Identifier)
+    alias:
+      self: m (Identifier)
+semicolon:
+  self: ; (Symbol)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: NOT (UnaryOperator)
+    right:
+      self: ( (CallingFunction)
+      args:
+      - self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+        from:
+          self: FROM (KeywordWithExpr)
+          expr:
+            self: sub (Identifier)
+            alias:
+              self: s (Identifier)
+        where:
+          self: WHERE (KeywordWithExpr)
+          expr:
+            self: = (BinaryOperator)
+            left:
+              self: . (BinaryOperator)
+              left:
+                self: s (Identifier)
+              right:
+                self: x (Identifier)
+            right:
+              self: . (BinaryOperator)
+              left:
+                self: m (Identifier)
+              right:
+                self: x (Identifier)
+      func:
+        self: EXISTS (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+        ),
         // FOR SYSTEM_TIME AS OF
         TestCase::new(
             "\

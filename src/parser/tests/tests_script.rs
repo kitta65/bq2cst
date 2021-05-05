@@ -1,5 +1,4 @@
 use super::*;
-//            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
 //            select * from (select 1 from table1) inner join table2;
 //            select * from t order by col1 asc nulls last, col2 nulls first;
 //            select * from data1 as one inner join data2 two ON true;
