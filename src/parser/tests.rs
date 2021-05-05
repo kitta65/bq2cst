@@ -64,130 +64,6 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
-        // ----- DISTINCT, ALL -----
-        TestCase::new(
-            "\
-SELECT DISTINCT 1;
-",
-            "\
-self: SELECT (SelectStatement)
-distinct_or_all:
-  self: DISTINCT (Keyword)
-exprs:
-- self: 1 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT ALL 1;
-",
-            "\
-self: SELECT (SelectStatement)
-distinct_or_all:
-  self: ALL (Keyword)
-exprs:
-- self: 1 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        // ----- asterisk -----
-        TestCase::new(
-            "\
-SELECT
-  * EXCEPT (col1),
-  t.* EXCEPT(col1, col2),
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: * (Symbol)
-  comma:
-    self: , (Symbol)
-  except:
-    self: EXCEPT (KeywordWithGroupedExprs)
-    group:
-      self: ( (GroupedExprs)
-      exprs:
-      - self: col1 (Identifier)
-      rparen:
-        self: ) (Symbol)
-- self: . (BinaryOperator)
-  comma:
-    self: , (Symbol)
-  left:
-    self: t (Identifier)
-  right:
-    self: * (Symbol)
-    except:
-      self: EXCEPT (KeywordWithGroupedExprs)
-      group:
-        self: ( (GroupedExprs)
-        exprs:
-        - self: col1 (Identifier)
-          comma:
-            self: , (Symbol)
-        - self: col2 (Identifier)
-        rparen:
-          self: ) (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT
-  * REPLACE (col1 * 2 AS _col1),
-  t.* REPLACE (col2 * 2 AS _col2),
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: * (Symbol)
-  comma:
-    self: , (Symbol)
-  replace:
-    self: REPLACE (KeywordWithGroupedExprs)
-    group:
-      self: ( (GroupedExprs)
-      exprs:
-      - self: * (BinaryOperator)
-        alias:
-          self: _col1 (Identifier)
-        as:
-          self: AS (Keyword)
-        left:
-          self: col1 (Identifier)
-        right:
-          self: 2 (NumericLiteral)
-      rparen:
-        self: ) (Symbol)
-- self: . (BinaryOperator)
-  comma:
-    self: , (Symbol)
-  left:
-    self: t (Identifier)
-  right:
-    self: * (Symbol)
-    replace:
-      self: REPLACE (KeywordWithGroupedExprs)
-      group:
-        self: ( (GroupedExprs)
-        exprs:
-        - self: * (BinaryOperator)
-          alias:
-            self: _col2 (Identifier)
-          as:
-            self: AS (Keyword)
-          left:
-            self: col2 (Identifier)
-          right:
-            self: 2 (NumericLiteral)
-        rparen:
-          self: ) (Symbol)
-",
-        ),
-        // ----- grouped statement -----
         TestCase::new(
             "\
 (SELECT 1);
@@ -225,33 +101,133 @@ trailing_comments:
 - self: /* */ (Comment)
 ",
         ),
-        // ----- alias -----
+        // ----- set operator -----
         TestCase::new(
             "\
-SELECT 1 AS one, 2 two
-FROM t1 AS t
+SELECT 1 UNION ALL SELECT 2;
 ",
             "\
-self: SELECT (SelectStatement)
-exprs:
-- self: 1 (NumericLiteral)
-  alias:
-    self: one (Identifier)
-  as:
-    self: AS (Keyword)
-  comma:
-    self: , (Symbol)
-- self: 2 (NumericLiteral)
-  alias:
-    self: two (Identifier)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: t1 (Identifier)
-    alias:
-      self: t (Identifier)
-    as:
-      self: AS (Keyword)
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 INTERSECT DISTINCT (SELECT 2);
+",
+            "\
+self: INTERSECT (SetOperator)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+(SELECT 1) EXCEPT DISTINCT SELECT 2;
+",
+            "\
+self: EXCEPT (SetOperator)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+left:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3;
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: UNION (SetOperator)
+  distinct_or_all:
+    self: ALL (Keyword)
+  left:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+  right:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 3 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 UNION ALL (SELECT 2 UNION ALL SELECT 3);
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: UNION (SetOperator)
+    distinct_or_all:
+      self: ALL (Keyword)
+    left:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
+    right:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 3 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
 ",
         ),
         // ----- unary operator -----
@@ -303,13 +279,11 @@ exprs:
 ",
         ),
         // ----- binary operator -----
+        // +, -, *, /
         TestCase::new(
             "\
 SELECT
   1 + 2,
-  1 BETWEEN 0 AND 3,
-  1 IN (1, 2, 3),
-  'x' LIKE '%x%',
 ",
             "\
 self: SELECT (SelectStatement)
@@ -321,50 +295,14 @@ exprs:
     self: 1 (NumericLiteral)
   right:
     self: 2 (NumericLiteral)
-- self: BETWEEN (BetweenOperator)
-  and:
-    self: AND (Keyword)
-  comma:
-    self: , (Symbol)
-  left:
-    self: 1 (NumericLiteral)
-  right:
-  - self: 0 (NumericLiteral)
-  - self: 3 (NumericLiteral)
-- self: IN (InOperator)
-  comma:
-    self: , (Symbol)
-  left:
-    self: 1 (NumericLiteral)
-  right:
-    self: ( (GroupedExprs)
-    exprs:
-    - self: 1 (NumericLiteral)
-      comma:
-        self: , (Symbol)
-    - self: 2 (NumericLiteral)
-      comma:
-        self: , (Symbol)
-    - self: 3 (NumericLiteral)
-    rparen:
-      self: ) (Symbol)
-- self: LIKE (BinaryOperator)
-  comma:
-    self: , (Symbol)
-  left:
-    self: 'x' (StringLiteral)
-  right:
-    self: '%x%' (StringLiteral)
 ",
         ),
-        // NOT
+        // BETWEEN
         TestCase::new(
             "\
 SELECT
+  1 BETWEEN 0 AND 3,
   1 NOT BETWEEN 0 AND 3,
-  1 NOT IN (1, 2, 3),
-  'x' NOT LIKE '%x%',
-  TRUE IS NOT FALSE,
 ",
             "\
 self: SELECT (SelectStatement)
@@ -376,11 +314,50 @@ exprs:
     self: , (Symbol)
   left:
     self: 1 (NumericLiteral)
+  right:
+  - self: 0 (NumericLiteral)
+  - self: 3 (NumericLiteral)
+- self: BETWEEN (BetweenOperator)
+  and:
+    self: AND (Keyword)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 1 (NumericLiteral)
   not:
     self: NOT (Keyword)
   right:
   - self: 0 (NumericLiteral)
   - self: 3 (NumericLiteral)
+",
+        ),
+        // IN
+        TestCase::new(
+            "\
+SELECT
+  1 IN (1, 2, 3),
+  1 NOT IN (1, 2, 3),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IN (InOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 1 (NumericLiteral)
+  right:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 3 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
 - self: IN (InOperator)
   comma:
     self: , (Symbol)
@@ -400,6 +377,25 @@ exprs:
     - self: 3 (NumericLiteral)
     rparen:
       self: ) (Symbol)
+",
+        ),
+        // LIKE
+        TestCase::new(
+            "\
+SELECT
+  'x' LIKE '%x%',
+  'x' NOT LIKE '%x%',
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: LIKE (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 'x' (StringLiteral)
+  right:
+    self: '%x%' (StringLiteral)
 - self: LIKE (BinaryOperator)
   comma:
     self: , (Symbol)
@@ -409,6 +405,35 @@ exprs:
     self: NOT (Keyword)
   right:
     self: '%x%' (StringLiteral)
+",
+        ),
+        // IS
+        TestCase::new(
+            "\
+SELECT
+  x IS NULL,
+  x IS NOT NULL,
+  TRUE IS NOT FALSE,
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IS (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: x (Identifier)
+  right:
+    self: NULL (NullLiteral)
+- self: IS (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: x (Identifier)
+  not:
+    self: NOT (Keyword)
+  right:
+    self: NULL (NullLiteral)
 - self: IS (BinaryOperator)
   comma:
     self: , (Symbol)
@@ -420,13 +445,12 @@ exprs:
     self: FALSE (BooleanLiteral)
 ",
         ),
-        // '.' operator
+        // '.' 
         TestCase::new(
             "\
 SELECT
   t.struct_col.num + 1,
   1 + t.struct_col.num,
-FROM `dataset`.table_name AS t
 ",
             "\
 self: SELECT (SelectStatement)
@@ -461,21 +485,9 @@ exprs:
         self: struct_col (Identifier)
     right:
       self: num (Identifier)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: . (BinaryOperator)
-    alias:
-      self: t (Identifier)
-    as:
-      self: AS (Keyword)
-    left:
-      self: `dataset` (Identifier)
-    right:
-      self: table_name (Identifier)
 ",
         ),
-        // ----- precedence -----
+        // precedence
         TestCase::new(
             "\
 SELECT (1+(-2)) * 3 IN (9)
@@ -515,7 +527,6 @@ exprs:
         TestCase::new(
             "\
 SELECT (1+2) * 3 NOT BETWEEN 10 + 0 AND 11 + 2 OR TRUE
-
 ",
             "\
 self: SELECT (SelectStatement)
@@ -556,12 +567,233 @@ exprs:
     self: TRUE (BooleanLiteral)
 ",
         ),
-        // ----- case expr -----
+        // ----- array -----
         TestCase::new(
             "\
 SELECT
-  CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE NULL END,
-  CASE WHEN c1 = 1 THEN 'one' ELSE NULL END,
+  [1, 2],
+  ARRAY[1,2],
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+",
+        ),
+        // array with type declaration
+        TestCase::new(
+            "\
+SELECT ARRAY<INT64>[1]
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  exprs:
+  - self: 1 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: INT64 (Type)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT ARRAY<STRUCT<INT64, INT64>>[(1,2)]
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  exprs:
+  - self: ( (StructLiteral)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: STRUCT (Type)
+        type_declaration:
+          self: < (GroupedTypeDeclarations)
+          declarations:
+          - self: None (TypeDeclaration)
+            comma:
+              self: , (Symbol)
+            type:
+              self: INT64 (Type)
+          - self: None (TypeDeclaration)
+            type:
+              self: INT64 (Type)
+          rparen:
+            self: > (Symbol)
+",
+        ),
+        // accessing array
+        TestCase::new(
+            "\
+SELECT arr[OFFSET(1)]
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayAccessing)
+  left:
+    self: arr (Identifier)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: 1 (NumericLiteral)
+    func:
+      self: OFFSET (Identifier)
+    rparen:
+      self: ) (Symbol)
+  rparen:
+    self: ] (Symbol)
+",
+        ),
+    // ----- struct -----
+        TestCase::new(
+            "\
+SELECT
+  (1,2),
+  STRUCT(1,2),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+",
+        ),
+        // struct with type declarations
+        TestCase::new(
+            "\
+SELECT STRUCT<INT64>(1)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (StructLiteral)
+  expr:
+    self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+    type_declaration:
+      self: < (GroupedTypeDeclarations)
+      declarations:
+      - self: None (TypeDeclaration)
+        type:
+          self: INT64 (Type)
+      rparen:
+        self: > (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT STRUCT<ARRAY<INT64>, x FLOAT64>([1], .1)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (StructLiteral)
+  exprs:
+  - self: [ (ArrayLiteral)
+    comma:
+      self: , (Symbol)
+    exprs:
+    - self: 1 (NumericLiteral)
+    rparen:
+      self: ] (Symbol)
+  - self: .1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+    type_declaration:
+      self: < (GroupedTypeDeclarations)
+      declarations:
+      - self: None (TypeDeclaration)
+        comma:
+          self: , (Symbol)
+        type:
+          self: ARRAY (Type)
+          type_declaration:
+            self: < (GroupedType)
+            rparen:
+              self: > (Symbol)
+            type:
+              self: INT64 (Type)
+      - self: x (TypeDeclaration)
+        type:
+          self: FLOAT64 (Type)
+      rparen:
+        self: > (Symbol)
+",
+        ),
+        // ----- case expr -----
+        TestCase::new(
+            "\
+SELECT CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE NULL END
 ",
             "\
 self: SELECT (SelectStatement)
@@ -585,12 +817,19 @@ exprs:
   - self: ELSE (CaseArm)
     result:
       self: NULL (NullLiteral)
-  comma:
-    self: , (Symbol)
   end:
     self: END (Keyword)
   expr:
     self: c1 (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT CASE WHEN c1 = 1 THEN 'one' ELSE NULL END
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: CASE (CaseExpr)
   arms:
   - self: WHEN (CaseArm)
@@ -607,13 +846,11 @@ exprs:
   - self: ELSE (CaseArm)
     result:
       self: NULL (NullLiteral)
-  comma:
-    self: , (Symbol)
   end:
     self: END (Keyword)
 ",
         ),
-        // ----- calling function -----
+        // ----- function -----
         TestCase::new(
             "\
 SELECT f(c1, c2)
@@ -633,7 +870,6 @@ exprs:
     self: ) (Symbol)
 ",
         ),
-        // ----- irregular function -----
         // CAST
         TestCase::new(
             "\
@@ -976,16 +1212,12 @@ exprs:
         // window frame clause
         TestCase::new(
             "\
-SELECT
-  SUM() OVER (ROWS 1 + 1 PRECEDING),
-  SUM() OVER (PARTITION BY a ORDER BY b, c ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING),
+SELECT SUM() OVER (ROWS 1 + 1 PRECEDING)
 ",
             "\
 self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -1004,9 +1236,16 @@ exprs:
         self: ) (Symbol)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT SUM() OVER (PARTITION BY a ORDER BY b, c ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -1052,7 +1291,6 @@ exprs:
 SELECT
   SUM() OVER named_window,
   SUM() OVER (named_window),
-  last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -1083,6 +1321,15 @@ exprs:
         self: ) (Symbol)
   rparen:
     self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
 - self: ( (CallingFunction)
   args:
   - self: col3 (Identifier)
@@ -1110,411 +1357,6 @@ exprs:
         self: ) (Symbol)
   rparen:
     self: ) (Symbol)
-",
-        ),
-        // window clause
-        TestCase::new(
-            "\
-SELECT *
-FROM t
-WINDOW
-  a AS (PARTITION BY col1),
-  b AS (a ORDER BY col2),
-  c AS b
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: * (Symbol)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: t (Identifier)
-window:
-  self: WINDOW (WindowClause)
-  window_exprs:
-  - self: a (WindowExpr)
-    as:
-      self: AS (Keyword)
-    comma:
-      self: , (Symbol)
-    window:
-      self: ( (WindowSpecification)
-      partitionby:
-        self: PARTITION (XXXByExprs)
-        by:
-          self: BY (Keyword)
-        exprs:
-        - self: col1 (Identifier)
-      rparen:
-        self: ) (Symbol)
-  - self: b (WindowExpr)
-    as:
-      self: AS (Keyword)
-    comma:
-      self: , (Symbol)
-    window:
-      self: ( (WindowSpecification)
-      name:
-        self: a (Identifier)
-      orderby:
-        self: ORDER (XXXByExprs)
-        by:
-          self: BY (Keyword)
-        exprs:
-        - self: col2 (Identifier)
-      rparen:
-        self: ) (Symbol)
-  - self: c (WindowExpr)
-    as:
-      self: AS (Keyword)
-    window:
-      self: b (Identifier)
-",
-        ),
-        // ----- array -----
-        TestCase::new(
-            "\
-SELECT
-  [1, 2],
-  ARRAY[1,2],
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: [ (ArrayLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: 1 (NumericLiteral)
-    comma:
-      self: , (Symbol)
-  - self: 2 (NumericLiteral)
-  rparen:
-    self: ] (Symbol)
-- self: [ (ArrayLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: 1 (NumericLiteral)
-    comma:
-      self: , (Symbol)
-  - self: 2 (NumericLiteral)
-  rparen:
-    self: ] (Symbol)
-  type:
-    self: ARRAY (Type)
-",
-        ),
-        // array with type declaration
-        TestCase::new(
-            "\
-SELECT
-  ARRAY<INT64>[1],
-  ARRAY<STRUCT<INT64, INT64>>[(1,2)],
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: [ (ArrayLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: 1 (NumericLiteral)
-  rparen:
-    self: ] (Symbol)
-  type:
-    self: ARRAY (Type)
-    type_declaration:
-      self: < (GroupedType)
-      rparen:
-        self: > (Symbol)
-      type:
-        self: INT64 (Type)
-- self: [ (ArrayLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: ( (StructLiteral)
-    exprs:
-    - self: 1 (NumericLiteral)
-      comma:
-        self: , (Symbol)
-    - self: 2 (NumericLiteral)
-    rparen:
-      self: ) (Symbol)
-  rparen:
-    self: ] (Symbol)
-  type:
-    self: ARRAY (Type)
-    type_declaration:
-      self: < (GroupedType)
-      rparen:
-        self: > (Symbol)
-      type:
-        self: STRUCT (Type)
-        type_declaration:
-          self: < (GroupedTypeDeclarations)
-          declarations:
-          - self: None (TypeDeclaration)
-            comma:
-              self: , (Symbol)
-            type:
-              self: INT64 (Type)
-          - self: None (TypeDeclaration)
-            type:
-              self: INT64 (Type)
-          rparen:
-            self: > (Symbol)
-",
-        ),
-        // accessing array
-        TestCase::new(
-            "\
-SELECT arr[OFFSET(1)]
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: [ (ArrayAccessing)
-  left:
-    self: arr (Identifier)
-  right:
-    self: ( (CallingFunction)
-    args:
-    - self: 1 (NumericLiteral)
-    func:
-      self: OFFSET (Identifier)
-    rparen:
-      self: ) (Symbol)
-  rparen:
-    self: ] (Symbol)
-",
-        ),
-    // ----- struct -----
-        TestCase::new(
-            "\
-SELECT
-  (1,2),
-  STRUCT(1,2),
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: ( (StructLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: 1 (NumericLiteral)
-    comma:
-      self: , (Symbol)
-  - self: 2 (NumericLiteral)
-  rparen:
-    self: ) (Symbol)
-- self: ( (StructLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: 1 (NumericLiteral)
-    comma:
-      self: , (Symbol)
-  - self: 2 (NumericLiteral)
-  rparen:
-    self: ) (Symbol)
-  type:
-    self: STRUCT (Type)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT
-  STRUCT<INT64>(1),
-  STRUCT<ARRAY<INT64>, x FLOAT64>([1], .1),
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: ( (StructLiteral)
-  comma:
-    self: , (Symbol)
-  expr:
-    self: 1 (NumericLiteral)
-  rparen:
-    self: ) (Symbol)
-  type:
-    self: STRUCT (Type)
-    type_declaration:
-      self: < (GroupedTypeDeclarations)
-      declarations:
-      - self: None (TypeDeclaration)
-        type:
-          self: INT64 (Type)
-      rparen:
-        self: > (Symbol)
-- self: ( (StructLiteral)
-  comma:
-    self: , (Symbol)
-  exprs:
-  - self: [ (ArrayLiteral)
-    comma:
-      self: , (Symbol)
-    exprs:
-    - self: 1 (NumericLiteral)
-    rparen:
-      self: ] (Symbol)
-  - self: .1 (NumericLiteral)
-  rparen:
-    self: ) (Symbol)
-  type:
-    self: STRUCT (Type)
-    type_declaration:
-      self: < (GroupedTypeDeclarations)
-      declarations:
-      - self: None (TypeDeclaration)
-        comma:
-          self: , (Symbol)
-        type:
-          self: ARRAY (Type)
-          type_declaration:
-            self: < (GroupedType)
-            rparen:
-              self: > (Symbol)
-            type:
-              self: INT64 (Type)
-      - self: x (TypeDeclaration)
-        type:
-          self: FLOAT64 (Type)
-      rparen:
-        self: > (Symbol)
-",
-        ),
-        // ----- set operator -----
-        TestCase::new(
-            "\
-SELECT 1 UNION ALL SELECT 2;
-",
-            "\
-self: UNION (SetOperator)
-distinct_or_all:
-  self: ALL (Keyword)
-left:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 1 (NumericLiteral)
-right:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 2 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT 1 INTERSECT DISTINCT (SELECT 2);
-",
-            "\
-self: INTERSECT (SetOperator)
-distinct_or_all:
-  self: DISTINCT (Keyword)
-left:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 1 (NumericLiteral)
-right:
-  self: ( (GroupedStatement)
-  rparen:
-    self: ) (Symbol)
-  stmt:
-    self: SELECT (SelectStatement)
-    exprs:
-    - self: 2 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-(SELECT 1) EXCEPT DISTINCT SELECT 2;
-",
-            "\
-self: EXCEPT (SetOperator)
-distinct_or_all:
-  self: DISTINCT (Keyword)
-left:
-  self: ( (GroupedStatement)
-  rparen:
-    self: ) (Symbol)
-  stmt:
-    self: SELECT (SelectStatement)
-    exprs:
-    - self: 1 (NumericLiteral)
-right:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 2 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3;
-",
-            "\
-self: UNION (SetOperator)
-distinct_or_all:
-  self: ALL (Keyword)
-left:
-  self: UNION (SetOperator)
-  distinct_or_all:
-    self: ALL (Keyword)
-  left:
-    self: SELECT (SelectStatement)
-    exprs:
-    - self: 1 (NumericLiteral)
-  right:
-    self: SELECT (SelectStatement)
-    exprs:
-    - self: 2 (NumericLiteral)
-right:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 3 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
-",
-        ),
-        TestCase::new(
-            "\
-SELECT 1 UNION ALL (SELECT 2 UNION ALL SELECT 3);
-",
-            "\
-self: UNION (SetOperator)
-distinct_or_all:
-  self: ALL (Keyword)
-left:
-  self: SELECT (SelectStatement)
-  exprs:
-  - self: 1 (NumericLiteral)
-right:
-  self: ( (GroupedStatement)
-  rparen:
-    self: ) (Symbol)
-  stmt:
-    self: UNION (SetOperator)
-    distinct_or_all:
-      self: ALL (Keyword)
-    left:
-      self: SELECT (SelectStatement)
-      exprs:
-      - self: 2 (NumericLiteral)
-    right:
-      self: SELECT (SelectStatement)
-      exprs:
-      - self: 3 (NumericLiteral)
-semicolon:
-  self: ; (Symbol)
 ",
         ),
         // ----- WITH clause -----
@@ -1592,7 +1434,159 @@ with:
             self: TRUE (BooleanLiteral)
 ",
         ),
-        // ----- AS STRUCT, VALUE -----
+        // ----- SELECT clause -----
+        // DISTINCT
+        TestCase::new(
+            "\
+SELECT DISTINCT 1;
+",
+            "\
+self: SELECT (SelectStatement)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+exprs:
+- self: 1 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        // ALL
+        TestCase::new(
+            "\
+SELECT ALL 1;
+",
+            "\
+self: SELECT (SelectStatement)
+distinct_or_all:
+  self: ALL (Keyword)
+exprs:
+- self: 1 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        // alias
+        TestCase::new(
+            "\
+SELECT 1 AS one, 2 two
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 1 (NumericLiteral)
+  alias:
+    self: one (Identifier)
+  as:
+    self: AS (Keyword)
+  comma:
+    self: , (Symbol)
+- self: 2 (NumericLiteral)
+  alias:
+    self: two (Identifier)
+",
+        ),
+        // * EXCEPT
+        TestCase::new(
+            "\
+SELECT * EXCEPT (col1)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+  except:
+    self: EXCEPT (KeywordWithGroupedExprs)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: col1 (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT t.* EXCEPT(col1, col2)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (BinaryOperator)
+  left:
+    self: t (Identifier)
+  right:
+    self: * (Symbol)
+    except:
+      self: EXCEPT (KeywordWithGroupedExprs)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: col1 (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: col2 (Identifier)
+        rparen:
+          self: ) (Symbol)
+",
+        ),
+        // * REPLACE
+        TestCase::new(
+            "\
+SELECT * REPLACE (col1 * 2 AS _col1)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+  replace:
+    self: REPLACE (KeywordWithGroupedExprs)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: * (BinaryOperator)
+        alias:
+          self: _col1 (Identifier)
+        as:
+          self: AS (Keyword)
+        left:
+          self: col1 (Identifier)
+        right:
+          self: 2 (NumericLiteral)
+      rparen:
+        self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT t.* REPLACE (col2 * 2 AS _col2)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (BinaryOperator)
+  left:
+    self: t (Identifier)
+  right:
+    self: * (Symbol)
+    replace:
+      self: REPLACE (KeywordWithGroupedExprs)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: * (BinaryOperator)
+          alias:
+            self: _col2 (Identifier)
+          as:
+            self: AS (Keyword)
+          left:
+            self: col2 (Identifier)
+          right:
+            self: 2 (NumericLiteral)
+        rparen:
+          self: ) (Symbol)
+",
+        ),
+        // AS STRUCT, VALUE
         TestCase::new(
             "\
 SELECT (SELECT AS STRUCT 1 a, 2 b) ab
@@ -1654,6 +1648,25 @@ exprs:
 ",
         ),
         // ----- FROM clause -----
+        TestCase::new(
+            "\
+SELECT 1
+FROM t1 AS t
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 1 (NumericLiteral)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t1 (Identifier)
+    alias:
+      self: t (Identifier)
+    as:
+      self: AS (Keyword)
+",
+        ),
         // FOR SYSTEM_TIME AS OF
         TestCase::new(
             "\
@@ -1681,7 +1694,7 @@ from:
       - self: OF (Keyword)
 ",
         ),
-        // FOR SYSTEM_TIME AS OF
+        // TABLE SAMPLE
         TestCase::new(
             "\
 SELECT *
@@ -1707,6 +1720,125 @@ from:
           self: ) (Symbol)
       system:
         self: SYSTEM (Keyword)
+",
+        ),
+        // ----- Window clause -----
+        TestCase::new(
+            "\
+SELECT *
+FROM t
+WINDOW
+  a AS (PARTITION BY col1),
+  b AS (a ORDER BY col2)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+window:
+  self: WINDOW (WindowClause)
+  window_exprs:
+  - self: a (WindowExpr)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+    window:
+      self: ( (WindowSpecification)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: col1 (Identifier)
+      rparen:
+        self: ) (Symbol)
+  - self: b (WindowExpr)
+    as:
+      self: AS (Keyword)
+    window:
+      self: ( (WindowSpecification)
+      name:
+        self: a (Identifier)
+      orderby:
+        self: ORDER (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: col2 (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT *
+FROM t
+WINDOW
+  a AS (PARTITION BY col1),
+  b AS a
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+window:
+  self: WINDOW (WindowClause)
+  window_exprs:
+  - self: a (WindowExpr)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+    window:
+      self: ( (WindowSpecification)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: col1 (Identifier)
+      rparen:
+        self: ) (Symbol)
+  - self: b (WindowExpr)
+    as:
+      self: AS (Keyword)
+    window:
+      self: a (Identifier)
+",
+        ),
+        // ----- ORDER BY clause -----
+        TestCase::new(
+            "\
+SELECT c1 FROM t ORDER BY c1 ASC, c2
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+orderby:
+  self: ORDER (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: c1 (Identifier)
+    comma:
+      self: , (Symbol)
+    order:
+      self: ASC (Keyword)
+  - self: c2 (Identifier)
 ",
         ),
         // ----- LIMIT clause -----
@@ -1748,32 +1880,6 @@ limit:
     self: OFFSET (KeywordWithExpr)
     expr:
       self: 10 (NumericLiteral)
-",
-        ),
-        // ----- ORDER BY -----
-        TestCase::new(
-            "\
-SELECT c1 FROM t ORDER BY c1 ASC, c2
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: c1 (Identifier)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: t (Identifier)
-orderby:
-  self: ORDER (XXXByExprs)
-  by:
-    self: BY (Keyword)
-  exprs:
-  - self: c1 (Identifier)
-    comma:
-      self: , (Symbol)
-    order:
-      self: ASC (Keyword)
-  - self: c2 (Identifier)
 ",
         ),
     ];
