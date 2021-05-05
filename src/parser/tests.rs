@@ -1458,6 +1458,81 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // WITH clause
+        TestCase::new(
+            "\
+WITH a AS (SELECT 1) SELECT 2;
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: a (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+WITH
+  a AS (SELECT 1),
+  b AS (SELECT 2 FROM t WHERE TRUE)
+SELECT 3
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 3 (NumericLiteral)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: a (WithQuery)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+  - self: b (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 2 (NumericLiteral)
+        from:
+          self: FROM (KeywordWithExpr)
+          expr:
+            self: t (Identifier)
+        where:
+          self: WHERE (KeywordWithExpr)
+          expr:
+            self: TRUE (BooleanLiteral)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -1496,7 +1571,6 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
 //            select as struct 1;select distinct 1;select all 1;
 //            select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
 //            select * from (select 1,2);select sub.* from (select 1,2) as sub;select * from main as m where not exists(select 1 from sub as s where s.x = m.x);
