@@ -2,8 +2,8 @@
 mod tests;
 
 use crate::constants;
-use serde::{Deserialize, Serialize};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
@@ -53,6 +53,9 @@ impl Token {
         if self.quoted_by('`') {
             return true;
         }
+        if self.is_reserved_keyword() {
+            return false;
+        }
         for kw in constants::KEYWORDS.iter() {
             // `PartialEq<&str>` is implemented for String
             if self.literal.to_uppercase() == *kw {
@@ -75,6 +78,18 @@ impl Token {
     pub fn is_numeric(&self) -> bool {
         let re = Regex::new(r"^([0-9]+|([0-9]*\.[0-9]+))([eE][\+\-]?[0-9]+)?$").unwrap();
         re.is_match(self.literal.as_str())
+    }
+    pub fn is_boolean(&self) -> bool {
+        self.literal.to_uppercase() == "TRUE" || self.literal.to_uppercase() == "FALSE"
+    }
+    pub fn is_reserved_keyword(&self) -> bool {
+        for kw in constants::KEYWORDS.iter() {
+            // `PartialEq<&str>` is implemented for String
+            if self.literal.to_uppercase() == *kw {
+                return true;
+            }
+        }
+        false
     }
     pub fn is_comment(&self) -> bool {
         let mut iter = self.literal.chars();
@@ -101,8 +116,7 @@ impl Token {
             return false;
         }
         // unwrap is safe because the length is longer then 2
-        self.literal.chars().next().unwrap() == ch
-            && self.literal.chars().last().unwrap() == ch
+        self.literal.chars().next().unwrap() == ch && self.literal.chars().last().unwrap() == ch
     }
 }
 

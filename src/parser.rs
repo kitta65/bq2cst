@@ -116,8 +116,24 @@ impl Parser {
         stmts
     }
     fn construct_node(&self, node_type: NodeType) -> Node {
+        let curr_token = self.get_token(0);
         let mut node = match node_type {
             NodeType::EOF => Node::empty(node_type),
+            NodeType::Unknown => {
+                let mut node = Node::new(curr_token.clone(), node_type);
+                if curr_token.is_identifier() {
+                    node.node_type = NodeType::Identifier;
+                } else if curr_token.is_numeric() {
+                    node.node_type = NodeType::NumericLiteral;
+                } else if curr_token.is_string() {
+                    node.node_type = NodeType::StringLiteral;
+                } else if curr_token.is_boolean() {
+                    node.node_type = NodeType::BooleanLiteral;
+                } else if curr_token.literal.to_uppercase() == "NULL" {
+                    node.node_type = NodeType::NullLiteral;
+                }
+                node
+            }
             _ => Node::new(self.get_token(0).clone(), node_type),
         };
         // leading_comments
@@ -206,7 +222,7 @@ impl Parser {
         node
     }
     fn parse_select_statement(&mut self, root: bool) -> Node {
-        if self.get_token(0).literal.to_uppercase().as_str() == "(" {
+        if self.get_token(0).literal.to_uppercase() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement);
             self.next_token(); // ( -> SELECT
             node.push_node("stmt", self.parse_select_statement(true));
@@ -228,10 +244,10 @@ impl Parser {
             }
             return node;
         }
-        if self.get_token(0).literal.to_uppercase().as_str() == "WITH" {
+        if self.get_token(0).literal.to_uppercase() == "WITH" {
             let mut with = self.construct_node(NodeType::WithClause);
             let mut queries = Vec::new();
-            while self.get_token(1).literal.to_uppercase().as_str() != "SELECT" {
+            while self.get_token(1).literal.to_uppercase() != "SELECT" {
                 self.next_token(); // WITH -> ident, ) -> ident
                 let mut query = self.construct_node(NodeType::WithQuery);
                 self.next_token(); // ident -> AS
@@ -254,7 +270,7 @@ impl Parser {
         let mut node = self.construct_node(NodeType::SelectStatement);
 
         // AS STRUCT, VALUE
-        if self.get_token(1).literal.to_uppercase().as_str() == "AS" {
+        if self.get_token(1).literal.to_uppercase() == "AS" {
             self.next_token(); // SELECT -> AS
             let as_ = self.construct_node(NodeType::Keyword);
             self.next_token(); // AS -> STRUCT, VALUE
@@ -378,7 +394,7 @@ impl Parser {
                 "expr",
                 self.parse_expr(999, &vec![";", ",", "offset", ")"], false), // NOTE offset is not reserved
             );
-            if self.get_token(1).literal.to_uppercase().as_str() == "OFFSET" {
+            if self.get_token(1).literal.to_uppercase() == "OFFSET" {
                 self.next_token(); // expr -> OFFSET
                 let mut offset = self.construct_node(NodeType::KeywordWithExpr);
                 self.next_token(); // OFFSET -> expr
@@ -739,7 +755,7 @@ impl Parser {
     }
     fn parse_create_function_statement(&mut self) -> Node {
         let mut node = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).literal.to_uppercase().as_str() == "OR" {
+        if self.get_token(1).literal.to_uppercase() == "OR" {
             let mut or_replace = Vec::new();
             self.next_token(); // create -> or
             or_replace.push(self.construct_node(NodeType::Unknown));
@@ -807,7 +823,7 @@ impl Parser {
             if self.get_token(1).in_(&vec!["deterministic", "not"]) {
                 self.next_token(); // type -> determinism
                 let mut determinism = self.construct_node(NodeType::Unknown);
-                if self.get_token(0).literal.to_uppercase().as_str() == "NOT" {
+                if self.get_token(0).literal.to_uppercase() == "NOT" {
                     self.next_token(); // not -> deterministic
                     determinism.push_node("right", self.construct_node(NodeType::Unknown));
                 }
@@ -1350,7 +1366,7 @@ impl Parser {
                 );
             }
         }
-        if self.get_token(1).literal.to_uppercase().as_str() == "FOR" {
+        if self.get_token(1).literal.to_uppercase() == "FOR" {
             self.next_token(); // table -> for
             let mut for_ = self.construct_node(NodeType::Unknown);
             self.next_token(); // for -> system_time
@@ -1392,7 +1408,7 @@ impl Parser {
             tablesample.push_node("group", group);
             left.push_node("tablesample", tablesample);
         }
-        if self.get_token(1).literal.to_uppercase().as_str() == "WITH" {
+        if self.get_token(1).literal.to_uppercase() == "WITH" {
             self.next_token(); // unnest() -> with
             let mut with = self.construct_node(NodeType::Unknown);
             self.next_token(); // with -> offset
@@ -1495,6 +1511,7 @@ impl Parser {
         let mut left = self.construct_node(NodeType::Unknown);
         match self.get_token(0).literal.to_uppercase().as_str() {
             "*" => {
+                left.node_type = NodeType::Symbol;
                 match self.get_token(1).literal.to_uppercase().as_str() {
                     "REPLACE" => {
                         self.next_token(); // * -> REPLACE
@@ -1532,20 +1549,20 @@ impl Parser {
                 self.next_token(); // ( -> expr
                 let mut exprs = self.parse_exprs(&vec![")"], false);
                 if exprs.len() == 1 {
-                    left.push_node("expr", exprs.pop().unwrap());
                     left.node_type = NodeType::GroupedExpr;
+                    left.push_node("expr", exprs.pop().unwrap());
                 } else {
-                    left.push_node_vec("exprs", exprs);
                     left.node_type = NodeType::GroupedExprs;
+                    left.push_node_vec("exprs", exprs);
                 }
                 self.next_token(); // expr -> )
                 left.push_node("rparen", self.construct_node(NodeType::Symbol));
             }
             "-" | "+" | "~" => {
+                left.node_type = NodeType::UnaryOperator;
                 self.next_token(); // - -> expr
                 let right = self.parse_expr(102, until, false);
                 left.push_node("right", right);
-                left.node_type = NodeType::UnaryOperator;
             }
             "[" => {
                 self.next_token(); // [ -> exprs
@@ -1559,17 +1576,18 @@ impl Parser {
                     || self.get_token(1).in_(&vec!["b", "r", "br", "rb"])
                         && self.get_token(2).is_string()
                 {
+                    left.node_type = NodeType::UnaryOperator;
                     self.next_token(); // -> expr
                     let right = self.parse_expr(001, until, false);
                     left.push_node("right", right);
-                    left.node_type = NodeType::UnaryOperator;
                 }
             }
             "INTERVAL" => {
+                left.node_type = NodeType::Keyword;
                 self.next_token(); // INTERVAL -> expr
                 let right = self.parse_expr(999, &vec!["hour", "day", "month", "year"], false); // NOTE hour, month, year is not reserved
                 self.next_token(); // expr -> HOUR
-                left.push_node("date_part", self.construct_node(NodeType::Unknown));
+                left.push_node("date_part", self.construct_node(NodeType::Keyword));
                 left.push_node("right", right);
             }
             "B" | "R" | "BR" | "RB" => {
@@ -1648,6 +1666,7 @@ impl Parser {
                 left.push_node("right", right);
             }
             "CASE" => {
+                left.node_type = NodeType::CaseExpr;
                 self.next_token(); // CASE -> expr, CASE -> when
                 if !self.get_token(0).is("WHEN") {
                     left.push_node("expr", self.parse_expr(999, &vec!["WHEN"], false));
@@ -1681,13 +1700,18 @@ impl Parser {
             match self.get_token(1).literal.to_uppercase().as_str() {
                 "(" => {
                     let func = self.get_token(0).literal.to_uppercase();
+                    if func != "." {
+                        // some functions (CAST, EXTRACT and so on) are reserved keywords
+                        // but handle them as if they were identifiers
+                        left.node_type = NodeType::Identifier;
+                    }
                     self.next_token(); // ident -> (
                     let mut node = self.construct_node(NodeType::CallingFunction);
-                    self.next_token(); // ( -> args
-                    if self.get_token(0).is("distinct") {
+                    if self.get_token(1).is("distinct") {
+                        self.next_token(); // ( -> DISTINCT
                         node.push_node("distinct", self.construct_node(NodeType::Keyword));
-                        self.next_token(); // distinct -> args
                     }
+                    self.next_token(); // ( -> args
                     node.push_node("func", left);
                     if !self.get_token(0).is(")") {
                         match func.as_str() {
@@ -1701,8 +1725,14 @@ impl Parser {
                                 node.push_node_vec("args", vec![as_]);
                             }
                             "EXTRACT" => {
-                                let datepart =
-                                    self.parse_expr(999, &vec![")", "from", "at"], false);
+                                let mut datepart;
+                                if self.get_token(1).is("(") {
+                                    datepart =
+                                        self.parse_expr(999, &vec![")", "from", "at"], false);
+                                    datepart.node_type = NodeType::CallingDatePartFunction;
+                                } else {
+                                    datepart = self.construct_node(NodeType::Keyword);
+                                }
                                 self.next_token(); // expr -> FROM
                                 let mut from = self.construct_node(NodeType::ExtractArgument);
                                 self.next_token(); // FROM -> timestamp_expr
@@ -1988,23 +2018,23 @@ impl Parser {
     fn parse_type(&mut self, schema: bool) -> Node {
         let mut res = match self.get_token(0).literal.to_uppercase().as_str() {
             "ARRAY" => {
-                let mut res = self.construct_node(NodeType::Unknown);
+                let mut res = self.construct_node(NodeType::Type);
                 if self.get_token(1).literal.as_str() == "<" {
-                    self.next_token(); // array -> <
-                    let mut type_ = self.construct_node(NodeType::Unknown);
-                    self.next_token(); // < -> type_expr
+                    self.next_token(); // ARRAY -> <
+                    let mut type_ = self.construct_node(NodeType::GroupedType);
+                    self.next_token(); // < -> type
                     type_.push_node("type", self.parse_type(schema));
-                    self.next_token(); // type_expr -> >
+                    self.next_token(); // type -> >
                     type_.push_node("rparen", self.construct_node(NodeType::Unknown));
                     res.push_node("type_declaration", type_);
                 }
                 res
             }
             "STRUCT" => {
-                let mut res = self.construct_node(NodeType::Unknown);
+                let mut res = self.construct_node(NodeType::Type);
                 if self.get_token(1).literal.as_str() == "<" {
-                    self.next_token(); // array -> <
-                    let mut type_ = self.construct_node(NodeType::Unknown);
+                    self.next_token(); // STRUCT -> <
+                    let mut type_ = self.construct_node(NodeType::GroupedTypeDeclarations);
                     self.next_token(); // < -> type or ident
                     let mut type_declarations = Vec::new();
                     while !self.get_token(0).is(">") {
@@ -2012,36 +2042,36 @@ impl Parser {
                         if !self.get_token(1).in_(&vec![",", ">", "TYPE", "<"]) {
                             // `is_identifier` is not availabe here,
                             // because `int64` is valid identifier
-                            type_declaration = self.construct_node(NodeType::Unknown);
+                            type_declaration = self.construct_node(NodeType::Identifier);
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = Node::empty(NodeType::Unknown);
+                            type_declaration = Node::empty(NodeType::Identifier);
                         }
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration
                         if self.get_token(0).is(",") {
                             type_declaration
-                                .push_node("comma", self.construct_node(NodeType::Unknown));
+                                .push_node("comma", self.construct_node(NodeType::Symbol));
                             self.next_token(); // , -> next_declaration
                         }
                         type_declarations.push(type_declaration);
                     }
-                    type_.push_node("rparen", self.construct_node(NodeType::Unknown));
+                    type_.push_node("rparen", self.construct_node(NodeType::Symbol));
                     type_.push_node_vec("declarations", type_declarations);
                     res.push_node("type_declaration", type_);
                 }
                 res
             }
             "ANY" => {
-                let mut res = self.construct_node(NodeType::Unknown);
+                let mut res = self.construct_node(NodeType::Type);
                 self.next_token(); // ANY -> TYPE
-                res.push_node("type", self.construct_node(NodeType::Unknown));
+                res.push_node("type", self.construct_node(NodeType::Keyword));
                 res
             }
-            _ => self.construct_node(NodeType::Unknown),
+            _ => self.construct_node(NodeType::Type),
         };
         if self.get_token(1).is("NOT") && schema {
-            self.next_token(); // -> not
+            self.next_token(); // -> NOT
             let not_ = self.construct_node(NodeType::Unknown);
             self.next_token(); // -> null
             let null = self.construct_node(NodeType::Unknown);
@@ -2082,6 +2112,7 @@ impl Parser {
         // 200... => (ST_GEOGFROMGEOJSON)
         // 999... LOWEST
         match self.get_token(offset).literal.to_uppercase().as_str() {
+            // return precedence of BINARY operator
             "(" | "." | "[" => 101,
             "*" | "/" | "||" => 103,
             "+" | "-" => 104,
@@ -2092,7 +2123,10 @@ impl Parser {
             "=" | "<" | ">" | "<=" | ">=" | "!=" | "<>" | "LIKE" | "BETWEEN" | "IN" | "IS" => 109,
             "NOT" => match self.get_token(offset + 1).literal.to_uppercase().as_str() {
                 "IN" | "LIKE" | "BETWEEN" => 109,
-                _ => 110,
+                _ => panic!(
+                    "Expected `IN`, `LIKE` or `BETWEEN` but got: {:?}",
+                    self.get_token(offset + 1)
+                ),
             },
             "AND" => 111,
             "OR" => 112,

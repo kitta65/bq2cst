@@ -51,7 +51,7 @@ SELECT 1;
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: 1 (Unknown)
+- self: 1 (NumericLiteral)
 semicolon:
   self: ; (Symbol)
 ",
@@ -67,7 +67,7 @@ FROM t
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Unknown)
+- self: * (Symbol)
   comma:
     self: , (Symbol)
   except:
@@ -75,31 +75,31 @@ exprs:
     group:
       self: ( (GroupedExprs)
       exprs:
-      - self: col1 (Unknown)
+      - self: col1 (Identifier)
       rparen:
         self: ) (Symbol)
 - self: . (BinaryOperator)
   comma:
     self: , (Symbol)
   left:
-    self: t (Unknown)
+    self: t (Identifier)
   right:
-    self: * (Unknown)
+    self: * (Symbol)
     except:
       self: EXCEPT (KeywordWithGroupedExprs)
       group:
         self: ( (GroupedExprs)
         exprs:
-        - self: col1 (Unknown)
+        - self: col1 (Identifier)
           comma:
             self: , (Symbol)
-        - self: col2 (Unknown)
+        - self: col2 (Identifier)
         rparen:
           self: ) (Symbol)
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: t (Unknown)
+    self: t (Identifier)
 ",
         ),
         TestCase::new(
@@ -112,7 +112,7 @@ FROM t
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Unknown)
+- self: * (Symbol)
   comma:
     self: , (Symbol)
   replace:
@@ -126,18 +126,18 @@ exprs:
         as:
           self: AS (Keyword)
         left:
-          self: col1 (Unknown)
+          self: col1 (Identifier)
         right:
-          self: 2 (Unknown)
+          self: 2 (NumericLiteral)
       rparen:
         self: ) (Symbol)
 - self: . (BinaryOperator)
   comma:
     self: , (Symbol)
   left:
-    self: t (Unknown)
+    self: t (Identifier)
   right:
-    self: * (Unknown)
+    self: * (Symbol)
     replace:
       self: REPLACE (KeywordWithGroupedExprs)
       group:
@@ -149,15 +149,15 @@ exprs:
           as:
             self: AS (Keyword)
           left:
-            self: col2 (Unknown)
+            self: col2 (Identifier)
           right:
-            self: 2 (Unknown)
+            self: 2 (NumericLiteral)
         rparen:
           self: ) (Symbol)
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: t (Unknown)
+    self: t (Identifier)
 ",
         ),
         // ----- grouped statement -----
@@ -174,7 +174,7 @@ semicolon:
 stmt:
   self: SELECT (SelectStatement)
   exprs:
-  - self: 1 (Unknown)
+  - self: 1 (NumericLiteral)
 ",
         ),
         // ----- comment -----
@@ -187,7 +187,7 @@ SELECT /* */ 1
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: 1 (Unknown)
+- self: 1 (NumericLiteral)
 leading_comments:
 - self: #standardSQL (Comment)
 semicolon:
@@ -207,20 +207,20 @@ FROM t1 AS t
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: 1 (Unknown)
+- self: 1 (NumericLiteral)
   alias:
     self: one (Identifier)
   as:
     self: AS (Keyword)
   comma:
     self: , (Symbol)
-- self: 2 (Unknown)
+- self: 2 (NumericLiteral)
   alias:
     self: two (Identifier)
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: t1 (Unknown)
+    self: t1 (Identifier)
     alias:
       self: t (Identifier)
     as:
@@ -245,34 +245,34 @@ exprs:
   comma:
     self: , (Symbol)
   right:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
 - self: + (UnaryOperator)
   comma:
     self: , (Symbol)
   right:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
 - self: r (UnaryOperator)
   comma:
     self: , (Symbol)
   right:
-    self: 'xxx' (Unknown)
+    self: 'xxx' (StringLiteral)
 - self: DATE (UnaryOperator)
   comma:
     self: , (Symbol)
   right:
-    self: '2020-01-01' (Unknown)
+    self: '2020-01-01' (StringLiteral)
 - self: TIMESTAMP (UnaryOperator)
   comma:
     self: , (Symbol)
   right:
     self: r (UnaryOperator)
     right:
-      self: '2020-01-01' (Unknown)
+      self: '2020-01-01' (StringLiteral)
 - self: NOT (UnaryOperator)
   comma:
     self: , (Symbol)
   right:
-    self: TRUE (Unknown)
+    self: TRUE (BooleanLiteral)
 ",
         ),
         // ----- binary operator -----
@@ -291,43 +291,43 @@ exprs:
   comma:
     self: , (Symbol)
   left:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
   right:
-    self: 2 (Unknown)
+    self: 2 (NumericLiteral)
 - self: BETWEEN (BetweenOperator)
   and:
     self: AND (Keyword)
   comma:
     self: , (Symbol)
   left:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
   right:
-  - self: 0 (Unknown)
-  - self: 3 (Unknown)
+  - self: 0 (NumericLiteral)
+  - self: 3 (NumericLiteral)
 - self: IN (InOperator)
   comma:
     self: , (Symbol)
   left:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
   right:
     self: ( (GroupedExprs)
     exprs:
-    - self: 1 (Unknown)
+    - self: 1 (NumericLiteral)
       comma:
         self: , (Symbol)
-    - self: 2 (Unknown)
+    - self: 2 (NumericLiteral)
       comma:
         self: , (Symbol)
-    - self: 3 (Unknown)
+    - self: 3 (NumericLiteral)
     rparen:
       self: ) (Symbol)
 - self: LIKE (BinaryOperator)
   comma:
     self: , (Symbol)
   left:
-    self: 'x' (Unknown)
+    self: 'x' (StringLiteral)
   right:
-    self: '%x%' (Unknown)
+    self: '%x%' (StringLiteral)
 ",
         ),
         TestCase::new(
@@ -347,56 +347,55 @@ exprs:
   comma:
     self: , (Symbol)
   left:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
   not:
     self: NOT (Keyword)
   right:
-  - self: 0 (Unknown)
-  - self: 3 (Unknown)
+  - self: 0 (NumericLiteral)
+  - self: 3 (NumericLiteral)
 - self: IN (InOperator)
   comma:
     self: , (Symbol)
   left:
-    self: 1 (Unknown)
+    self: 1 (NumericLiteral)
   not:
     self: NOT (Keyword)
   right:
     self: ( (GroupedExprs)
     exprs:
-    - self: 1 (Unknown)
+    - self: 1 (NumericLiteral)
       comma:
         self: , (Symbol)
-    - self: 2 (Unknown)
+    - self: 2 (NumericLiteral)
       comma:
         self: , (Symbol)
-    - self: 3 (Unknown)
+    - self: 3 (NumericLiteral)
     rparen:
       self: ) (Symbol)
 - self: LIKE (BinaryOperator)
   comma:
     self: , (Symbol)
   left:
-    self: 'x' (Unknown)
+    self: 'x' (StringLiteral)
   not:
     self: NOT (Keyword)
   right:
-    self: '%x%' (Unknown)
+    self: '%x%' (StringLiteral)
 - self: IS (BinaryOperator)
   comma:
     self: , (Symbol)
   left:
-    self: TRUE (Unknown)
+    self: TRUE (BooleanLiteral)
   not:
     self: NOT (Keyword)
   right:
-    self: FALSE (Unknown)
+    self: FALSE (BooleanLiteral)
 ",
         ),
         // ----- precedence -----
         TestCase::new(
             "\
 SELECT (1+(-2)) * 3 IN (9)
-
 ",
             "\
 self: SELECT (SelectStatement)
@@ -409,23 +408,23 @@ exprs:
       expr:
         self: + (BinaryOperator)
         left:
-          self: 1 (Unknown)
+          self: 1 (NumericLiteral)
         right:
           self: ( (GroupedExpr)
           expr:
             self: - (UnaryOperator)
             right:
-              self: 2 (Unknown)
+              self: 2 (NumericLiteral)
           rparen:
             self: ) (Symbol)
       rparen:
         self: ) (Symbol)
     right:
-      self: 3 (Unknown)
+      self: 3 (NumericLiteral)
   right:
     self: ( (GroupedExprs)
     exprs:
-    - self: 9 (Unknown)
+    - self: 9 (NumericLiteral)
     rparen:
       self: ) (Symbol)
 ",
@@ -450,28 +449,28 @@ exprs:
         expr:
           self: + (BinaryOperator)
           left:
-            self: 1 (Unknown)
+            self: 1 (NumericLiteral)
           right:
-            self: 2 (Unknown)
+            self: 2 (NumericLiteral)
         rparen:
           self: ) (Symbol)
       right:
-        self: 3 (Unknown)
+        self: 3 (NumericLiteral)
     not:
       self: NOT (Keyword)
     right:
     - self: + (BinaryOperator)
       left:
-        self: 10 (Unknown)
+        self: 10 (NumericLiteral)
       right:
-        self: 0 (Unknown)
+        self: 0 (NumericLiteral)
     - self: + (BinaryOperator)
       left:
-        self: 11 (Unknown)
+        self: 11 (NumericLiteral)
       right:
-        self: 2 (Unknown)
+        self: 2 (NumericLiteral)
   right:
-    self: TRUE (Unknown)
+    self: TRUE (BooleanLiteral)
 ",
         ),
         // ----- case expr -----
@@ -484,47 +483,47 @@ SELECT
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: CASE (Unknown)
+- self: CASE (CaseExpr)
   arms:
   - self: WHEN (CaseArm)
     expr:
-      self: 1 (Unknown)
+      self: 1 (NumericLiteral)
     result:
-      self: 'one' (Unknown)
+      self: 'one' (StringLiteral)
     then:
       self: THEN (Keyword)
   - self: WHEN (CaseArm)
     expr:
-      self: 2 (Unknown)
+      self: 2 (NumericLiteral)
     result:
-      self: 'two' (Unknown)
+      self: 'two' (StringLiteral)
     then:
       self: THEN (Keyword)
   - self: ELSE (CaseArm)
     result:
-      self: NULL (Unknown)
+      self: NULL (NullLiteral)
   comma:
     self: , (Symbol)
   end:
     self: END (Keyword)
   expr:
-    self: c1 (Unknown)
-- self: CASE (Unknown)
+    self: c1 (Identifier)
+- self: CASE (CaseExpr)
   arms:
   - self: WHEN (CaseArm)
     expr:
       self: = (BinaryOperator)
       left:
-        self: c1 (Unknown)
+        self: c1 (Identifier)
       right:
-        self: 1 (Unknown)
+        self: 1 (NumericLiteral)
     result:
-      self: 'one' (Unknown)
+      self: 'one' (StringLiteral)
     then:
       self: THEN (Keyword)
   - self: ELSE (CaseArm)
     result:
-      self: NULL (Unknown)
+      self: NULL (NullLiteral)
   comma:
     self: , (Symbol)
   end:
@@ -541,12 +540,12 @@ self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
   args:
-  - self: c1 (Unknown)
+  - self: c1 (Identifier)
     comma:
       self: , (Symbol)
-  - self: c2 (Unknown)
+  - self: c2 (Identifier)
   func:
-    self: f (Unknown)
+    self: f (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -563,13 +562,13 @@ exprs:
   args:
   - self: AS (CastArgument)
     cast_from:
-      self: '1' (Unknown)
+      self: '1' (StringLiteral)
     cast_to:
-      self: INT64 (Unknown)
+      self: INT64 (Type)
   comma:
     self: , (Symbol)
   func:
-    self: CAST (Unknown)
+    self: CAST (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -588,32 +587,32 @@ exprs:
   args:
   - self: FROM (ExtractArgument)
     extract_datepart:
-      self: DAY (Unknown)
+      self: DAY (Keyword)
     extract_from:
-      self: ts (Unknown)
+      self: ts (Identifier)
   comma:
     self: , (Symbol)
   func:
-    self: EXTRACT (Unknown)
+    self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
 - self: ( (CallingFunction)
   args:
   - self: FROM (ExtractArgument)
     extract_datepart:
-      self: ( (CallingFunction)
+      self: ( (CallingDatePartFunction)
       args:
-      - self: SUNDAY (Unknown)
+      - self: SUNDAY (Identifier)
       func:
-        self: WEEK (Unknown)
+        self: WEEK (Identifier)
       rparen:
         self: ) (Symbol)
     extract_from:
-      self: ts (Unknown)
+      self: ts (Identifier)
   comma:
     self: , (Symbol)
   func:
-    self: EXTRACT (Unknown)
+    self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
 - self: ( (CallingFunction)
@@ -624,15 +623,15 @@ exprs:
     - self: TIME (Keyword)
     - self: ZONE (Keyword)
     extract_datepart:
-      self: DAY (Unknown)
+      self: DAY (Keyword)
     extract_from:
-      self: ts (Unknown)
+      self: ts (Identifier)
     time_zone:
-      self: 'UTC' (Unknown)
+      self: 'UTC' (StringLiteral)
   comma:
     self: , (Symbol)
   func:
-    self: EXTRACT (Unknown)
+    self: EXTRACT (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -646,29 +645,29 @@ self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
   args:
-  - self: x (Unknown)
+  - self: x (Identifier)
     comma:
       self: , (Symbol)
-  - self: y (Unknown)
+  - self: y (Identifier)
   comma:
     self: , (Symbol)
   distinct:
     self: DISTINCT (Keyword)
   func:
-    self: STRING_AGG (Unknown)
+    self: STRING_AGG (Identifier)
   ignore_nulls:
   - self: IGNORE (Keyword)
   - self: NULLS (Keyword)
   limit:
     self: LIMIT (KeywordWithExpr)
     expr:
-      self: 100 (Unknown)
+      self: 100 (NumericLiteral)
   orderby:
     self: ORDER (XXXByExprs)
     by:
       self: BY (Keyword)
     exprs:
-    - self: z (Unknown)
+    - self: z (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -688,15 +687,15 @@ exprs:
     left:
       self: SELECT (SelectStatement)
       exprs:
-      - self: 1 (Unknown)
+      - self: 1 (NumericLiteral)
     right:
       self: SELECT (SelectStatement)
       exprs:
-      - self: 2 (Unknown)
+      - self: 2 (NumericLiteral)
   comma:
     self: , (Symbol)
   func:
-    self: ARRAY (Unknown)
+    self: ARRAY (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -710,18 +709,18 @@ self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
   args:
-  - self: p (Unknown)
+  - self: p (Identifier)
     comma:
       self: , (Symbol)
   - self: => (BinaryOperator)
     left:
-      self: oriented (Unknown)
+      self: oriented (Identifier)
     right:
-      self: TRUE (Unknown)
+      self: TRUE (BooleanLiteral)
   comma:
     self: , (Symbol)
   func:
-    self: ST_GEOGFROMTEXT (Unknown)
+    self: ST_GEOGFROMTEXT (Identifier)
   rparen:
     self: ) (Symbol)
 ",
@@ -735,22 +734,22 @@ self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
   args:
-  - self: dt (Unknown)
+  - self: dt (Identifier)
     comma:
       self: , (Symbol)
-  - self: INTERVAL (Unknown)
+  - self: INTERVAL (Keyword)
     date_part:
-      self: DAY (Unknown)
+      self: DAY (Keyword)
     right:
       self: + (BinaryOperator)
       left:
-        self: 1 (Unknown)
+        self: 1 (NumericLiteral)
       right:
-        self: 1 (Unknown)
+        self: 1 (NumericLiteral)
   comma:
     self: , (Symbol)
   func:
-    self: DATE_ADD (Unknown)
+    self: DATE_ADD (Identifier)
   rparen:
     self: ) (Symbol)
 ",

@@ -15,39 +15,46 @@ pub enum ContentType {
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
     ArrayAccessing,
-    BinaryOperator,
+    BinaryOperator, // + | - | = | ...
     BetweenOperator,
-    CallingFunction,
-    CaseArm,
-    CastArgument,
+    BooleanLiteral, // TRUE | FALSE
+    CallingFunction,         // (
+    CallingDatePartFunction, // WEEK(SUNDAY)
+    CaseArm,                 // WHEN a THEN b
+    CaseExpr,                // CASE WHEN a then b ELSE c END
+    CastArgument,            // x AS INT64
     Comment,
     EOF,
-    ExtractArgument,
-    GroupedExpr,
-    GroupedExprs,
-    GroupedStatement,
-    GroupedType, // <INT64>
+    ExtractArgument,         // DAY FROM expr
+    GroupedExpr,             // (1)
+    GroupedExprs,            // (1, 2, 3)
+    GroupedStatement,        // (SELECT 1)
+    GroupedType,             // <INT64>
     GroupedTypeDeclarations, // <x INT64, y FLOAT64>
     Keyword,
-    KeywordWithExpr,
-    KeywordWithGroupedExprs,
+    KeywordWithExpr, // WHEN expr
+    KeywordWithGroupedExprs, // EXCEPT (c1, c2)
     Identifier,
     InOperator,
     LimitClause,
+    NumericLiteral, // 1 | 1.1 | .1E10
+    NullLiteral,
     SelectStatement,
-    SetOperator,
+    SetOperator, // UNION | INTERSECT | EXCEPT
+    StringLiteral,
     StructLiteral,
-    Symbol,
+    Symbol,          // ) | ] | * | ...
+    Type,            // INT64
     TypeDeclaration, // x INT64
-    UnaryOperator,
-    Unknown, // TODO develop only
-    WindowClause,
-    WindowExpr,          // xxx AS (PARTITION BY c1 ORDER BY c2)
+    UnaryOperator,   // - | + | TIMESTAMP | ...
+    Unknown,
+    WindowClause,        // WINDOW x AS (PARTITION BY c1)
+    WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)
     WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-    WindowSpecification, // PARTITION BY c1 ORDER BY c2
-    WithClause,
-    WithQuery,
-    XXXByExprs,
+    WindowSpecification, // PARTITION BY c1 ORDER BY c2 | named_window
+    WithClause,          // WITH x AS (SELECT 1)
+    WithQuery,           // x AS (SELECT 1)
+    XXXByExprs,          // ORDER BY expr
 }
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
