@@ -15,6 +15,7 @@ pub enum ContentType {
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
     ArrayAccessing,
+    ArrayLiteral,
     BinaryOperator, // + | - | = | ...
     BetweenOperator,
     BooleanLiteral,          // TRUE | FALSE

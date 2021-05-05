@@ -1565,6 +1565,7 @@ impl Parser {
                 left.push_node("right", right);
             }
             "[" => {
+                left.node_type = NodeType::ArrayLiteral;
                 self.next_token(); // [ -> exprs
                 left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
                 self.next_token(); // exprs -> ]
@@ -1608,24 +1609,26 @@ impl Parser {
                 left.node_type = NodeType::UnaryOperator;
             }
             "ARRAY" => {
-                if self.get_token(1).literal.as_str() == "<" {
-                    self.next_token(); // ARRAY -> <
-                    let mut type_ = self.construct_node(NodeType::GroupedType);
-                    self.next_token(); // < -> type
-                    type_.push_node("type", self.parse_type(false));
-                    self.next_token(); // type -> >
-                    type_.push_node("rparen", self.construct_node(NodeType::Symbol));
-                    left.push_node("type_declaration", type_);
-                }
-                // when not used as function
+                // when used as literal
                 if !self.get_token(1).is("(") {
-                    self.next_token(); // ARRAY -> [, > -> [
-                    let mut right = self.construct_node(NodeType::GroupedExprs);
+                    left.node_type = NodeType::Type;
+                    if self.get_token(1).literal.as_str() == "<" {
+                        self.next_token(); // ARRAY -> <
+                        let mut type_ = self.construct_node(NodeType::GroupedType);
+                        self.next_token(); // < -> type
+                        type_.push_node("type", self.parse_type(false));
+                        self.next_token(); // type -> >
+                        type_.push_node("rparen", self.construct_node(NodeType::Symbol));
+                        left.push_node("type_declaration", type_);
+                    }
+                    self.next_token(); // > -> [
+                    let mut right = self.construct_node(NodeType::ArrayLiteral);
                     self.next_token(); // [ -> exprs
                     right.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
                     self.next_token(); // exprs -> ]
                     right.push_node("rparen", self.construct_node(NodeType::Symbol));
-                    left.push_node("right", right);
+                    right.push_node("type", left);
+                    left = right;
                 }
             }
             "STRUCT" => {

@@ -17,7 +17,11 @@ impl TestCase {
         let mut p = Parser::new(self.code.clone());
         let stmts = p.parse_code();
         println!(
-            "========== testing ==========\n{}\n=============================\n",
+            "\
+========== testing ==========
+{}
+=============================
+",
             self.code.trim()
         );
         let result = stmts[0].to_string();
@@ -30,7 +34,11 @@ impl TestCase {
         let mut p = Parser::new(self.code.clone());
         let stmts = p.parse_code();
         println!(
-            "========== testing ==========\n{}\n=============================\n",
+            "\
+========== testing ==========
+{}
+=============================
+",
             self.code.trim()
         );
         let result = stmts[1].to_string();
@@ -745,7 +753,7 @@ exprs:
         // ----- window function -----
         TestCase::new(
             "\
-SELECT SUM(x) OVER (),
+SELECT SUM(x) OVER ()
 ",
             "\
 self: SELECT (SelectStatement)
@@ -753,8 +761,6 @@ exprs:
 - self: ( (CallingFunction)
   args:
   - self: x (Identifier)
-  comma:
-    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -989,7 +995,184 @@ exprs:
 ",
         ),
         // ----- window clause -----
+        TestCase::new(
+            "\
+SELECT *
+FROM t
+WINDOW
+  a AS (PARTITION BY col1),
+  b AS (a ORDER BY col2),
+  c AS b
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+window:
+  self: WINDOW (WindowClause)
+  window_exprs:
+  - self: a (WindowExpr)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+    window:
+      self: ( (WindowSpecification)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: col1 (Identifier)
+      rparen:
+        self: ) (Symbol)
+  - self: b (WindowExpr)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+    window:
+      self: ( (WindowSpecification)
+      name:
+        self: a (Identifier)
+      orderby:
+        self: ORDER (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: col2 (Identifier)
+      rparen:
+        self: ) (Symbol)
+  - self: c (WindowExpr)
+    as:
+      self: AS (Keyword)
+    window:
+      self: b (Identifier)
+",
+        ),
+        // ----- array -----
+        TestCase::new(
+            "\
+SELECT
+  [1, 2],
+  ARRAY[1,2],
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  ARRAY<INT64>[1],
+  ARRAY<STRUCT<INT64, INT64>>[(1,2)],
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: INT64 (Type)
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: ( (GroupedExprs)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: STRUCT (Type)
+        type_declaration:
+          self: < (GroupedTypeDeclarations)
+          declarations:
+          - self: None (Identifier)
+            comma:
+              self: , (Symbol)
+            type:
+              self: INT64 (Type)
+          - self: None (Identifier)
+            type:
+              self: INT64 (Type)
+          rparen:
+            self: > (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT arr[OFFSET(1)]
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayAccessing)
+  left:
+    self: arr (Identifier)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: 1 (NumericLiteral)
+    func:
+      self: OFFSET (Identifier)
+    rparen:
+      self: ) (Symbol)
+  rparen:
+    self: ] (Symbol)
+",
+        ),
     ];
+    // ----- struct -----
     for t in test_cases {
         t.test();
     }
@@ -1027,15 +1210,8 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            FROM table
-//            WINDOW
-//              a AS (PARTITION BY col1),
-//              b AS (a ORDER BY col2),
-//              c AS b;
 //            select (t.struct_col.num + 1) as result from `dataset`.table as t;
-//            select arr[offset(1)], [1, 2], ARRAY[1,2],array<int64>[1],array<struct<array<int64>>>[struct([1])];
 //            select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
-//            (select 1);
 //            select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
 //            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
 //            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
