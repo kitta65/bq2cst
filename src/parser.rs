@@ -1344,7 +1344,6 @@ impl Parser {
                 group.push_node("expr", self.parse_table(true));
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node(NodeType::Unknown));
-                //group = self.parse_alias(group);
                 if self.get_token(1).is("AS") {
                     self.next_token(); // -> AS
                     group.push_node("as", self.construct_node(NodeType::Keyword));
@@ -1545,6 +1544,7 @@ impl Parser {
                     _ => (),
                 }
             }
+            // STRUCT
             "(" => {
                 self.next_token(); // ( -> expr
                 let mut exprs = self.parse_exprs(&vec![")"], false);
@@ -1559,40 +1559,34 @@ impl Parser {
                 left.push_node("rparen", self.construct_node(NodeType::Symbol));
             }
             "STRUCT" => {
-                left.node_type = NodeType::Type;
-                if self.get_token(1).literal.as_str() == "<" {
-                    self.next_token(); // STRUCT -> <
-                    let mut type_ = self.construct_node(NodeType::GroupedTypeDeclarations);
-                    let mut type_declarations = Vec::new();
-                    self.next_token(); // < -> ident or type
-                    while !self.get_token(0).is(">") {
-                        let mut type_declaration;
-                        if !self.get_token(1).in_(&vec![",", ">", "TYPE", "<"]) {
-                            // `is_identifier` is not availabe here,
-                            // because `int64` is valid identifier
-                            type_declaration = self.construct_node(NodeType::TypeDeclaration);
-                            self.next_token(); // ident -> type
-                        } else {
-                            type_declaration = Node::empty(NodeType::TypeDeclaration);
-                        }
-                        type_declaration.push_node("type", self.parse_type(false));
-                        self.next_token(); // type -> ",", next_declaration
-                        if self.get_token(0).is(",") {
-                            type_declaration
-                                .push_node("comma", self.construct_node(NodeType::Symbol));
-                            self.next_token(); // , -> next_declaration
-                        }
-                        type_declarations.push(type_declaration);
-                    }
-                    type_.push_node("rparen", self.construct_node(NodeType::Symbol));
-                    type_.push_node_vec("declarations", type_declarations);
-                    left.push_node("type_declaration", type_);
-                }
+                let type_ = self.parse_type(false);
                 self.next_token(); // STRUCT -> (, > -> (
                 let mut struct_literal = self.parse_expr(999, &vec![], false);
                 struct_literal.node_type = NodeType::StructLiteral; // in the case of `(1)`
-                struct_literal.push_node("type", left);
+                struct_literal.push_node("type", type_);
                 left = struct_literal;
+            }
+            // ARRAY
+            "[" => {
+                left.node_type = NodeType::ArrayLiteral;
+                self.next_token(); // [ -> exprs
+                left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
+                self.next_token(); // exprs -> ]
+                left.push_node("rparen", self.construct_node(NodeType::Symbol));
+            }
+            "ARRAY" => {
+                // when used as literal
+                if !self.get_token(1).is("(") {
+                    let type_ = self.parse_type(false);
+                    self.next_token(); // > -> [
+                    let mut arr = self.construct_node(NodeType::ArrayLiteral);
+                    self.next_token(); // [ -> exprs
+                    arr.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
+                    self.next_token(); // exprs -> ]
+                    arr.push_node("rparen", self.construct_node(NodeType::Symbol));
+                    arr.push_node("type", type_);
+                    left = arr;
+                }
             }
             "-" | "+" | "~" => {
                 left.node_type = NodeType::UnaryOperator;
@@ -1636,36 +1630,6 @@ impl Parser {
                 let right = self.parse_expr(110, until, false);
                 left.push_node("right", right);
                 left.node_type = NodeType::UnaryOperator;
-            }
-            "[" => {
-                left.node_type = NodeType::ArrayLiteral;
-                self.next_token(); // [ -> exprs
-                left.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
-                self.next_token(); // exprs -> ]
-                left.push_node("rparen", self.construct_node(NodeType::Symbol));
-            }
-            "ARRAY" => {
-                // when used as literal
-                if !self.get_token(1).is("(") {
-                    left.node_type = NodeType::Type;
-                    if self.get_token(1).literal.as_str() == "<" {
-                        self.next_token(); // ARRAY -> <
-                        let mut type_ = self.construct_node(NodeType::GroupedType);
-                        self.next_token(); // < -> type
-                        type_.push_node("type", self.parse_type(false));
-                        self.next_token(); // type -> >
-                        type_.push_node("rparen", self.construct_node(NodeType::Symbol));
-                        left.push_node("type_declaration", type_);
-                    }
-                    self.next_token(); // > -> [
-                    let mut right = self.construct_node(NodeType::ArrayLiteral);
-                    self.next_token(); // [ -> exprs
-                    right.push_node_vec("exprs", self.parse_exprs(&vec!["]"], false));
-                    self.next_token(); // exprs -> ]
-                    right.push_node("rparen", self.construct_node(NodeType::Symbol));
-                    right.push_node("type", left);
-                    left = right;
-                }
             }
             "CASE" => {
                 left.node_type = NodeType::CaseExpr;
@@ -1979,19 +1943,6 @@ impl Parser {
             self.construct_node(NodeType::Identifier)
         }
     }
-    //fn parse_alias(&mut self, node: Node) -> Node {
-    //    let mut node = node.clone();
-    //    if self.get_token(1).is("AS") {
-    //        self.next_token(); // expr -> AS
-    //        node.push_node("AS", self.construct_node(NodeType::Keyword));
-    //        self.next_token(); // AS -> alias
-    //        node.push_node("alias", self.construct_node(NodeType::Identifier));
-    //    } else if self.get_token(1).is_identifier() {
-    //        self.next_token(); // expr -> alias
-    //        node.push_node("alias", self.construct_node(NodeType::Identifier));
-    //    }
-    //    node
-    //}
     fn parse_binary_operator(&mut self, left: Node, until: &Vec<&str>) -> Node {
         let precedence = self.get_precedence(0);
         let mut node = self.construct_node(NodeType::BinaryOperator);
@@ -2044,10 +1995,10 @@ impl Parser {
                         if !self.get_token(1).in_(&vec![",", ">", "TYPE", "<"]) {
                             // `is_identifier` is not availabe here,
                             // because `int64` is valid identifier
-                            type_declaration = self.construct_node(NodeType::Identifier);
+                            type_declaration = self.construct_node(NodeType::TypeDeclaration);
                             self.next_token(); // ident -> type
                         } else {
-                            type_declaration = Node::empty(NodeType::Identifier);
+                            type_declaration = Node::empty(NodeType::TypeDeclaration);
                         }
                         type_declaration.push_node("type", self.parse_type(schema));
                         self.next_token(); // type -> , or next_declaration

@@ -1197,12 +1197,12 @@ exprs:
         type_declaration:
           self: < (GroupedTypeDeclarations)
           declarations:
-          - self: None (Identifier)
+          - self: None (TypeDeclaration)
             comma:
               self: , (Symbol)
             type:
               self: INT64 (Type)
-          - self: None (Identifier)
+          - self: None (TypeDeclaration)
             type:
               self: INT64 (Type)
           rparen:
