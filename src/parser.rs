@@ -1801,7 +1801,7 @@ impl Parser {
                     node.push_node("rparen", self.construct_node(NodeType::Symbol));
                     if self.get_token(1).is("over") {
                         self.next_token(); // ) -> OVER
-                        let mut over = self.construct_node(NodeType::Symbol);
+                        let mut over = self.construct_node(NodeType::OverCaluse);
                         self.next_token(); // OVER -> (, OVER -> named_expr
                         over.push_node("window", self.parse_window_expr());
                         node.push_node("over", over);
@@ -1974,7 +1974,7 @@ impl Parser {
             window.push_node("rparen", self.construct_node(NodeType::Symbol));
             window
         } else {
-            self.construct_node(NodeType::WindowSpecification)
+            self.construct_node(NodeType::Identifier)
         }
     }
     fn parse_alias(&mut self, node: Node) -> Node {

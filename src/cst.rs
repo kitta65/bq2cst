@@ -17,7 +17,7 @@ pub enum NodeType {
     ArrayAccessing,
     BinaryOperator, // + | - | = | ...
     BetweenOperator,
-    BooleanLiteral, // TRUE | FALSE
+    BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (
     CallingDatePartFunction, // WEEK(SUNDAY)
     CaseArm,                 // WHEN a THEN b
@@ -32,13 +32,14 @@ pub enum NodeType {
     GroupedType,             // <INT64>
     GroupedTypeDeclarations, // <x INT64, y FLOAT64>
     Keyword,
-    KeywordWithExpr, // WHEN expr
+    KeywordWithExpr,         // WHEN expr
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
     Identifier,
     InOperator,
     LimitClause,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
+    OverCaluse, // OVER (PARTITON BY x, y)
     SelectStatement,
     SetOperator, // UNION | INTERSECT | EXCEPT
     StringLiteral,
@@ -51,7 +52,7 @@ pub enum NodeType {
     WindowClause,        // WINDOW x AS (PARTITION BY c1)
     WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)
     WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-    WindowSpecification, // PARTITION BY c1 ORDER BY c2 | named_window
+    WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
     WithClause,          // WITH x AS (SELECT 1)
     WithQuery,           // x AS (SELECT 1)
     XXXByExprs,          // ORDER BY expr

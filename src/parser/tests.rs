@@ -62,7 +62,6 @@ semicolon:
 SELECT
   * EXCEPT (col1),
   t.* EXCEPT(col1, col2),
-FROM t
 ",
             "\
 self: SELECT (SelectStatement)
@@ -96,10 +95,6 @@ exprs:
         - self: col2 (Identifier)
         rparen:
           self: ) (Symbol)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: t (Identifier)
 ",
         ),
         TestCase::new(
@@ -107,7 +102,6 @@ from:
 SELECT
   * REPLACE (col1 * 2 AS _col1),
   t.* REPLACE (col2 * 2 AS _col2),
-FROM t
 ",
             "\
 self: SELECT (SelectStatement)
@@ -154,10 +148,6 @@ exprs:
             self: 2 (NumericLiteral)
         rparen:
           self: ) (Symbol)
-from:
-  self: FROM (KeywordWithExpr)
-  expr:
-    self: t (Identifier)
 ",
         ),
         // ----- grouped statement -----
@@ -638,7 +628,7 @@ exprs:
         ),
         TestCase::new(
             "\
-SELECT STRING_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z LIMIT 100),
+SELECT STRING_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z LIMIT 100)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -649,8 +639,6 @@ exprs:
     comma:
       self: , (Symbol)
   - self: y (Identifier)
-  comma:
-    self: , (Symbol)
   distinct:
     self: DISTINCT (Keyword)
   func:
@@ -754,6 +742,253 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // ----- window function -----
+        TestCase::new(
+            "\
+SELECT SUM(x) OVER (),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: x (Identifier)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  SUM(x) OVER (PARTITION BY a),
+  SUM(x) OVER (ORDER BY a),
+  SUM(x) OVER (PARTITION BY a ORDER BY b, c),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: x (Identifier)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: x (Identifier)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      orderby:
+        self: ORDER (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: x (Identifier)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      orderby:
+        self: ORDER (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: b (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: c (Identifier)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  SUM() OVER (ROWS 1 + 1 PRECEDING),
+  SUM() OVER (PARTITION BY a ORDER BY b, c ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      frame:
+        self: ROWS (WindowFrameClause)
+        start:
+        - self: + (BinaryOperator)
+          left:
+            self: 1 (NumericLiteral)
+          right:
+            self: 1 (NumericLiteral)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      frame:
+        self: ROWS (WindowFrameClause)
+        and:
+          self: AND (Keyword)
+        between:
+          self: BETWEEN (Keyword)
+        end:
+        - self: UNBOUNDED (Unknown)
+        - self: FOLLOWING (Keyword)
+        start:
+        - self: UNBOUNDED (Unknown)
+        - self: PRECEDING (Keyword)
+      orderby:
+        self: ORDER (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: b (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: c (Identifier)
+      partitionby:
+        self: PARTITION (XXXByExprs)
+        by:
+          self: BY (Keyword)
+        exprs:
+        - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  SUM() OVER named_clause,
+  SUM() OVER (named_clause),
+  last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: named_clause (Identifier)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  comma:
+    self: , (Symbol)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      name:
+        self: named_clause (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: col3 (Identifier)
+  func:
+    self: last_value (Identifier)
+  over:
+    self: OVER (OverCaluse)
+    window:
+      self: ( (WindowSpecification)
+      frame:
+        self: ROWS (WindowFrameClause)
+        and:
+          self: AND (Keyword)
+        between:
+          self: BETWEEN (Keyword)
+        end:
+        - self: 2 (NumericLiteral)
+        - self: FOLLOWING (Keyword)
+        start:
+        - self: 2 (NumericLiteral)
+        - self: PRECEDING (Keyword)
+      name:
+        self: c (Identifier)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
+        // ----- window clause -----
     ];
     for t in test_cases {
         t.test();
@@ -792,16 +1027,6 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            select
-//              sum() over (),
-//              sum() over named_clause,
-//              sum() over (named_clause),
-//              sum() over (partition by a),
-//              sum() over (order by a),
-//              sum() over (partition by a order by b, c),
-//              sum() over (partition by a order by b, c rows between unbounded preceding and unbounded following),
-//              sum() over (rows 1 + 1 preceding),
-//            select last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
 //            FROM table
 //            WINDOW
 //              a AS (PARTITION BY col1),
