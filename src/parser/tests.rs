@@ -328,6 +328,7 @@ exprs:
     self: '%x%' (StringLiteral)
 ",
         ),
+        // NOT
         TestCase::new(
             "\
 SELECT
@@ -773,6 +774,7 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // PARTITION BY, ORDER BY
         TestCase::new(
             "\
 SELECT
@@ -857,6 +859,7 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // window frame clause
         TestCase::new(
             "\
 SELECT
@@ -929,11 +932,12 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        // named window specification
         TestCase::new(
             "\
 SELECT
-  SUM() OVER named_clause,
-  SUM() OVER (named_clause),
+  SUM() OVER named_window,
+  SUM() OVER (named_window),
   last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
 ",
             "\
@@ -947,7 +951,7 @@ exprs:
   over:
     self: OVER (OverCaluse)
     window:
-      self: named_clause (Identifier)
+      self: named_window (Identifier)
   rparen:
     self: ) (Symbol)
 - self: ( (CallingFunction)
@@ -960,7 +964,7 @@ exprs:
     window:
       self: ( (WindowSpecification)
       name:
-        self: named_clause (Identifier)
+        self: named_window (Identifier)
       rparen:
         self: ) (Symbol)
   rparen:
@@ -994,7 +998,7 @@ exprs:
     self: ) (Symbol)
 ",
         ),
-        // ----- window clause -----
+        // window clause
         TestCase::new(
             "\
 SELECT *
@@ -1088,6 +1092,7 @@ exprs:
     self: ARRAY (Type)
 ",
         ),
+        // array with type declaration
         TestCase::new(
             "\
 SELECT
@@ -1149,6 +1154,7 @@ exprs:
             self: > (Symbol)
 ",
         ),
+        // accessing array
         TestCase::new(
             "\
 SELECT arr[OFFSET(1)]
