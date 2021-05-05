@@ -391,6 +391,61 @@ exprs:
     self: FALSE (BooleanLiteral)
 ",
         ),
+        // '.' operator
+        TestCase::new(
+            "\
+SELECT
+  t.struct_col.num + 1,
+  1 + t.struct_col.num,
+FROM `dataset`.table_name AS t
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: + (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: . (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: struct_col (Identifier)
+    right:
+      self: num (Identifier)
+  right:
+    self: 1 (NumericLiteral)
+- self: + (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 1 (NumericLiteral)
+  right:
+    self: . (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: struct_col (Identifier)
+    right:
+      self: num (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: . (BinaryOperator)
+    alias:
+      self: t (Identifier)
+    as:
+      self: AS (Keyword)
+    left:
+      self: `dataset` (Identifier)
+    right:
+      self: table_name (Identifier)
+",
+        ),
         // ----- precedence -----
         TestCase::new(
             "\
@@ -906,10 +961,10 @@ exprs:
         between:
           self: BETWEEN (Keyword)
         end:
-        - self: UNBOUNDED (Unknown)
+        - self: UNBOUNDED (Keyword)
         - self: FOLLOWING (Keyword)
         start:
-        - self: UNBOUNDED (Unknown)
+        - self: UNBOUNDED (Keyword)
         - self: PRECEDING (Keyword)
       orderby:
         self: ORDER (XXXByExprs)
@@ -1121,7 +1176,7 @@ exprs:
   comma:
     self: , (Symbol)
   exprs:
-  - self: ( (GroupedExprs)
+  - self: ( (StructLiteral)
     exprs:
     - self: 1 (NumericLiteral)
       comma:
@@ -1177,8 +1232,104 @@ exprs:
     self: ] (Symbol)
 ",
         ),
-    ];
     // ----- struct -----
+        TestCase::new(
+            "\
+SELECT
+  (1,2),
+  STRUCT(1,2),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  STRUCT<INT64>(1),
+  STRUCT<ARRAY<INT64>, x FLOAT64>([1], .1),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  expr:
+    self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+    type_declaration:
+      self: < (GroupedTypeDeclarations)
+      declarations:
+      - self: None (TypeDeclaration)
+        type:
+          self: INT64 (Type)
+      rparen:
+        self: > (Symbol)
+- self: ( (StructLiteral)
+  comma:
+    self: , (Symbol)
+  exprs:
+  - self: [ (ArrayLiteral)
+    comma:
+      self: , (Symbol)
+    exprs:
+    - self: 1 (NumericLiteral)
+    rparen:
+      self: ] (Symbol)
+  - self: .1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  type:
+    self: STRUCT (Type)
+    type_declaration:
+      self: < (GroupedTypeDeclarations)
+      declarations:
+      - self: None (TypeDeclaration)
+        comma:
+          self: , (Symbol)
+        type:
+          self: ARRAY (Type)
+          type_declaration:
+            self: < (GroupedType)
+            rparen:
+              self: > (Symbol)
+            type:
+              self: INT64 (Type)
+      - self: x (TypeDeclaration)
+        type:
+          self: FLOAT64 (Type)
+      rparen:
+        self: > (Symbol)
+",
+        ),
+    ];
     for t in test_cases {
         t.test();
     }
@@ -1216,8 +1367,6 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            select (t.struct_col.num + 1) as result from `dataset`.table as t;
-//            select (1,2),struct(1,2),struct<int64>(1),struct<int64,x float64>(1,.1),struct<array<int64>>([1]),;
 //            select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
 //            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
 //            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
