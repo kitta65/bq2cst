@@ -1408,21 +1408,20 @@ impl Parser {
             left.push_node("tablesample", tablesample);
         }
         if self.get_token(1).literal.to_uppercase() == "WITH" {
-            self.next_token(); // unnest() -> with
-            let mut with = self.construct_node(NodeType::Unknown);
-            self.next_token(); // with -> offset
-            with.push_node(
-                "unnest_offset",
-                self.parse_expr(
-                    999,
-                    &vec![
-                        "on", "left", "right", "cross", "inner", ",", "full", "join", "where",
-                        "group", "having", ";", ")",
-                    ],
-                    true,
-                ),
-            );
-            left.push_node("with", with);
+            self.next_token(); // UNNEST() -> WITH
+            let with = self.construct_node(NodeType::Keyword);
+            self.next_token(); // WITH -> OFFSET
+            let offset = self.construct_node(NodeType::Keyword);
+            if self.get_token(1).is("AS") {
+                self.next_token(); // OFFSET -> AS
+                left.push_node("offset_as", self.construct_node(NodeType::Keyword));
+                self.next_token(); // AS -> alias
+                left.push_node("offset_alias", self.construct_node(NodeType::Identifier));
+            } else if self.get_token(1).is_identifier() {
+                self.next_token(); // expr -> alias
+                left.push_node("offset_alias", self.construct_node(NodeType::Identifier));
+            }
+            left.push_node_vec("with_offset", vec![with, offset]);
         }
         while self.get_token(1).in_(&vec![
             "left", "right", "cross", "inner", "full", "join", ",",
@@ -1547,9 +1546,14 @@ impl Parser {
             // STRUCT
             "(" => {
                 self.next_token(); // ( -> expr
+                let stmt_flg = self.get_token(0).in_(&vec!["WITH", "SELECT"]);
                 let mut exprs = self.parse_exprs(&vec![")"], true); // parse alias in the case of struct
                 if exprs.len() == 1 {
-                    left.node_type = NodeType::GroupedExpr;
+                    if stmt_flg {
+                        left.node_type = NodeType::GroupedStatement;
+                    } else {
+                        left.node_type = NodeType::GroupedExpr;
+                    }
                     left.push_node("expr", exprs.pop().unwrap());
                 } else {
                     left.node_type = NodeType::StructLiteral;
