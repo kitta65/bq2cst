@@ -1329,6 +1329,135 @@ exprs:
         self: > (Symbol)
 ",
         ),
+        // ----- set operator -----
+        TestCase::new(
+            "\
+SELECT 1 UNION ALL SELECT 2;
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 INTERSECT DISTINCT (SELECT 2);
+",
+            "\
+self: INTERSECT (SetOperator)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+(SELECT 1) EXCEPT DISTINCT SELECT 2;
+",
+            "\
+self: EXCEPT (SetOperator)
+distinct_or_all:
+  self: DISTINCT (Keyword)
+left:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3;
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: UNION (SetOperator)
+  distinct_or_all:
+    self: ALL (Keyword)
+  left:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+  right:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 3 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT 1 UNION ALL (SELECT 2 UNION ALL SELECT 3);
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: UNION (SetOperator)
+    distinct_or_all:
+      self: ALL (Keyword)
+    left:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
+    right:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 3 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -1367,8 +1496,6 @@ leading_comments:
 //fn test_parse_exprs() {
 //    let input = "\
 //            SELECT null FROM data for system_time as of current_timestamp() tablesample system (20 percent) where true group by 1 HAVING true order by abc DESC, def limit 100 offset 10;
-//            select 1 union all select 2;(select 1) union all select 2;select 1 union all (select 2);select 1 union all select 2 union all select 3;
-//            select 1 union all (select 2 union all select 3);(select 1 union all select 2) union all select 3;
 //            with a as (select 1) select 2;with a as (select 1), b as (select 2 from data where true) select 3;
 //            select as struct 1;select distinct 1;select all 1;
 //            select * from unnest([1,2,3]);select * from unnest([1]) with offset;select * from unnest([1]) a with offset as b;
