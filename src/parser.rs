@@ -1530,18 +1530,20 @@ impl Parser {
             // STRUCT
             "(" => {
                 self.next_token(); // ( -> expr
-                let stmt_flg = self.get_token(0).in_(&vec!["WITH", "SELECT"]);
-                let mut exprs = self.parse_exprs(&vec![")"], true); // parse alias in the case of struct
-                if exprs.len() == 1 {
-                    if stmt_flg {
-                        left.node_type = NodeType::GroupedStatement;
-                    } else {
-                        left.node_type = NodeType::GroupedExpr;
-                    }
-                    left.push_node("expr", exprs.pop().unwrap());
+                let mut exprs;
+                if self.get_token(0).in_(&vec!["WITH", "SELECT"]) {
+                    left.node_type = NodeType::GroupedStatement;
+                    exprs = vec![self.parse_select_statement(true)];
+                    left.push_node("stmt", exprs.pop().unwrap());
                 } else {
-                    left.node_type = NodeType::StructLiteral;
-                    left.push_node_vec("exprs", exprs);
+                    exprs = self.parse_exprs(&vec![")"], true); // parse alias in the case of struct
+                    if exprs.len() == 1 {
+                        left.node_type = NodeType::GroupedExpr;
+                        left.push_node("expr", exprs.pop().unwrap());
+                    } else {
+                        left.node_type = NodeType::StructLiteral;
+                        left.push_node_vec("exprs", exprs);
+                    }
                 }
                 self.next_token(); // expr -> )
                 left.push_node("rparen", self.construct_node(NodeType::Symbol));

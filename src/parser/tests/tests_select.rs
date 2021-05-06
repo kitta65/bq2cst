@@ -398,7 +398,9 @@ exprs:
 - self: ( (GroupedStatement)
   alias:
     self: ab (Identifier)
-  expr:
+  rparen:
+    self: ) (Symbol)
+  stmt:
     self: SELECT (SelectStatement)
     as_struct_or_value:
     - self: AS (Keyword)
@@ -412,8 +414,6 @@ exprs:
     - self: 2 (NumericLiteral)
       alias:
         self: b (Identifier)
-  rparen:
-    self: ) (Symbol)
 ",
         ),
         TestCase::new(
@@ -457,12 +457,38 @@ SELECT (SELECT 1)
 self: SELECT (SelectStatement)
 exprs:
 - self: ( (GroupedStatement)
-  expr:
+  rparen:
+    self: ) (Symbol)
+  stmt:
     self: SELECT (SelectStatement)
     exprs:
     - self: 1 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT (SELECT 1 EXCEPT DISTINCT SELECT 2);
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (GroupedStatement)
   rparen:
     self: ) (Symbol)
+  stmt:
+    self: EXCEPT (SetOperator)
+    distinct_or_all:
+      self: DISTINCT (Keyword)
+    left:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+    right:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
 ",
         ),
         // ----- FROM clause -----
@@ -499,15 +525,15 @@ from:
   self: FROM (KeywordWithExpr)
   expr:
     self: ( (GroupedStatement)
-    expr:
+    rparen:
+      self: ) (Symbol)
+    stmt:
       self: SELECT (SelectStatement)
       exprs:
       - self: 1 (NumericLiteral)
         comma:
           self: , (Symbol)
       - self: 2 (NumericLiteral)
-    rparen:
-      self: ) (Symbol)
 ",
         ),
         TestCase::new(
@@ -530,15 +556,15 @@ from:
       self: SUB (Identifier)
     as:
       self: AS (Keyword)
-    expr:
+    rparen:
+      self: ) (Symbol)
+    stmt:
       self: SELECT (SelectStatement)
       exprs:
       - self: 1 (NumericLiteral)
         comma:
           self: , (Symbol)
       - self: 2 (NumericLiteral)
-    rparen:
-      self: ) (Symbol)
 semicolon:
   self: ; (Symbol)
 ",
@@ -759,7 +785,9 @@ from:
       self: INNER (Keyword)
     left:
       self: ( (GroupedStatement)
-      expr:
+      rparen:
+        self: ) (Symbol)
+      stmt:
         self: SELECT (SelectStatement)
         exprs:
         - self: 1 (NumericLiteral)
@@ -767,8 +795,6 @@ from:
           self: FROM (KeywordWithExpr)
           expr:
             self: t1 (Identifier)
-      rparen:
-        self: ) (Symbol)
     right:
       self: t2 (Identifier)
 semicolon:
