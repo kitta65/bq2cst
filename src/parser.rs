@@ -1338,6 +1338,27 @@ impl Parser {
     fn parse_table(&mut self, root: bool) -> Node {
         let mut left: Node;
         match self.get_token(0).literal.to_uppercase().as_str() {
+            "(" => {
+                let mut group = self.construct_node(NodeType::GroupedStatement);
+                self.next_token(); // ( -> table
+                if self.get_token(0).is("SELECT") {
+                    group.push_node("stmt", self.parse_select_statement(true));
+                } else {
+                    group.node_type = NodeType::GroupedExpr;
+                    group.push_node("expr", self.parse_table(true));
+                }
+                self.next_token(); // table -> )
+                group.push_node("rparen", self.construct_node(NodeType::Symbol));
+                if self.get_token(1).is("AS") {
+                    self.next_token(); // -> AS
+                    group.push_node("as", self.construct_node(NodeType::Keyword));
+                }
+                if self.get_token(1).is_identifier() {
+                    self.next_token(); // -> ident
+                    group.push_node("alias", self.construct_node(NodeType::Identifier));
+                }
+                left = group;
+            }
             _ => {
                 left = self.parse_expr(
                     999,

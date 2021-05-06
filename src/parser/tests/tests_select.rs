@@ -771,7 +771,7 @@ from:
         // JOIN
         TestCase::new(
             "\
-SELECT * FROM (SELECT 1 FROM t1) INNER JOIN t2;
+SELECT * FROM (SELECT 1 FROM t1) INNER JOIN t2 ON TRUE;
 ",
             "\
 self: SELECT (SelectStatement)
@@ -795,10 +795,140 @@ from:
           self: FROM (KeywordWithExpr)
           expr:
             self: t1 (Identifier)
+    on:
+      self: ON (OnClause)
+      expr:
+        self: TRUE (BooleanLiteral)
     right:
       self: t2 (Identifier)
 semicolon:
   self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT * FROM t1 AS one JOIN t2 two ON TRUE
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    left:
+      self: t1 (Identifier)
+      alias:
+        self: one (Identifier)
+      as:
+        self: AS (Keyword)
+    on:
+      self: ON (OnClause)
+      expr:
+        self: TRUE (BooleanLiteral)
+    right:
+      self: t2 (Identifier)
+      alias:
+        self: two (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT * FROM data1 AS one LEFT JOIN data2 two USING(col) LEFT OUTER JOIN data3 ON TRUE
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    join_type:
+      self: LEFT (Keyword)
+      outer:
+        self: OUTER (Keyword)
+    left:
+      self: JOIN (JoinOperator)
+      join_type:
+        self: LEFT (Keyword)
+      left:
+        self: data1 (Identifier)
+        alias:
+          self: one (Identifier)
+        as:
+          self: AS (Keyword)
+      right:
+        self: data2 (Identifier)
+        alias:
+          self: two (Identifier)
+      using:
+        self: ( (CallingFunction)
+        args:
+        - self: col (Identifier)
+        func:
+          self: USING (Identifier)
+        rparen:
+          self: ) (Symbol)
+    on:
+      self: ON (OnClause)
+      expr:
+        self: TRUE (BooleanLiteral)
+    right:
+      self: data3 (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT * FROM data1 AS one , data2 two JOIN (data3 FULL OUTER JOIN data4 ON col1=col2) ON TRUE
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    left:
+      self: , (JoinOperator)
+      left:
+        self: data1 (Identifier)
+        alias:
+          self: one (Identifier)
+        as:
+          self: AS (Keyword)
+      right:
+        self: data2 (Identifier)
+        alias:
+          self: two (Identifier)
+    on:
+      self: ON (OnClause)
+      expr:
+        self: TRUE (BooleanLiteral)
+    right:
+      self: ( (GroupedExpr)
+      expr:
+        self: JOIN (JoinOperator)
+        join_type:
+          self: FULL (Keyword)
+          outer:
+            self: OUTER (Keyword)
+        left:
+          self: data3 (Identifier)
+        on:
+          self: ON (OnClause)
+          expr:
+            self: = (BinaryOperator)
+            left:
+              self: col1 (Identifier)
+            right:
+              self: col2 (Identifier)
+        right:
+          self: data4 (Identifier)
+      rparen:
+        self: ) (Symbol)
 ",
         ),
         // ----- WHERE clause -----
