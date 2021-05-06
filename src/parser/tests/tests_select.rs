@@ -1006,6 +1006,37 @@ orderby:
   - self: c2 (Identifier)
 ",
         ),
+        TestCase::new(
+            "\
+SELECT c1 FROM t ORDER BY c1 NULLS FIRST, c2 DESC NULLS LAST
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+orderby:
+  self: ORDER (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: c1 (Identifier)
+    comma:
+      self: , (Symbol)
+    null_order:
+    - self: NULLS (Keyword)
+    - self: FIRST (Keyword)
+  - self: c2 (Identifier)
+    null_order:
+    - self: NULLS (Keyword)
+    - self: LAST (Keyword)
+    order:
+      self: DESC (Keyword)
+",
+        ),
         // ----- LIMIT clause -----
         TestCase::new(
             "\
