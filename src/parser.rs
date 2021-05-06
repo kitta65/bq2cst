@@ -105,16 +105,6 @@ impl Parser {
         };
         self.tokens.len() - 1 <= idx
     }
-    pub fn parse_code(&mut self) -> Vec<Node> {
-        let mut stmts: Vec<Node> = Vec::new();
-        while !self.is_eof(0) {
-            let stmt = self.parse_statement();
-            stmts.push(stmt);
-            self.next_token();
-        }
-        stmts.push(self.construct_node(NodeType::EOF));
-        stmts
-    }
     fn construct_node(&self, node_type: NodeType) -> Node {
         let curr_token = self.get_token(0);
         let mut node = match node_type {
@@ -153,6 +143,17 @@ impl Parser {
             node.push_node_vec("trailing_comments", trailing_comment_nodes);
         }
         node
+    }
+    // ----- common -----
+    pub fn parse_code(&mut self) -> Vec<Node> {
+        let mut stmts: Vec<Node> = Vec::new();
+        while !self.is_eof(0) {
+            let stmt = self.parse_statement();
+            stmts.push(stmt);
+            self.next_token();
+        }
+        stmts.push(self.construct_node(NodeType::EOF));
+        stmts
     }
     fn parse_statement(&mut self) -> Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
@@ -221,6 +222,7 @@ impl Parser {
         };
         node
     }
+    // ----- SELECT statement -----
     fn parse_select_statement(&mut self, root: bool) -> Node {
         if self.get_token(0).literal.to_uppercase() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement);
@@ -428,6 +430,7 @@ impl Parser {
         }
         node
     }
+    // ----- DML -----
     fn parse_insert_statement(&mut self, root: bool) -> Node {
         let mut insert = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("into") {
@@ -619,6 +622,7 @@ impl Parser {
         }
         merge
     }
+    // ----- DDL -----
     fn parse_create_table_statement(&mut self) -> Node {
         let mut create = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("or") {
@@ -1053,6 +1057,50 @@ impl Parser {
         }
         drop
     }
+    // ----- script -----
+    fn parse_declare_statement(&mut self) -> Node {
+        let mut declare = self.construct_node(NodeType::DeclareStatement);
+        let mut idents = Vec::new();
+        loop {
+            self.next_token(); // -> ident
+            if self.get_token(1).is(",") {
+                let mut ident = self.parse_identifier();
+                self.next_token(); // ident -> comma
+                ident.push_node("comma", self.construct_node(NodeType::Symbol));
+                idents.push(ident);
+            } else {
+                idents.push(self.parse_identifier());
+                break;
+            }
+        }
+        declare.push_node_vec("idents", idents);
+        if !self.get_token(1).is("DEFAULT") {
+            self.next_token(); // ident -> variable_type
+            declare.push_node("variable_type", self.parse_type(false));
+        }
+        if self.get_token(1).is("DEFAULT") {
+            self.next_token(); // -> DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // DEFAULT -> expr
+            default.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            declare.push_node("default", default);
+        }
+        if self.get_token(1).is(";") {
+            self.next_token();
+            declare.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        declare
+    }
+    fn parse_set_statement(&mut self) -> Node {
+        let mut set = self.construct_node(NodeType::SetStatement);
+        self.next_token(); // set -> expr
+        set.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        if self.get_token(1).is(";") {
+            self.next_token();
+            set.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        set
+    }
     fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> procedure_name
@@ -1279,49 +1327,6 @@ impl Parser {
             execute.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         execute
-    }
-    fn parse_set_statement(&mut self) -> Node {
-        let mut set = self.construct_node(NodeType::Unknown);
-        self.next_token(); // set -> expr
-        set.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        if self.get_token(1).is(";") {
-            self.next_token();
-            set.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        set
-    }
-    fn parse_declare_statement(&mut self) -> Node {
-        let mut declare = self.construct_node(NodeType::DeclareStatement);
-        let mut idents = Vec::new();
-        loop {
-            self.next_token(); // -> ident
-            if self.get_token(1).is(",") {
-                let mut ident = self.parse_identifier();
-                self.next_token(); // ident -> comma
-                ident.push_node("comma", self.construct_node(NodeType::Symbol));
-                idents.push(ident);
-            } else {
-                idents.push(self.parse_identifier());
-                break;
-            }
-        }
-        declare.push_node_vec("idents", idents);
-        if !self.get_token(1).is("DEFAULT") {
-            self.next_token(); // ident -> variable_type
-            declare.push_node("variable_type", self.parse_type(false));
-        }
-        if self.get_token(1).is("DEFAULT") {
-            self.next_token(); // -> DEFAULT
-            let mut default = self.construct_node(NodeType::KeywordWithExpr);
-            self.next_token(); // DEFAULT -> expr
-            default.push_node("expr", self.parse_expr(999, &vec![";"], false));
-            declare.push_node("default", default);
-        }
-        if self.get_token(1).is(";") {
-            self.next_token();
-            declare.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        declare
     }
     fn parse_identifier(&mut self) -> Node {
         let mut left = self.construct_node(NodeType::Identifier);

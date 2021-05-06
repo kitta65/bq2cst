@@ -37,7 +37,81 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
-        // check root argument
+        TestCase::new(
+            "\
+SET x = 5
+",
+            "\
+self: SET (SetStatement)
+expr:
+  self: = (BinaryOperator)
+  left:
+    self: x (Identifier)
+  right:
+    self: 5 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+SET (x,y) = (1,2)
+",
+            "\
+self: SET (SetStatement)
+expr:
+  self: = (BinaryOperator)
+  left:
+    self: ( (StructLiteral)
+    exprs:
+    - self: x (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: y (Identifier)
+    rparen:
+      self: ) (Symbol)
+  right:
+    self: ( (StructLiteral)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SET (x, y) = (SELECT AS STRUCT 1,2)
+",
+            "\
+self: SET (SetStatement)
+expr:
+  self: = (BinaryOperator)
+  left:
+    self: ( (StructLiteral)
+    exprs:
+    - self: x (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: y (Identifier)
+    rparen:
+      self: ) (Symbol)
+  right:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      as_struct_or_value:
+      - self: AS (Keyword)
+      - self: STRUCT (Keyword)
+      exprs:
+      - self: 1 (NumericLiteral)
+        comma:
+          self: , (Symbol)
+      - self: 2 (NumericLiteral)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -60,7 +134,6 @@ semicolon:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 //            ;
-//            set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
 //            execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
 //            begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
 //            if true then end if;
