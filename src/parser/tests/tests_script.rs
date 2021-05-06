@@ -112,6 +112,90 @@ expr:
       - self: 2 (NumericLiteral)
 ",
         ),
+        TestCase::new(
+            "\
+EXECUTE IMMEDIATE 'SELECT 1'
+",
+            "\
+self: EXECUTE (ExecuteStatement)
+immediate:
+  self: IMMEDIATE (Keyword)
+sql_expr:
+  self: 'SELECT 1' (StringLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+EXECUTE IMMEDIATE 'SELECT ?' USING 1;
+",
+            "\
+self: EXECUTE (ExecuteStatement)
+immediate:
+  self: IMMEDIATE (Keyword)
+semicolon:
+  self: ; (Symbol)
+sql_expr:
+  self: 'SELECT ?' (StringLiteral)
+using:
+  self: USING (KeywordWithExprs)
+  exprs:
+  - self: 1 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+EXECUTE IMMEDIATE 'SELECT ?,?' INTO x, y USING 1, 2;
+",
+            "\
+self: EXECUTE (ExecuteStatement)
+immediate:
+  self: IMMEDIATE (Keyword)
+into:
+  self: INTO (KeywordWithExprs)
+  idents:
+  - self: x (Identifier)
+    comma:
+      self: , (Symbol)
+  - self: y (Identifier)
+semicolon:
+  self: ; (Symbol)
+sql_expr:
+  self: 'SELECT ?,?' (StringLiteral)
+using:
+  self: USING (KeywordWithExprs)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+EXECUTE IMMEDIATE 'SELECT @x' INTO x USING 1 AS x;
+",
+            "\
+self: EXECUTE (ExecuteStatement)
+immediate:
+  self: IMMEDIATE (Keyword)
+into:
+  self: INTO (KeywordWithExprs)
+  idents:
+  - self: x (Identifier)
+semicolon:
+  self: ; (Symbol)
+sql_expr:
+  self: 'SELECT @x' (StringLiteral)
+using:
+  self: USING (KeywordWithExprs)
+  exprs:
+  - self: 1 (NumericLiteral)
+    alias:
+      self: x (Identifier)
+    as:
+      self: AS (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -134,7 +218,6 @@ expr:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 //            ;
-//            execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
 //            begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
 //            if true then end if;
 //            if true then select 1; select 2;end if;

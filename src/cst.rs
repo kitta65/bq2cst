@@ -27,6 +27,7 @@ pub enum NodeType {
     Comment,
     DeclareStatement,
     EOF,
+    ExecuteStatement,        // EXECUTE IMMEDIATE 'SELECT 1;'
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     GroupedExpr,             // (1)
@@ -36,6 +37,7 @@ pub enum NodeType {
     GroupedTypeDeclarations, // <x INT64, y FLOAT64>
     Keyword,
     KeywordWithExpr,         // WHEN expr
+    KeywordWithExprs,        // USING 1, 2
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
     Identifier,
     InOperator,
@@ -43,11 +45,11 @@ pub enum NodeType {
     LimitClause,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
-    OnClause,   // on x.c1 = y.c2
-    OverCaluse, // OVER (PARTITON BY x, y)
+    OnClause,        // on x.c1 = y.c2
+    OverCaluse,      // OVER (PARTITON BY x, y)
     SelectStatement, // SELECT 1;
-    SetOperator, // UNION | INTERSECT | EXCEPT
-    SetStatement, // SET x = 5
+    SetOperator,     // UNION | INTERSECT | EXCEPT
+    SetStatement,    // SET x = 5
     StringLiteral,
     StructLiteral,
     Symbol,            // ) | ] | * | ...
