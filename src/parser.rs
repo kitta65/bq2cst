@@ -1291,14 +1291,14 @@ impl Parser {
         set
     }
     fn parse_declare_statement(&mut self) -> Node {
-        let mut declare = self.construct_node(NodeType::Unknown);
+        let mut declare = self.construct_node(NodeType::DeclareStatement);
         let mut idents = Vec::new();
         loop {
             self.next_token(); // -> ident
             if self.get_token(1).is(",") {
                 let mut ident = self.parse_identifier();
                 self.next_token(); // ident -> comma
-                ident.push_node("comma", self.construct_node(NodeType::Unknown));
+                ident.push_node("comma", self.construct_node(NodeType::Symbol));
                 idents.push(ident);
             } else {
                 idents.push(self.parse_identifier());
@@ -1306,14 +1306,14 @@ impl Parser {
             }
         }
         declare.push_node_vec("idents", idents);
-        if !self.get_token(1).is("default") {
+        if !self.get_token(1).is("DEFAULT") {
             self.next_token(); // ident -> variable_type
             declare.push_node("variable_type", self.parse_type(false));
         }
-        if self.get_token(1).is("default") {
-            self.next_token(); // -> default
-            let mut default = self.construct_node(NodeType::Unknown);
-            self.next_token(); // default -> expr
+        if self.get_token(1).is("DEFAULT") {
+            self.next_token(); // -> DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // DEFAULT -> expr
             default.push_node("expr", self.parse_expr(999, &vec![";"], false));
             declare.push_node("default", default);
         }

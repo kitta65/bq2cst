@@ -25,6 +25,7 @@ pub enum NodeType {
     CaseExpr,                // CASE WHEN a then b ELSE c END
     CastArgument,            // x AS INT64
     Comment,
+    DeclareStatement,
     EOF,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts

@@ -1,5 +1,49 @@
 use super::*;
 
+#[test]
+fn test_parse_code_select() {
+    let test_cases = vec![
+        // ----- DECLARE statement -----
+        TestCase::new(
+            "\
+DECLARE x INT64;
+",
+            "\
+self: DECLARE (DeclareStatement)
+idents:
+- self: x (Identifier)
+semicolon:
+  self: ; (Symbol)
+variable_type:
+  self: INT64 (Type)
+",
+        ),
+        TestCase::new(
+            "\
+DECLARE x,y DEFAULT 1;
+",
+            "\
+self: DECLARE (DeclareStatement)
+default:
+  self: DEFAULT (KeywordWithExpr)
+  expr:
+    self: 1 (NumericLiteral)
+idents:
+- self: x (Identifier)
+  comma:
+    self: , (Symbol)
+- self: y (Identifier)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        // check root argument
+    ];
+    for t in test_cases {
+        t.test();
+    }
+}
+
 //            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
 //            create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
 //            create function abc() returns int64 language js options() as '''return 1''';
@@ -16,7 +60,6 @@ use super::*;
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 //            ;
-//            declare x int64;declare x,y default 1;
 //            set x=5;set (x,y)=(1,2);set (x,y)=(select as struct 1,2);
 //            execute immediate 'select 1';execute immediate 'select ?,?' into x,y using 1,2;execute immediate 'select @x' into x using 1 as x;
 //            begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
