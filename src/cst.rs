@@ -38,20 +38,22 @@ pub enum NodeType {
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
     Identifier,
     InOperator,
+    JoinOperator, // JOIN | ,
     LimitClause,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
+    OnClause,   // on x.c1 = y.c2
     OverCaluse, // OVER (PARTITON BY x, y)
     SelectStatement,
     SetOperator, // UNION | INTERSECT | EXCEPT
     StringLiteral,
     StructLiteral,
-    Symbol,          // ) | ] | * | ...
+    Symbol,            // ) | ] | * | ...
     TableSampleCaluse, // TABLESAMPLE SYSTEM (10 PERCENT)
-    TableSampleRatio, // (10 PERCENT)
-    Type,            // INT64
-    TypeDeclaration, // x INT64
-    UnaryOperator,   // - | + | TIMESTAMP | ...
+    TableSampleRatio,  // (10 PERCENT)
+    Type,              // INT64
+    TypeDeclaration,   // x INT64
+    UnaryOperator,     // - | + | TIMESTAMP | ...
     Unknown,
     WindowClause,        // WINDOW x AS (PARTITION BY c1)
     WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)

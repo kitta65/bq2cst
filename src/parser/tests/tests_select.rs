@@ -742,6 +742,39 @@ from:
     - self: OFFSET (Keyword)
 ",
         ),
+        // JOIN
+        TestCase::new(
+            "\
+SELECT * FROM (SELECT 1 FROM t1) INNER JOIN t2;
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    join_type:
+      self: INNER (Keyword)
+    left:
+      self: ( (GroupedStatement)
+      expr:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+        from:
+          self: FROM (KeywordWithExpr)
+          expr:
+            self: t1 (Identifier)
+      rparen:
+        self: ) (Symbol)
+    right:
+      self: t2 (Identifier)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
         // ----- WHERE clause -----
         TestCase::new(
             "\

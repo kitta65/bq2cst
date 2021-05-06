@@ -1338,22 +1338,6 @@ impl Parser {
     fn parse_table(&mut self, root: bool) -> Node {
         let mut left: Node;
         match self.get_token(0).literal.to_uppercase().as_str() {
-            //"(" => {
-            //    let mut group = self.construct_node(NodeType::Unknown);
-            //    self.next_token(); // ( -> table
-            //    group.push_node("expr", self.parse_table(true));
-            //    self.next_token(); // table -> )
-            //    group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            //    if self.get_token(1).is("AS") {
-            //        self.next_token(); // -> AS
-            //        group.push_node("as", self.construct_node(NodeType::Keyword));
-            //    }
-            //    if self.get_token(1).is_identifier() {
-            //        self.next_token(); // -> ident
-            //        group.push_node("alias", self.construct_node(NodeType::Identifier));
-            //    }
-            //    left = group;
-            //}
             _ => {
                 left = self.parse_expr(
                     999,
@@ -1392,15 +1376,15 @@ impl Parser {
         }
         if self.get_token(1).is("tablesample") {
             // TODO check when it becomes GA
-            self.next_token(); // -> tablesample
+            self.next_token(); // -> TABLESAMPLE
             let mut tablesample = self.construct_node(NodeType::TableSampleCaluse);
-            self.next_token(); // -> system
+            self.next_token(); // -> SYSTEM
             tablesample.push_node("system", self.construct_node(NodeType::Keyword));
             self.next_token(); // -> (
             let mut group = self.construct_node(NodeType::TableSampleRatio);
             self.next_token(); // -> expr
             group.push_node("expr", self.parse_expr(999, &vec!["percent"], false)); // NOTE percent is not reserved
-            self.next_token(); // -> percent
+            self.next_token(); // -> PERCENT
             group.push_node("percent", self.construct_node(NodeType::Keyword));
             self.next_token(); // -> )
             group.push_node("rparen", self.construct_node(NodeType::Symbol));
@@ -1427,27 +1411,27 @@ impl Parser {
             "left", "right", "cross", "inner", "full", "join", ",",
         ]) && root
         {
-            self.next_token(); // table -> left, right, inner, cross, full, join, ","
+            self.next_token(); // table -> LEFT, RIGHT, INNER, CROSS, FULL, JOIN, ","
             let mut join = if self.get_token(0).in_(&vec!["join", ","]) {
-                let join = self.construct_node(NodeType::Unknown);
+                let join = self.construct_node(NodeType::JoinOperator);
                 join
             } else {
-                let mut type_ = self.construct_node(NodeType::Unknown);
-                self.next_token(); // type -> outer, type -> join
+                let mut type_ = self.construct_node(NodeType::Keyword);
+                self.next_token(); // join_type -> OUTER, JOIN
                 if self.get_token(0).is("OUTER") {
-                    type_.push_node("outer", self.construct_node(NodeType::Unknown));
-                    self.next_token(); // outer -> join
+                    type_.push_node("outer", self.construct_node(NodeType::Keyword));
+                    self.next_token(); // OUTER -> JOIN
                 }
-                let mut join = self.construct_node(NodeType::Unknown);
+                let mut join = self.construct_node(NodeType::JoinOperator);
                 join.push_node("join_type", type_);
                 join
             };
             self.next_token(); // -> table
             let right = self.parse_table(false);
             if self.get_token(1).is("on") {
-                self.next_token(); // `table` -> on
-                let mut on = self.construct_node(NodeType::Unknown);
-                self.next_token(); // on -> expr
+                self.next_token(); // `table` -> ON
+                let mut on = self.construct_node(NodeType::OnClause);
+                self.next_token(); // ON -> expr
                 on.push_node(
                     "expr",
                     self.parse_expr(
@@ -1461,7 +1445,7 @@ impl Parser {
                 );
                 join.push_node("on", on);
             } else if self.get_token(1).is("using") {
-                self.next_token(); // -> using
+                self.next_token(); // -> USING
                 join.push_node(
                     "using",
                     self.parse_expr(
