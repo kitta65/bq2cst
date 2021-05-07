@@ -517,6 +517,64 @@ stmts:
     self: ; (Symbol)
 ",
         ),
+        // ----- WHILE statement -----
+        TestCase::new(
+            "\
+WHILE TRUE DO
+  SELECT 1;
+END WHILE;
+",
+            "\
+self: WHILE (WhileStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+do:
+  self: DO (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+end_while:
+- self: END (Keyword)
+- self: WHILE (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        // ----- WHILE statement -----
+        TestCase::new(
+            "\
+WHILE TRUE DO
+  ITERATE;
+  LEAVE;
+  CONTINUE;
+END WHILE;
+",
+            "\
+self: WHILE (WhileStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+do:
+  self: DO (KeywordWithStatements)
+  stmts:
+  - self: ITERATE (SingleTokenStatement)
+    semicolon:
+      self: ; (Symbol)
+  - self: LEAVE (SingleTokenStatement)
+    semicolon:
+      self: ; (Symbol)
+  - self: CONTINUE (SingleTokenStatement)
+    semicolon:
+      self: ; (Symbol)
+end_while:
+- self: END (Keyword)
+- self: WHILE (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -539,8 +597,6 @@ stmts:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 
-//            while true do select 1; end while;
-//            while true do iterate;leave;continue; end while;
 //            raise;raise using message = 'error';
 //            begin
 //              begin

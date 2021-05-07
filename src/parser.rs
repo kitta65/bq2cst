@@ -1236,25 +1236,17 @@ impl Parser {
         loop_
     }
     fn parse_while_statement(&mut self) -> Node {
-        let mut while_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> boolean_expression
+        let mut while_ = self.construct_node(NodeType::WhileStatement);
+        self.next_token(); // -> condition
         while_.push_node("condition", self.parse_expr(999, &vec!["do"], false)); // NOTE do is not reserved
-        self.next_token(); // -> do
-        while_.push_node("do", self.construct_node(NodeType::Unknown));
-        let mut stmts = Vec::new();
-        while !self.get_token(1).is("end") {
-            self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
-        }
-        if 0 < stmts.len() {
-            while_.push_node_vec("stmts", stmts);
-        }
-        self.next_token(); // -> end
-        let end = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> while
+        self.next_token(); // -> DO
+        while_.push_node("do", self.parse_keyword_with_statements(&vec!["END"]));
+        self.next_token(); // -> END
+        let end = self.construct_node(NodeType::Keyword);
+        self.next_token(); // -> WHILE
         while_.push_node_vec(
             "end_while",
-            vec![end, self.construct_node(NodeType::Unknown)],
+            vec![end, self.construct_node(NodeType::Keyword)],
         );
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
