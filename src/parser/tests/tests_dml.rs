@@ -181,6 +181,171 @@ table_name:
   self: t (Identifier)
 ",
         ),
+        // ----- UPDATE statement -----
+        TestCase::new(
+            "\
+UPDATE TABLE t SET
+  col1 = 1,
+  col2 = 2
+WHERE TRUE;
+",
+            "\
+self: UPDATE (UpdateStatement)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (KeywordWithExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    comma:
+      self: , (Symbol)
+    left:
+      self: col1 (Identifier)
+    right:
+      self: 1 (NumericLiteral)
+  - self: = (BinaryOperator)
+    left:
+      self: col2 (Identifier)
+    right:
+      self: 2 (NumericLiteral)
+table_name:
+  self: TABLE (Identifier)
+  alias:
+    self: t (Identifier)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: TRUE (BooleanLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+UPDATE table1 AS one SET
+  one.value=two.value
+FROM table2 AS two
+WHERE one.id = two.id;
+",
+            "\
+self: UPDATE (UpdateStatement)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: table2 (Identifier)
+    alias:
+      self: two (Identifier)
+    as:
+      self: AS (Keyword)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (KeywordWithExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: one (Identifier)
+      right:
+        self: value (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: two (Identifier)
+      right:
+        self: value (Identifier)
+table_name:
+  self: table1 (Identifier)
+  alias:
+    self: one (Identifier)
+  as:
+    self: AS (Keyword)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: one (Identifier)
+      right:
+        self: id (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: two (Identifier)
+      right:
+        self: id (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+UPDATE t1 SET
+  t1.flg = true
+FROM t2 INNER JOIN t3 ON t2.id = t3.id
+WHERE t1.id = t3.id;
+",
+            "\
+self: UPDATE (UpdateStatement)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    join_type:
+      self: INNER (Keyword)
+    left:
+      self: t2 (Identifier)
+    on:
+      self: ON (OnClause)
+      expr:
+        self: = (BinaryOperator)
+        left:
+          self: . (BinaryOperator)
+          left:
+            self: t2 (Identifier)
+          right:
+            self: id (Identifier)
+        right:
+          self: . (BinaryOperator)
+          left:
+            self: t3 (Identifier)
+          right:
+            self: id (Identifier)
+    right:
+      self: t3 (Identifier)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (KeywordWithExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t1 (Identifier)
+      right:
+        self: flg (Identifier)
+    right:
+      self: true (BooleanLiteral)
+table_name:
+  self: t1 (Identifier)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t1 (Identifier)
+      right:
+        self: id (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: t3 (Identifier)
+      right:
+        self: id (Identifier)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -192,8 +357,6 @@ table_name:
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
 
-//            update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
-//            update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
 //            merge t using s on t.id=s.id when matched then delete;
 //            merge dataset.t t using dataset.s s on t.id=s.id
 //            when not matched then insert row

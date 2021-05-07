@@ -69,6 +69,7 @@ pub enum NodeType {
     TypeDeclaration,   // x INT64
     UnaryOperator,     // - | + | TIMESTAMP | ...
     Unknown,
+    UpdateStatement,
     WhileStatement,
     WindowClause,        // WINDOW x AS (PARTITION BY c1)
     WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)

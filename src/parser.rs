@@ -449,7 +449,8 @@ impl Parser {
             self.next_token(); // INSERT -> INTO
             insert.push_node("into", self.construct_node(NodeType::Keyword));
         }
-        if !self.get_token(1).in_(&vec!["(", "VALUE", "ROW"]) {
+        if !self.get_token(1).in_(&vec!["(", "VALUES", "ROW"]) {
+            // identifier does not appear when called by parse_merge_statement()
             self.next_token(); // INSERT -> identifier
             insert.push_node("target_name", self.parse_identifier());
         }
@@ -462,7 +463,7 @@ impl Parser {
             group.push_node("rparen", self.construct_node(NodeType::Symbol));
             insert.push_node("columns", group);
         }
-        if self.get_token(1).is("values") {
+        if self.get_token(1).is("VALUES") {
             self.next_token(); // ) -> values
             let mut values = self.construct_node(NodeType::KeywordWithExprs);
             let mut lparens = Vec::new();
@@ -535,30 +536,30 @@ impl Parser {
         truncate
     }
     fn parse_update_statement(&mut self, root: bool) -> Node {
-        let mut update = self.construct_node(NodeType::Unknown);
-        if !self.get_token(1).is("set") {
-            self.next_token(); // -> target_name
-            update.push_node("target_name", self.parse_table(true));
+        let mut update = self.construct_node(NodeType::UpdateStatement);
+        if !self.get_token(1).is("SET") {
+            self.next_token(); // -> table_name
+            update.push_node("table_name", self.parse_table(true));
         }
-        self.next_token(); // -> set
-        let mut set = self.construct_node(NodeType::Unknown);
-        self.next_token(); // set -> exprs
+        self.next_token(); // -> SET
+        let mut set = self.construct_node(NodeType::KeywordWithExprs);
+        self.next_token(); // SET -> exprs
         set.push_node_vec(
             "exprs",
             self.parse_exprs(&vec!["from", "where", "when", ";"], false),
         );
-        if self.get_token(1).is("from") {
-            self.next_token(); // exprs -> from
-            let mut from = self.construct_node(NodeType::Unknown);
-            self.next_token(); // from -> target_name
+        if self.get_token(1).is("FROM") {
+            self.next_token(); // exprs -> FROM
+            let mut from = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // FROM -> target_name
             from.push_node("expr", self.parse_table(true));
             update.push_node("from", from);
         }
         update.push_node("set", set);
-        if self.get_token(1).is("where") {
-            self.next_token(); // exprs -> where
-            let mut where_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // where -> expr
+        if self.get_token(1).is("WHERE") {
+            self.next_token(); // exprs -> WHERE
+            let mut where_ = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // WHERE -> expr
             where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
             update.push_node("where", where_);
         }
