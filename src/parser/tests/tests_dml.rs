@@ -1,26 +1,106 @@
 use super::*;
 
-//#[test]
-//fn test_parse_code_dml() {
-//    let test_cases = vec![
-//        // ----- xxx -----
-//        TestCase::new(
-//            "\
-//INSERT INTO TABLE VALUEs(1,2);insert table values(1),(2);insert table (col) select 1;
-//",
-//            "\
-//",
-//        ),
-//    ];
-//    for t in test_cases {
-//        t.test();
-//    }
-//}
+#[test]
+fn test_parse_code_dml() {
+    let test_cases = vec![
+        // ----- INSERT statement -----
+        TestCase::new(
+            "\
+INSERT INTO TABLE VALUES(1,2);
+",
+            "\
+self: INSERT (InsertStatement)
+input:
+  self: VALUES (KeywordWithExprs)
+  exprs:
+  - self: ( (GroupedExprs)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+into:
+  self: INTO (Keyword)
+semicolon:
+  self: ; (Symbol)
+target_name:
+  self: TABLE (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+INSERT table_name (col) VALUES(1),(2);
+",
+            "\
+self: INSERT (InsertStatement)
+columns:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: col (Identifier)
+  rparen:
+    self: ) (Symbol)
+input:
+  self: VALUES (KeywordWithExprs)
+  exprs:
+  - self: ( (GroupedExprs)
+    comma:
+      self: , (Symbol)
+    exprs:
+    - self: 1 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+  - self: ( (GroupedExprs)
+    exprs:
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+target_name:
+  self: table_name (Identifier)
+",
+        ),
+        TestCase::new(
+            "\
+INSERT table_name (col1, col2) SELECT 1, 2;
+",
+            "\
+self: INSERT (InsertStatement)
+columns:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: col1 (Identifier)
+    comma:
+      self: , (Symbol)
+  - self: col2 (Identifier)
+  rparen:
+    self: ) (Symbol)
+input:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+target_name:
+  self: table_name (Identifier)
+",
+        ),
+    ];
+    for t in test_cases {
+        t.test();
+    }
+}
 
 //            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
 //            create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
+
 //            delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
 //            truncate table t;
 //            update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;

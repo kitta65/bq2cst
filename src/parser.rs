@@ -444,48 +444,48 @@ impl Parser {
     }
     // ----- DML -----
     fn parse_insert_statement(&mut self, root: bool) -> Node {
-        let mut insert = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("into") {
-            self.next_token(); // insert -> into
-            insert.push_node("into", self.construct_node(NodeType::Unknown));
+        let mut insert = self.construct_node(NodeType::InsertStatement);
+        if self.get_token(1).is("INTO") {
+            self.next_token(); // INSERT -> INTO
+            insert.push_node("into", self.construct_node(NodeType::Keyword));
         }
-        if !self.get_token(1).in_(&vec!["(", "value", "row"]) {
-            self.next_token(); // insert -> identifier
+        if !self.get_token(1).in_(&vec!["(", "VALUE", "ROW"]) {
+            self.next_token(); // INSERT -> identifier
             insert.push_node("target_name", self.parse_identifier());
         }
         if self.get_token(1).is("(") {
             self.next_token(); // identifier -> (
-            let mut group = self.construct_node(NodeType::Unknown);
+            let mut group = self.construct_node(NodeType::GroupedExprs);
             self.next_token(); // ( -> columns
             group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
             self.next_token(); // columns -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            group.push_node("rparen", self.construct_node(NodeType::Symbol));
             insert.push_node("columns", group);
         }
         if self.get_token(1).is("values") {
             self.next_token(); // ) -> values
-            let mut values = self.construct_node(NodeType::Unknown);
+            let mut values = self.construct_node(NodeType::KeywordWithExprs);
             let mut lparens = Vec::new();
             while self.get_token(1).is("(") {
-                self.next_token(); // vlaues -> (, ',' -> (
-                let mut lparen = self.construct_node(NodeType::Unknown);
+                self.next_token(); // VALUES -> (, ',' -> (
+                let mut lparen = self.construct_node(NodeType::GroupedExprs);
                 self.next_token(); // -> expr
                 lparen.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
                 self.next_token(); // expr -> )
-                lparen.push_node("rparen", self.construct_node(NodeType::Unknown));
+                lparen.push_node("rparen", self.construct_node(NodeType::Symbol));
                 if self.get_token(1).is(",") {
                     self.next_token(); // ) -> ,
-                    lparen.push_node("comma", self.construct_node(NodeType::Unknown));
+                    lparen.push_node("comma", self.construct_node(NodeType::Symbol));
                 }
                 lparens.push(lparen);
             }
             values.push_node_vec("exprs", lparens);
             insert.push_node("input", values);
         } else if self.get_token(1).is("row") {
-            self.next_token(); // -> row
-            insert.push_node("input", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> ROW
+            insert.push_node("input", self.construct_node(NodeType::Keyword));
         } else {
-            self.next_token(); // ) -> select
+            self.next_token(); // ) -> SELECT
             insert.push_node("input", self.parse_select_statement(false));
         }
         if self.get_token(1).is(";") && root {

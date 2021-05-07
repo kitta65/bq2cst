@@ -44,6 +44,7 @@ pub enum NodeType {
     KeywordWithStatements,   // THEN SELECT 1;
     Identifier,
     IfStatement,
+    InsertStatement,
     InOperator,
     JoinOperator, // JOIN | ,
     LimitClause,
