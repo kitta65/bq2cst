@@ -495,25 +495,25 @@ impl Parser {
         insert
     }
     fn parse_delete_statement(&mut self) -> Node {
-        let mut delete = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("from") {
-            self.next_token(); // delete -> from
-            delete.push_node("from", self.construct_node(NodeType::Unknown));
+        let mut delete = self.construct_node(NodeType::DeleteStatement);
+        if self.get_token(1).is("FROM") {
+            self.next_token(); // DELETE -> FROM
+            delete.push_node("from", self.construct_node(NodeType::Keyword));
         }
-        self.next_token(); // -> target_name
-        let mut target_name = self.parse_identifier();
-        if !self.get_token(1).is("where") {
+        self.next_token(); // -> table_name
+        let mut table_name = self.parse_identifier();
+        if !self.get_token(1).is("WHERE") {
             self.next_token(); // -> AS, ident
             if self.get_token(0).is("AS") {
-                target_name.push_node("as", self.construct_node(NodeType::Keyword));
+                table_name.push_node("as", self.construct_node(NodeType::Keyword));
                 self.next_token(); // AS -> ident
             }
-            target_name.push_node("alias", self.construct_node(NodeType::Identifier));
+            table_name.push_node("alias", self.construct_node(NodeType::Identifier));
         }
-        delete.push_node("target_name", target_name);
-        self.next_token(); // target_name -> where, alias -> where
-        let mut where_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // where -> expr
+        delete.push_node("table_name", table_name);
+        self.next_token(); // -> WHERE
+        let mut where_ = self.construct_node(NodeType::KeywordWithExpr);
+        self.next_token(); // WHERE -> expr
         where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
         delete.push_node("where", where_);
         if self.get_token(1).is(";") {

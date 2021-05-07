@@ -28,6 +28,7 @@ pub enum NodeType {
     CastArgument,            // x AS INT64
     Comment,
     DeclareStatement,
+    DeleteStatement,
     EOF,
     ExecuteStatement,        // EXECUTE IMMEDIATE 'SELECT 1;'
     ExtractArgument,         // DAY FROM expr

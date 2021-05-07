@@ -90,6 +90,82 @@ target_name:
   self: table_name (Identifier)
 ",
         ),
+        // ----- DELETE statement -----
+        TestCase::new(
+            "\
+DELETE table_name WHERE TRUE;
+",
+            "\
+self: DELETE (DeleteStatement)
+semicolon:
+  self: ; (Symbol)
+table_name:
+  self: table_name (Identifier)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: TRUE (BooleanLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+DELETE table_name t WHERE TRUE;
+",
+            "\
+self: DELETE (DeleteStatement)
+semicolon:
+  self: ; (Symbol)
+table_name:
+  self: table_name (Identifier)
+  alias:
+    self: t (Identifier)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: TRUE (BooleanLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+DELETE FROM table_name AS t
+WHERE NOT EXISTS (SELECT * FROM t WHERE TRUE);
+",
+            "\
+self: DELETE (DeleteStatement)
+from:
+  self: FROM (Keyword)
+semicolon:
+  self: ; (Symbol)
+table_name:
+  self: table_name (Identifier)
+  alias:
+    self: t (Identifier)
+  as:
+    self: AS (Keyword)
+where:
+  self: WHERE (KeywordWithExpr)
+  expr:
+    self: NOT (UnaryOperator)
+    right:
+      self: ( (CallingFunction)
+      args:
+      - self: SELECT (SelectStatement)
+        exprs:
+        - self: * (Symbol)
+        from:
+          self: FROM (KeywordWithExpr)
+          expr:
+            self: t (Identifier)
+        where:
+          self: WHERE (KeywordWithExpr)
+          expr:
+            self: TRUE (BooleanLiteral)
+      func:
+        self: EXISTS (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -101,7 +177,6 @@ target_name:
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
 
-//            delete table where true;delete table t where true;delete from table as t where not exists (select * from t where true);
 //            truncate table t;
 //            update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
 //            update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
