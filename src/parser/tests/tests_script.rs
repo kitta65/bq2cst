@@ -37,6 +37,7 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- SET statement -----
         TestCase::new(
             "\
 SET x = 5
@@ -112,6 +113,7 @@ expr:
       - self: 2 (NumericLiteral)
 ",
         ),
+        // ----- EXECUTE statement -----
         TestCase::new(
             "\
 EXECUTE IMMEDIATE 'SELECT 1'
@@ -222,6 +224,7 @@ stmts:
     self: ; (Symbol)
 ",
         ),
+        // ----- BEGIN statement -----
         TestCase::new(
             "\
 BEGIN
@@ -272,6 +275,202 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- IF statement -----
+        TestCase::new(
+            "\
+IF TRUE THEN END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+",
+        ),
+        TestCase::new(
+            "\
+IF TRUE THEN
+  SELECT 1;
+  SELECT 2;
+END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+IF TRUE THEN
+  SELECT 1;
+ELSEIF TRUE THEN
+END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+elseifs:
+- self: ELSEIF (Keyword)
+  condition:
+    self: TRUE (BooleanLiteral)
+  then:
+    self: THEN (KeywordWithStatements)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+IF TRUE THEN
+ELSEIF TRUE THEN
+  SELECT 1;
+ELSEIF TRUE THEN
+  SELECT 2;
+  SELECT 3;
+ELSE
+END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+else:
+  self: ELSE (KeywordWithStatements)
+elseifs:
+- self: ELSEIF (Keyword)
+  condition:
+    self: TRUE (BooleanLiteral)
+  then:
+    self: THEN (KeywordWithStatements)
+    stmts:
+    - self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+      semicolon:
+        self: ; (Symbol)
+- self: ELSEIF (Keyword)
+  condition:
+    self: TRUE (BooleanLiteral)
+  then:
+    self: THEN (KeywordWithStatements)
+    stmts:
+    - self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
+      semicolon:
+        self: ; (Symbol)
+    - self: SELECT (SelectStatement)
+      exprs:
+      - self: 3 (NumericLiteral)
+      semicolon:
+        self: ; (Symbol)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+",
+        ),
+        TestCase::new(
+            "\
+IF TRUE THEN
+ELSE SELECT 1;
+END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+else:
+  self: ELSE (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+",
+        ),
+        TestCase::new(
+            "\
+IF TRUE THEN
+ELSE
+  SELECT 1;
+  SELECT 2;
+END IF;
+",
+            "\
+self: IF (IfStatement)
+condition:
+  self: TRUE (BooleanLiteral)
+else:
+  self: ELSE (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+end_if:
+- self: END (Keyword)
+- self: IF (Keyword)
+semicolon:
+  self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -294,12 +493,6 @@ semicolon:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 
-//            if true then end if;
-//            if true then select 1; select 2;end if;
-//            if true then select 1; elseif true then end if;
-//            if true then elseif true then select 1; elseif true then select 2; select 3; else end if;
-//            if true then else select 1; end if;
-//            if true then else select 1;select 2; end if;
 //            loop select 1; end loop;loop select 1;break; end loop;
 //            while true do select 1; end while;
 //            while true do iterate;leave;continue; end while;

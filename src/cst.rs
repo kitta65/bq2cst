@@ -40,7 +40,9 @@ pub enum NodeType {
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
+    KeywordWithStatements, // THEN SELECT 1;
     Identifier,
+    IfStatement,
     InOperator,
     JoinOperator, // JOIN | ,
     LimitClause,

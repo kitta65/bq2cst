@@ -1266,14 +1266,14 @@ impl Parser {
         node
     }
     fn parse_if_statement(&mut self) -> Node {
-        let mut if_ = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> cond
+        let mut if_ = self.construct_node(NodeType::IfStatement);
+        self.next_token(); // -> condition
         if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
 
-        self.next_token(); // -> then
-        let mut then = self.construct_node(NodeType::Unknown);
+        self.next_token(); // -> THEN
+        let mut then = self.construct_node(NodeType::KeywordWithStatements);
         let mut then_stmts = Vec::new();
-        while !self.get_token(1).in_(&vec!["elseif", "else", "end"]) {
+        while !self.get_token(1).in_(&vec!["ELSEIF", "ELSE", "END"]) {
             self.next_token(); // -> stmt
             then_stmts.push(self.parse_statement());
         }
@@ -1283,15 +1283,15 @@ impl Parser {
         if_.push_node("then", then);
 
         let mut elseifs = Vec::new();
-        while self.get_token(1).is("elseif") {
-            self.next_token(); // -> elseif
-            let mut elseif = self.construct_node(NodeType::Unknown);
+        while self.get_token(1).is("ELSEIF") {
+            self.next_token(); // -> ELSEIF
+            let mut elseif = self.construct_node(NodeType::Keyword);
             self.next_token(); // -> condition
             elseif.push_node("condition", self.parse_expr(999, &vec!["then"], false));
-            self.next_token(); // -> then
-            let mut then = self.construct_node(NodeType::Unknown);
+            self.next_token(); // -> THEN
+            let mut then = self.construct_node(NodeType::KeywordWithStatements);
             let mut then_stmts = Vec::new();
-            while !self.get_token(1).in_(&vec!["elseif", "else", "end"]) {
+            while !self.get_token(1).in_(&vec!["ELSEIF", "ELSE", "END"]) {
                 self.next_token(); // -> stmt
                 then_stmts.push(self.parse_statement());
             }
@@ -1305,11 +1305,11 @@ impl Parser {
             if_.push_node_vec("elseifs", elseifs);
         }
 
-        if self.get_token(1).is("else") {
-            self.next_token(); // -> else
-            let mut else_ = self.construct_node(NodeType::Unknown);
+        if self.get_token(1).is("ELSE") {
+            self.next_token(); // -> ELSE
+            let mut else_ = self.construct_node(NodeType::KeywordWithStatements);
             let mut else_stmts = Vec::new();
-            while !self.get_token(1).is("end") {
+            while !self.get_token(1).is("END") {
                 self.next_token(); // -> stmt
                 else_stmts.push(self.parse_statement());
             }
@@ -1318,10 +1318,10 @@ impl Parser {
             }
             if_.push_node("else", else_);
         }
-        self.next_token(); // -> end
-        let end = self.construct_node(NodeType::Unknown);
-        self.next_token(); // -> if
-        if_.push_node_vec("end_if", vec![end, self.construct_node(NodeType::Unknown)]);
+        self.next_token(); // -> END
+        let end = self.construct_node(NodeType::Keyword);
+        self.next_token(); // -> IF
+        if_.push_node_vec("end_if", vec![end, self.construct_node(NodeType::Keyword)]);
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
             if_.push_node("semicolon", self.construct_node(NodeType::Symbol));
