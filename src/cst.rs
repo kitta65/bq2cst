@@ -46,6 +46,7 @@ pub enum NodeType {
     InOperator,
     JoinOperator, // JOIN | ,
     LimitClause,
+    LoopStatement,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
     OnClause,        // on x.c1 = y.c2
@@ -53,6 +54,7 @@ pub enum NodeType {
     SelectStatement, // SELECT 1;
     SetOperator,     // UNION | INTERSECT | EXCEPT
     SetStatement,    // SET x = 5
+    SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
     Symbol,            // ) | ] | * | ...

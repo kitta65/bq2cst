@@ -473,6 +473,50 @@ then:
   self: THEN (KeywordWithStatements)
 ",
         ),
+        // ----- LOOP statement -----
+        TestCase::new(
+            "\
+LOOP
+  SELECT 1;
+END LOOP;
+",
+            "\
+self: LOOP (LoopStatement)
+end_loop:
+- self: END (Keyword)
+- self: LOOP (Keyword)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+LOOP SELECT 1; BREAK; END LOOP;
+",
+            "\
+self: LOOP (LoopStatement)
+end_loop:
+- self: END (Keyword)
+- self: LOOP (Keyword)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+- self: BREAK (SingleTokenStatement)
+  semicolon:
+    self: ; (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -495,7 +539,6 @@ then:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 
-//            loop select 1; end loop;loop select 1;break; end loop;
 //            while true do select 1; end while;
 //            while true do iterate;leave;continue; end while;
 //            raise;raise using message = 'error';
