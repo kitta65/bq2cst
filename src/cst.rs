@@ -51,6 +51,7 @@ pub enum NodeType {
     NullLiteral,
     OnClause,        // on x.c1 = y.c2
     OverCaluse,      // OVER (PARTITON BY x, y)
+    RaiseStatement,
     SelectStatement, // SELECT 1;
     SetOperator,     // UNION | INTERSECT | EXCEPT
     SetStatement,    // SET x = 5

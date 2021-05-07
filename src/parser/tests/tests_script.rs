@@ -575,6 +575,35 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- WHILE statement -----
+        TestCase::new(
+            "\
+RAISE;
+",
+            "\
+self: RAISE (RaiseStatement)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+RAISE USING MESSAGE = 'error';
+",
+            "\
+self: RAISE (RaiseStatement)
+semicolon:
+  self: ; (Symbol)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: MESSAGE (Identifier)
+    right:
+      self: 'error' (StringLiteral)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -597,7 +626,6 @@ semicolon:
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
 
-//            raise;raise using message = 'error';
 //            begin
 //              begin
 //                select 1;

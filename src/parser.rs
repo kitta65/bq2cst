@@ -1262,6 +1262,22 @@ impl Parser {
         }
         node
     }
+    fn parse_raise_statement(&mut self) -> Node {
+        let mut raise = self.construct_node(NodeType::RaiseStatement);
+        if self.get_token(1).is("using") {
+            self.next_token(); // -> USING
+            let mut using = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> MESSAGE
+            // NOTE node_type of MESSAGE is not Keyword but Identifier
+            using.push_node("expr", self.parse_expr(999, &vec![";"], false));
+            raise.push_node("using", using);
+        }
+        if self.get_token(1).is(";") {
+            self.next_token(); // -> ;
+            raise.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        raise
+    }
     fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> procedure_name
@@ -1271,21 +1287,6 @@ impl Parser {
             call.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         call
-    }
-    fn parse_raise_statement(&mut self) -> Node {
-        let mut raise = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("using") {
-            self.next_token(); // -> using
-            let mut using = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> message
-            using.push_node("expr", self.parse_expr(999, &vec![";"], false));
-            raise.push_node("using", using);
-        }
-        if self.get_token(1).is(";") {
-            self.next_token(); // -> ;
-            raise.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        raise
     }
     fn parse_identifier(&mut self) -> Node {
         let mut left = self.construct_node(NodeType::Identifier);
