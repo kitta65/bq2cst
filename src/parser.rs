@@ -1142,6 +1142,46 @@ impl Parser {
         }
         execute
     }
+    fn parse_begin_statement(&mut self, root: bool) -> Node {
+        let mut begin = self.construct_node(NodeType::BeginStatement);
+        let mut stmts = Vec::new();
+        while !self.get_token(1).in_(&vec!["END", "EXCEPTION"]) {
+            self.next_token(); // -> stmt
+            stmts.push(self.parse_statement());
+        }
+        if 0 < stmts.len() {
+            begin.push_node_vec("stmts", stmts);
+        }
+        if self.get_token(1).is("exception") {
+            self.next_token(); // ; -> EXCEPTION
+            let exception = self.construct_node(NodeType::Keyword);
+            self.next_token(); // EXCEPTION -> WHEN
+            let when = self.construct_node(NodeType::Keyword);
+            self.next_token(); // WHEN -> ERROR
+            let error = self.construct_node(NodeType::Keyword);
+            self.next_token(); // WHEN -> THEN
+            let then = self.construct_node(NodeType::Keyword);
+            begin.push_node_vec(
+                "exception_when_error_then",
+                vec![exception, when, error, then],
+            );
+            let mut exception_stmts = Vec::new();
+            while !self.get_token(1).is("END") {
+                self.next_token(); // -> stmt
+                exception_stmts.push(self.parse_statement());
+            }
+            if 0 < exception_stmts.len() {
+                begin.push_node_vec("exception_stmts", exception_stmts);
+            }
+        }
+        self.next_token(); // -> end
+        begin.push_node("end", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is(";") && root {
+            self.next_token(); // -> ;
+            begin.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        begin
+    }
     fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node(NodeType::Unknown);
         self.next_token(); // -> procedure_name
@@ -1287,46 +1327,6 @@ impl Parser {
             if_.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         if_
-    }
-    fn parse_begin_statement(&mut self, root: bool) -> Node {
-        let mut begin = self.construct_node(NodeType::Unknown);
-        let mut stmts = Vec::new();
-        while !self.get_token(1).in_(&vec!["end", "exception"]) {
-            self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
-        }
-        if 0 < stmts.len() {
-            begin.push_node_vec("stmts", stmts);
-        }
-        if self.get_token(1).is("exception") {
-            self.next_token(); // ; -> exception
-            let exception = self.construct_node(NodeType::Unknown);
-            self.next_token(); // exception -> when
-            let when = self.construct_node(NodeType::Unknown);
-            self.next_token(); // exception -> error
-            let error = self.construct_node(NodeType::Unknown);
-            self.next_token(); // when -> then
-            let then = self.construct_node(NodeType::Unknown);
-            begin.push_node_vec(
-                "exception_when_error_then",
-                vec![exception, when, error, then],
-            );
-            let mut exception_stmts = Vec::new();
-            while !self.get_token(1).is("end") {
-                self.next_token(); // -> stmt
-                exception_stmts.push(self.parse_statement());
-            }
-            if 0 < exception_stmts.len() {
-                begin.push_node_vec("exception_stmts", exception_stmts);
-            }
-        }
-        self.next_token(); // -> end
-        begin.push_node("end", self.construct_node(NodeType::Unknown));
-        if self.get_token(1).is(";") && root {
-            self.next_token(); // -> ;
-            begin.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        begin
     }
     fn parse_identifier(&mut self) -> Node {
         let mut left = self.construct_node(NodeType::Identifier);

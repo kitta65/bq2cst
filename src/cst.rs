@@ -17,6 +17,7 @@ pub enum NodeType {
     ArrayAccessing,
     ArrayLiteral,   // [1, 2]
     BinaryOperator, // + | - | = | ...
+    BeginStatement,
     BetweenOperator,
     BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (

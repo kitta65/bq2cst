@@ -196,6 +196,82 @@ using:
       self: AS (Keyword)
 ",
         ),
+        TestCase::new(
+            "\
+BEGIN
+  SELECT 1;
+  SELECT 2;
+END;
+",
+            "\
+self: BEGIN (BeginStatement)
+end:
+  self: END (Keyword)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+BEGIN
+  SELECT 1;
+EXCEPTION WHEN ERROR THEN
+  SELECT 2;
+END;
+",
+            "\
+self: BEGIN (BeginStatement)
+end:
+  self: END (Keyword)
+exception_stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+exception_when_error_then:
+- self: EXCEPTION (Keyword)
+- self: WHEN (Keyword)
+- self: ERROR (Keyword)
+- self: THEN (Keyword)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+BEGIN EXCEPTiON WHEN ERROR THEN END;
+",
+            "\
+self: BEGIN (BeginStatement)
+end:
+  self: END (Keyword)
+exception_when_error_then:
+- self: EXCEPTiON (Keyword)
+- self: WHEN (Keyword)
+- self: ERROR (Keyword)
+- self: THEN (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -217,8 +293,7 @@ using:
 //            when not matched by target then insert (id,value) values (1,2)
 //            when not matched by source then update set id=999
 //            when not matched by source and true then update set id=999,value=999
-//            ;
-//            begin select 1;select 2;end;begin select 1;exception when error then select 2;end;begin exception when error then end;
+
 //            if true then end if;
 //            if true then select 1; select 2;end if;
 //            if true then select 1; elseif true then end if;
