@@ -237,17 +237,10 @@ END;
 self: BEGIN (BeginStatement)
 end:
   self: END (Keyword)
-exception_stmts:
-- self: SELECT (SelectStatement)
-  exprs:
-  - self: 2 (NumericLiteral)
-  semicolon:
-    self: ; (Symbol)
-exception_when_error_then:
+exception_when_error:
 - self: EXCEPTION (Keyword)
 - self: WHEN (Keyword)
 - self: ERROR (Keyword)
-- self: THEN (Keyword)
 semicolon:
   self: ; (Symbol)
 stmts:
@@ -256,6 +249,14 @@ stmts:
   - self: 1 (NumericLiteral)
   semicolon:
     self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
 ",
         ),
         TestCase::new(
@@ -266,13 +267,14 @@ BEGIN EXCEPTiON WHEN ERROR THEN END;
 self: BEGIN (BeginStatement)
 end:
   self: END (Keyword)
-exception_when_error_then:
+exception_when_error:
 - self: EXCEPTiON (Keyword)
 - self: WHEN (Keyword)
 - self: ERROR (Keyword)
-- self: THEN (Keyword)
 semicolon:
   self: ; (Symbol)
+then:
+  self: THEN (KeywordWithStatements)
 ",
         ),
         // ----- IF statement -----
