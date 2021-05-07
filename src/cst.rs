@@ -22,7 +22,6 @@ pub enum NodeType {
     BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (
     CallingDatePartFunction, // WEEK(SUNDAY)
-    CallingProcedure,        // (
     CallStatement,           // CALL procedure_name (arg);
     CaseArm,                 // WHEN a THEN b
     CaseExpr,                // CASE WHEN a then b ELSE c END

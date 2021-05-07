@@ -1281,8 +1281,8 @@ impl Parser {
     fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node(NodeType::CallStatement);
         self.next_token(); // -> procedure_name
-        let mut procedure = self.parse_expr(999, &vec![";"], false);
-        procedure.node_type = NodeType::CallingProcedure;
+        // NOTE node_type of procedure is CallingFunction
+        let procedure = self.parse_expr(999, &vec![";"], false);
         call.push_node("procedure", procedure);
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
