@@ -64,6 +64,7 @@ pub enum NodeType {
     Symbol,            // ) | ] | * | ...
     TableSampleCaluse, // TABLESAMPLE SYSTEM (10 PERCENT)
     TableSampleRatio,  // (10 PERCENT)
+    TruncateStatement,
     Type,              // INT64
     TypeDeclaration,   // x INT64
     UnaryOperator,     // - | + | TIMESTAMP | ...

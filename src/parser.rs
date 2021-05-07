@@ -523,11 +523,11 @@ impl Parser {
         delete
     }
     fn parse_truncate_statement(&mut self) -> Node {
-        let mut truncate = self.construct_node(NodeType::Unknown);
-        self.next_token(); // truncate -> table
-        truncate.push_node("table", self.construct_node(NodeType::Unknown));
-        self.next_token(); // table -> ident
-        truncate.push_node("target_name", self.parse_identifier());
+        let mut truncate = self.construct_node(NodeType::TruncateStatement);
+        self.next_token(); // TRUNCATE -> TABLE
+        truncate.push_node("table", self.construct_node(NodeType::Keyword));
+        self.next_token(); // TABLE -> ident
+        truncate.push_node("table_name", self.parse_identifier());
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
             truncate.push_node("semicolon", self.construct_node(NodeType::Symbol));

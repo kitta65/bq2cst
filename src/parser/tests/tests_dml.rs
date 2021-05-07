@@ -166,6 +166,21 @@ where:
         self: ) (Symbol)
 ",
         ),
+        // ----- TRUNCATE statement -----
+        TestCase::new(
+            "\
+TRUNCATE table_name t;
+",
+            "\
+self: TRUNCATE (TruncateStatement)
+semicolon:
+  self: ; (Symbol)
+table:
+  self: table_name (Keyword)
+table_name:
+  self: t (Identifier)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -177,7 +192,6 @@ where:
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
 
-//            truncate table t;
 //            update table t set col1=1,col2=2 where true;update table1 as one set one.value=two.value from table2 as two where one.id = two.id;
 //            update t1 set t1.flg=true from t2 inner join t3 on t2.id=t3.id where t1.id=t3.id;
 //            merge t using s on t.id=s.id when matched then delete;
