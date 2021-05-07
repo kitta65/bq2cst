@@ -22,6 +22,8 @@ pub enum NodeType {
     BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (
     CallingDatePartFunction, // WEEK(SUNDAY)
+    CallingProcedure,        // (
+    CallStatement,           // CALL procedure_name (arg);
     CaseArm,                 // WHEN a THEN b
     CaseExpr,                // CASE WHEN a then b ELSE c END
     CastArgument,            // x AS INT64
@@ -40,7 +42,7 @@ pub enum NodeType {
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
-    KeywordWithStatements, // THEN SELECT 1;
+    KeywordWithStatements,   // THEN SELECT 1;
     Identifier,
     IfStatement,
     InOperator,
@@ -49,12 +51,12 @@ pub enum NodeType {
     LoopStatement,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
-    OnClause,        // on x.c1 = y.c2
-    OverCaluse,      // OVER (PARTITON BY x, y)
+    OnClause,   // on x.c1 = y.c2
+    OverCaluse, // OVER (PARTITON BY x, y)
     RaiseStatement,
-    SelectStatement, // SELECT 1;
-    SetOperator,     // UNION | INTERSECT | EXCEPT
-    SetStatement,    // SET x = 5
+    SelectStatement,      // SELECT 1;
+    SetOperator,          // UNION | INTERSECT | EXCEPT
+    SetStatement,         // SET x = 5
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,

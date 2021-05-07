@@ -604,6 +604,29 @@ using:
       self: 'error' (StringLiteral)
 ",
         ),
+        // ----- CALL statement -----
+        TestCase::new(
+            "\
+CALL mydataset.myprocedure(1);
+",
+            "\
+self: CALL (CallStatement)
+procedure:
+  self: ( (CallingProcedure)
+  args:
+  - self: 1 (NumericLiteral)
+  func:
+    self: . (Identifier)
+    left:
+      self: mydataset (Identifier)
+    right:
+      self: myprocedure (Identifier)
+  rparen:
+    self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -635,7 +658,6 @@ using:
 //            exception when error then
 //              select @@error.message;
 //            end;
-//            call mydataset.myprocedure(1);
 //            create table example (x int64);create temp table example (x int64, y int64);
 //            CREATE  or replace TABLE dataset.example(x INT64 OPTIONS(description='dummy'))
 //            PARTITION BY _PARTITIONDATE OPTIONS(partition_expiration_days=1);

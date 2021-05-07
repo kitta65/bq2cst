@@ -1279,9 +1279,11 @@ impl Parser {
         raise
     }
     fn parse_call_statement(&mut self) -> Node {
-        let mut call = self.construct_node(NodeType::Unknown);
+        let mut call = self.construct_node(NodeType::CallStatement);
         self.next_token(); // -> procedure_name
-        call.push_node("expr", self.parse_expr(999, &vec![";"], false));
+        let mut procedure = self.parse_expr(999, &vec![";"], false);
+        procedure.node_type = NodeType::CallingProcedure;
+        call.push_node("procedure", procedure);
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
             call.push_node("semicolon", self.construct_node(NodeType::Symbol));
