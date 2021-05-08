@@ -267,8 +267,10 @@ impl Parser {
             }
             type_declarations.push(type_declaration);
         }
+        if 0 < type_declarations.len() {
+            group.push_node_vec("declarations", type_declarations);
+        }
         group.push_node("rparen", self.construct_node(NodeType::Symbol));
-        group.push_node_vec("declarations", type_declarations);
         group
     }
     fn parse_keyword_with_grouped_exprs(&mut self) -> Node {
@@ -765,7 +767,10 @@ impl Parser {
             with.push_node_vec("partition_columns", self.parse_n_keywords(2));
             if self.get_token(1).is("(") {
                 self.next_token(); // -> (
-                with.push_node("column_schema_group", self.parse_grouped_type_declarations(false));
+                with.push_node(
+                    "column_schema_group",
+                    self.parse_grouped_type_declarations(false),
+                );
             }
             create.push_node("with_partition_columns", with);
         }
@@ -833,239 +838,68 @@ impl Parser {
         }
         create
     }
-    fn parse_create_table_statement_legacy(&mut self, semicolon: bool) -> Node {
-        let mut create = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("or") {
-            self.next_token(); // -> or
-            let or_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> replace
-            let replace = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("or_replace", vec![or_, replace]);
-        }
-        if self.get_token(1).is("materialized") {
-            self.next_token();
-            create.push_node("materialized", self.construct_node(NodeType::Unknown));
-        }
-        if self.get_token(1).is("external") {
-            self.next_token();
-            create.push_node("external", self.construct_node(NodeType::Unknown));
-        }
-        if self.get_token(1).in_(&vec!["temp", "temporary"]) {
-            self.next_token(); // -> temporary
-            create.push_node("temp", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> table
-        create.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.get_token(1).is("if") {
-            self.next_token(); // -> if
-            let if_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> not
-            let not = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> exists
-            let exists = self.construct_node(NodeType::Unknown);
-            create.push_node_vec("if_not_exists", vec![if_, not, exists]);
-        }
-        self.next_token(); // -> ident
-        create.push_node("ident", self.parse_identifier());
-        if self.get_token(1).is("(") {
-            self.next_token(); // -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            let mut column_definitions = Vec::new();
-            while !self.get_token(1).is(")") {
-                self.next_token(); // -> column_identifier
-                let mut column = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> type
-                column.push_node("type", self.parse_type(true));
-                if self.get_token(1).is(",") {
-                    self.next_token(); // -> ,
-                    column.push_node("comma", self.construct_node(NodeType::Unknown));
-                }
-                column_definitions.push(column);
-            }
-            group.push_node_vec("column_definitions", column_definitions);
-            self.next_token(); // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            create.push_node("column_schema_group", group);
-        }
-        if self.get_token(1).is("partition") {
-            self.next_token(); // -> partition
-            let mut partitionby = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> by
-            partitionby.push_node("by", self.construct_node(NodeType::Unknown));
-            self.next_token(); // -> expr
-            partitionby.push_node(
-                "expr",
-                self.parse_expr(999, &vec!["cluster", "options", "as"], false),
-            );
-            create.push_node("partitionby", partitionby);
-        }
-        if self.get_token(1).is("cluster") {
-            self.next_token(); // -> cluster
-            let mut clusterby = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> by
-            clusterby.push_node("by", self.construct_node(NodeType::Unknown));
-            self.next_token(); // -> expr
-            clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false)); // NOTE options is not reservved
-            create.push_node("clusterby", clusterby);
-        }
-        if self.get_token(1).is("with") {
-            self.next_token(); // -> with
-            let mut with = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> partition
-            let partition = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> columns
-            let columns = self.construct_node(NodeType::Unknown);
-            with.push_node_vec("partition_columns", vec![partition, columns]);
-            if self.get_token(1).is("(") {
-                self.next_token(); // -> "("
-                let mut group = self.construct_node(NodeType::Unknown);
-                let mut column_definitions = Vec::new();
-                while !self.get_token(1).is(")") {
-                    self.next_token(); // -> column_identifier
-                    let mut column = self.construct_node(NodeType::Unknown);
-                    self.next_token(); // -> type
-                    column.push_node("type", self.parse_type(true));
-                    if self.get_token(1).is(",") {
-                        self.next_token(); // -> ,
-                        column.push_node("comma", self.construct_node(NodeType::Unknown));
-                    }
-                    column_definitions.push(column);
-                }
-                if 0 < column_definitions.len() {
-                    group.push_node_vec("column_definitions", column_definitions);
-                }
-                self.next_token(); // -> )
-                group.push_node("rparen", self.construct_node(NodeType::Unknown));
-                with.push_node("column_schema_group", group);
-            }
-            create.push_node("with_partition_columns", with);
-        }
-        if self.get_token(1).is("options") {
-            self.next_token(); // options
-            let mut options = self.construct_node(NodeType::Unknown);
-            self.next_token(); // options -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            if !self.get_token(1).is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            options.push_node("group", group);
-            create.push_node("options", options);
-        }
-        if self.get_token(1).is("AS") {
-            self.next_token(); // -> AS
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> stmt
-            as_.push_node("stmt", self.parse_select_statement(false, true));
-            create.push_node("as", as_);
-        }
-        if self.get_token(1).is(";") && semicolon {
-            self.next_token(); // -> ;
-            create.push_node("semicolon", self.construct_node(NodeType::Symbol));
-        }
-        create
-    }
     fn parse_create_function_statement(&mut self, semicolon: bool) -> Node {
-        let mut node = self.construct_node(NodeType::Unknown);
+        let mut node = self.construct_node(NodeType::CreateFunctionStatement);
         if self.get_token(1).literal.to_uppercase() == "OR" {
-            let mut or_replace = Vec::new();
-            self.next_token(); // create -> or
-            or_replace.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // or -> replace
-            or_replace.push(self.construct_node(NodeType::Unknown));
-            node.push_node_vec("or_replace", or_replace);
+            self.next_token(); // -> OR
+            node.push_node_vec("or_replace", self.parse_n_keywords(2));
         }
-        if self.get_token(1).in_(&vec!["temporary", "temp"]) {
-            self.next_token(); // -> temp
-            node.push_node("temp", self.construct_node(NodeType::Unknown));
+        if self.get_token(1).in_(&vec!["TEMPORARY", "TEMP"]) {
+            self.next_token(); // -> TEMP
+            node.push_node("temp", self.construct_node(NodeType::Keyword));
         }
-        self.next_token(); // -> function
-        node.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.get_token(1).in_(&vec!["if"]) {
-            let mut if_not_exists = Vec::new();
-            self.next_token(); // function -> if
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // if -> not
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            self.next_token(); // not -> exists
-            if_not_exists.push(self.construct_node(NodeType::Unknown));
-            node.push_node_vec("if_not_exists", if_not_exists);
+        self.next_token(); // -> FUNCTION
+        node.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).in_(&vec!["IF"]) {
+            self.next_token(); // -> IF
+            node.push_node_vec("if_not_exists", self.parse_n_keywords(3));
         }
         self.next_token(); // -> ident
         node.push_node("ident", self.parse_identifier());
-        self.next_token(); // ident -> (
-        let mut group = self.construct_node(NodeType::Unknown);
-        let mut args = Vec::new();
-        while !self.get_token(1).is(")") {
-            self.next_token(); // ( -> arg, ',' -> arg
-            let mut arg = self.construct_node(NodeType::Unknown);
-            self.next_token(); // arg -> type
-            arg.push_node("type", self.parse_type(false));
-            if self.get_token(1).is(",") {
-                self.next_token(); // type -> ,
-                arg.push_node("comma", self.construct_node(NodeType::Unknown));
-            }
-            args.push(arg);
+        self.next_token(); // -> (
+        node.push_node("group", self.parse_grouped_type_declarations(false));
+        if self.get_token(1).is("RETURNS") {
+            self.next_token(); // -> RETURNS
+            let mut returns = self.construct_node(NodeType::KeywordWithType);
+            self.next_token(); // -> type
+            returns.push_node("type", self.parse_type(false));
+            node.push_node("returns", returns);
         }
-        if args.len() > 0 {
-            group.push_node_vec("args", args);
-        }
-        self.next_token(); // type -> )
-        group.push_node("rparen", self.construct_node(NodeType::Unknown));
-        node.push_node("group", group);
-        if self.get_token(1).is("returns") {
-            self.next_token(); // ) -> return
-            let mut return_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // return -> type
-            return_.push_node("type", self.parse_type(false));
-            node.push_node("returns", return_);
-        }
-        if self.get_token(1).is("as") {
-            self.next_token(); // -> as
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> (
-            let mut group = self.construct_node(NodeType::Unknown);
+        if self.get_token(1).is("AS") {
+            // sql function definition
+            self.next_token(); // -> AS
+            let mut as_ = self.construct_node(NodeType::KeywordWithGroupedExpr);
+            self.next_token(); // -> (
+            let mut group = self.construct_node(NodeType::GroupedExpr);
             self.next_token(); // ( -> expr
             group.push_node("expr", self.parse_expr(999, &vec![")"], false));
             self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+            group.push_node("rparen", self.construct_node(NodeType::Symbol));
             as_.push_node("group", group);
             node.push_node("as", as_);
         } else {
-            if self.get_token(1).in_(&vec!["deterministic", "not"]) {
-                self.next_token(); // type -> determinism
-                let mut determinism = self.construct_node(NodeType::Unknown);
-                if self.get_token(0).literal.to_uppercase() == "NOT" {
-                    self.next_token(); // not -> deterministic
-                    determinism.push_node("right", self.construct_node(NodeType::Unknown));
+            // javascript function definition
+            if self.get_token(1).in_(&vec!["DETERMINISTIC", "NOT"]) {
+                self.next_token(); // -> DETERMINISTIC | NOT
+                if self.get_token(0).is("NOT") {
+                    node.push_node_vec("determinism", self.parse_n_keywords(2));
+                } else {
+                    node.push_node_vec("determinism", self.parse_n_keywords(1));
                 }
-                node.push_node("determinism", determinism);
             }
-            self.next_token(); // determinism -> language, type -> language
-            let mut language = self.construct_node(NodeType::Unknown);
-            self.next_token(); // language -> js
-            language.push_node("language", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> LANGUAGE
+            let mut language = self.construct_node(NodeType::LanguageSpecifier);
+            self.next_token(); // -> js
+            language.push_node("language", self.construct_node(NodeType::Keyword));
             node.push_node("language", language);
-            if self.get_token(1).is("options") {
-                self.next_token(); // js -> options
-                let mut options = self.construct_node(NodeType::Unknown);
-                self.next_token(); // options -> (
-                let mut group = self.construct_node(NodeType::Unknown);
-                if !self.get_token(1).is(")") {
-                    self.next_token(); // ( -> expr
-                    group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-                }
-                self.next_token(); // expr -> )
-                group.push_node("rparen", self.construct_node(NodeType::Unknown));
-                options.push_node("group", group);
-                node.push_node("options", options);
+            if self.get_token(1).is("OPTIONS") {
+                self.next_token(); // -> OPTIONS
+                node.push_node("options", self.parse_keyword_with_grouped_exprs());
             }
-            self.next_token(); // js -> as, ) -> as
-            let mut as_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // as -> javascript_code
-            as_.push_node("expr", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> AS
+            let mut as_ = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> javascript_code
+            as_.push_node("expr", self.parse_expr(999, &vec![], false));
             node.push_node("as", as_);
         }
         if self.get_token(1).is(";") && semicolon {
@@ -1074,6 +908,140 @@ impl Parser {
         }
         node
     }
+    //fn parse_create_table_statement_legacy(&mut self, semicolon: bool) -> Node {
+    //    let mut create = self.construct_node(NodeType::Unknown);
+    //    if self.get_token(1).is("or") {
+    //        self.next_token(); // -> or
+    //        let or_ = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> replace
+    //        let replace = self.construct_node(NodeType::Unknown);
+    //        create.push_node_vec("or_replace", vec![or_, replace]);
+    //    }
+    //    if self.get_token(1).is("materialized") {
+    //        self.next_token();
+    //        create.push_node("materialized", self.construct_node(NodeType::Unknown));
+    //    }
+    //    if self.get_token(1).is("external") {
+    //        self.next_token();
+    //        create.push_node("external", self.construct_node(NodeType::Unknown));
+    //    }
+    //    if self.get_token(1).in_(&vec!["temp", "temporary"]) {
+    //        self.next_token(); // -> temporary
+    //        create.push_node("temp", self.construct_node(NodeType::Unknown));
+    //    }
+    //    self.next_token(); // -> table
+    //    create.push_node("what", self.construct_node(NodeType::Unknown));
+    //    if self.get_token(1).is("if") {
+    //        self.next_token(); // -> if
+    //        let if_ = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> not
+    //        let not = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> exists
+    //        let exists = self.construct_node(NodeType::Unknown);
+    //        create.push_node_vec("if_not_exists", vec![if_, not, exists]);
+    //    }
+    //    self.next_token(); // -> ident
+    //    create.push_node("ident", self.parse_identifier());
+    //    if self.get_token(1).is("(") {
+    //        self.next_token(); // -> (
+    //        let mut group = self.construct_node(NodeType::Unknown);
+    //        let mut column_definitions = Vec::new();
+    //        while !self.get_token(1).is(")") {
+    //            self.next_token(); // -> column_identifier
+    //            let mut column = self.construct_node(NodeType::Unknown);
+    //            self.next_token(); // -> type
+    //            column.push_node("type", self.parse_type(true));
+    //            if self.get_token(1).is(",") {
+    //                self.next_token(); // -> ,
+    //                column.push_node("comma", self.construct_node(NodeType::Unknown));
+    //            }
+    //            column_definitions.push(column);
+    //        }
+    //        group.push_node_vec("column_definitions", column_definitions);
+    //        self.next_token(); // -> )
+    //        group.push_node("rparen", self.construct_node(NodeType::Unknown));
+    //        create.push_node("column_schema_group", group);
+    //    }
+    //    if self.get_token(1).is("partition") {
+    //        self.next_token(); // -> partition
+    //        let mut partitionby = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> by
+    //        partitionby.push_node("by", self.construct_node(NodeType::Unknown));
+    //        self.next_token(); // -> expr
+    //        partitionby.push_node(
+    //            "expr",
+    //            self.parse_expr(999, &vec!["cluster", "options", "as"], false),
+    //        );
+    //        create.push_node("partitionby", partitionby);
+    //    }
+    //    if self.get_token(1).is("cluster") {
+    //        self.next_token(); // -> cluster
+    //        let mut clusterby = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> by
+    //        clusterby.push_node("by", self.construct_node(NodeType::Unknown));
+    //        self.next_token(); // -> expr
+    //        clusterby.push_node_vec("exprs", self.parse_exprs(&vec!["options", "as"], false)); // NOTE options is not reservved
+    //        create.push_node("clusterby", clusterby);
+    //    }
+    //    if self.get_token(1).is("with") {
+    //        self.next_token(); // -> with
+    //        let mut with = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> partition
+    //        let partition = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // -> columns
+    //        let columns = self.construct_node(NodeType::Unknown);
+    //        with.push_node_vec("partition_columns", vec![partition, columns]);
+    //        if self.get_token(1).is("(") {
+    //            self.next_token(); // -> "("
+    //            let mut group = self.construct_node(NodeType::Unknown);
+    //            let mut column_definitions = Vec::new();
+    //            while !self.get_token(1).is(")") {
+    //                self.next_token(); // -> column_identifier
+    //                let mut column = self.construct_node(NodeType::Unknown);
+    //                self.next_token(); // -> type
+    //                column.push_node("type", self.parse_type(true));
+    //                if self.get_token(1).is(",") {
+    //                    self.next_token(); // -> ,
+    //                    column.push_node("comma", self.construct_node(NodeType::Unknown));
+    //                }
+    //                column_definitions.push(column);
+    //            }
+    //            if 0 < column_definitions.len() {
+    //                group.push_node_vec("column_definitions", column_definitions);
+    //            }
+    //            self.next_token(); // -> )
+    //            group.push_node("rparen", self.construct_node(NodeType::Unknown));
+    //            with.push_node("column_schema_group", group);
+    //        }
+    //        create.push_node("with_partition_columns", with);
+    //    }
+    //    if self.get_token(1).is("options") {
+    //        self.next_token(); // options
+    //        let mut options = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // options -> (
+    //        let mut group = self.construct_node(NodeType::Unknown);
+    //        if !self.get_token(1).is(")") {
+    //            self.next_token(); // ( -> expr
+    //            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+    //        }
+    //        self.next_token(); // expr -> )
+    //        group.push_node("rparen", self.construct_node(NodeType::Unknown));
+    //        options.push_node("group", group);
+    //        create.push_node("options", options);
+    //    }
+    //    if self.get_token(1).is("AS") {
+    //        self.next_token(); // -> AS
+    //        let mut as_ = self.construct_node(NodeType::Unknown);
+    //        self.next_token(); // as -> stmt
+    //        as_.push_node("stmt", self.parse_select_statement(false, true));
+    //        create.push_node("as", as_);
+    //    }
+    //    if self.get_token(1).is(";") && semicolon {
+    //        self.next_token(); // -> ;
+    //        create.push_node("semicolon", self.construct_node(NodeType::Symbol));
+    //    }
+    //    create
+    //}
     fn parse_create_procedure_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("or") {

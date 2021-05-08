@@ -26,6 +26,7 @@ pub enum NodeType {
     CaseArm,                 // WHEN a THEN b
     CaseExpr,                // CASE WHEN a then b ELSE c END
     CastArgument,            // x AS INT64
+    CreateFunctionStatement,
     CreateSchemaStatement,
     CreateTableStatement,
     CreateViewStatement,
@@ -44,6 +45,8 @@ pub enum NodeType {
     Keyword,
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2
+    KeywordWithType,         // RETURNS INT64
+    KeywordWithGroupedExpr,  // AS (1 + 1)
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
     KeywordWithStatement,    // THEN INSERT ROW
     KeywordWithStatements,   // THEN SELECT 1;
@@ -51,7 +54,8 @@ pub enum NodeType {
     IfStatement,
     InsertStatement,
     InOperator,
-    JoinOperator, // JOIN | ,
+    JoinOperator,      // JOIN | ,
+    LanguageSpecifier, // LANGUAGE js
     LimitClause,
     LoopStatement,
     MergeStatement,

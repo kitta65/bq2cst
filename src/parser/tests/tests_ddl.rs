@@ -422,16 +422,253 @@ what:
   self: VIEW (Keyword)
 ",
         ),
+        // ----- CREATE FUNCTION statement -----
+        // sql function definition
+        TestCase::new(
+            "\
+CREATE OR REPLACE FUNCTION abc() AS (1);
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithGroupedExpr)
+  group:
+    self: ( (GroupedExpr)
+    expr:
+      self: 1 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+or_replace:
+- self: OR (Keyword)
+- self: REPLACE (Keyword)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE TEMP FUNCTION abc(x INT64) AS (x);
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithGroupedExpr)
+  group:
+    self: ( (GroupedExpr)
+    expr:
+      self: x (Identifier)
+    rparen:
+      self: ) (Symbol)
+group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: INT64 (Type)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+semicolon:
+  self: ; (Symbol)
+temp:
+  self: TEMP (Keyword)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE FUNCTION IF NOT EXISTS abc(x ARRAY<INT64>, y INT64)
+RETURNS INT64
+AS (x + y);
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithGroupedExpr)
+  group:
+    self: ( (GroupedExpr)
+    expr:
+      self: + (BinaryOperator)
+      left:
+        self: x (Identifier)
+      right:
+        self: y (Identifier)
+    rparen:
+      self: ) (Symbol)
+group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    comma:
+      self: , (Symbol)
+    type:
+      self: ARRAY (Type)
+      type_declaration:
+        self: < (GroupedType)
+        rparen:
+          self: > (Symbol)
+        type:
+          self: INT64 (Type)
+  - self: y (TypeDeclaration)
+    type:
+      self: INT64 (Type)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+if_not_exists:
+- self: IF (Keyword)
+- self: NOT (Keyword)
+- self: EXISTS (Keyword)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
+        // javascript function definition
+        TestCase::new(
+            "\
+CREATE FUNCTION abc() RETURNS INT64 LAGUAGE js
+OPTIONS()
+AS '''return 1''';
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: '''return 1''' (StringLiteral)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+language:
+  self: LAGUAGE (LanguageSpecifier)
+  language:
+    self: js (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    rparen:
+      self: ) (Symbol)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE FUNCTION abc() RETURNS INT64 DETERMINISTIC LANGUAGE js
+OPTIONS(library = ['dummy'])
+AS '''return 1''';
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: '''return 1''' (StringLiteral)
+determinism:
+- self: DETERMINISTIC (Keyword)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+language:
+  self: LANGUAGE (LanguageSpecifier)
+  language:
+    self: js (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: library (Identifier)
+      right:
+        self: [ (ArrayLiteral)
+        exprs:
+        - self: 'dummy' (StringLiteral)
+        rparen:
+          self: ] (Symbol)
+    rparen:
+      self: ) (Symbol)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE FUNCTION abc() RETURNS INT64 NOT DETERMINISTIC LANGUAGE js
+AS '''return 1''';
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: '''return 1''' (StringLiteral)
+determinism:
+- self: NOT (Keyword)
+- self: DETERMINISTIC (Keyword)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+language:
+  self: LANGUAGE (LanguageSpecifier)
+  language:
+    self: js (Keyword)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
     }
 }
 
-//            create temp function abc(x int64) as (x);create function if not exists abc(x array<int64>, y int64) returns int64 as (x+y);create or replace function abc() as(1);
-//            create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
-//            create function abc() returns int64 language js options() as '''return 1''';
-//            create function abc() returns int64 not deterministic language js as '''return 1''';
 
 //            CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
 //            CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
