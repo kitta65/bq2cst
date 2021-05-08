@@ -346,6 +346,239 @@ where:
         self: id (Identifier)
 ",
         ),
+        // ----- MERGE statement -----
+        // DELETE
+        TestCase::new(
+            "\
+MERGE t 
+USING s ON t.id = s.id
+WHEN MATCHED THEN DELETE;
+",
+            "\
+self: MERGE (MergeStatement)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: id (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: s (Identifier)
+      right:
+        self: id (Identifier)
+semicolon:
+  self: ; (Symbol)
+table_name:
+  self: t (Identifier)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: s (Identifier)
+whens:
+- self: WHEN (WhenClause)
+  matched:
+    self: MATCHED (Keyword)
+  then:
+    self: THEN (KeywordWithStatement)
+    stmt:
+      self: DELETE (SingleTokenStatement)
+",
+        ),
+        // INSERT
+        TestCase::new(
+            "\
+MERGE t1 AS t USING t2 AS s ON t.id = s.id
+WHEN NOT MATCHED THEN INSERT ROW
+WHEN NOT MATCHED BY TARGET THEN
+  INSERT (id, value) VALUES (1,2)
+",
+            "\
+self: MERGE (MergeStatement)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: id (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: s (Identifier)
+      right:
+        self: id (Identifier)
+table_name:
+  self: t1 (Identifier)
+  alias:
+    self: t (Identifier)
+  as:
+    self: AS (Keyword)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: t2 (Identifier)
+    alias:
+      self: s (Identifier)
+    as:
+      self: AS (Keyword)
+whens:
+- self: WHEN (WhenClause)
+  matched:
+    self: MATCHED (Keyword)
+  not:
+    self: NOT (Keyword)
+  then:
+    self: THEN (KeywordWithStatement)
+    stmt:
+      self: INSERT (InsertStatement)
+      input:
+        self: ROW (Keyword)
+- self: WHEN (WhenClause)
+  by_target_or_source:
+  - self: BY (Keyword)
+  - self: TARGET (Keyword)
+  matched:
+    self: MATCHED (Keyword)
+  not:
+    self: NOT (Keyword)
+  then:
+    self: THEN (KeywordWithStatement)
+    stmt:
+      self: INSERT (InsertStatement)
+      columns:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: id (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: value (Identifier)
+        rparen:
+          self: ) (Symbol)
+      input:
+        self: VALUES (KeywordWithExprs)
+        exprs:
+        - self: ( (GroupedExprs)
+          exprs:
+          - self: 1 (NumericLiteral)
+            comma:
+              self: , (Symbol)
+          - self: 2 (NumericLiteral)
+          rparen:
+            self: ) (Symbol)
+",
+        ),
+        // UPDATE
+        TestCase::new(
+            "\
+MERGE dataset.t t USING dataset.s AS s ON t.id = s.id
+WHEN NOT MATCHED BY SOURCE THEN
+  UPDATE SET id = 999
+WHEN NOT MATCHED BY SOURCE AND TRUE THEN
+  UPDATE SET
+    id = 999,
+    value=999
+",
+            "\
+self: MERGE (MergeStatement)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: . (BinaryOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: id (Identifier)
+    right:
+      self: . (BinaryOperator)
+      left:
+        self: s (Identifier)
+      right:
+        self: id (Identifier)
+table_name:
+  self: . (BinaryOperator)
+  alias:
+    self: t (Identifier)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: t (Identifier)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: . (BinaryOperator)
+    alias:
+      self: s (Identifier)
+    as:
+      self: AS (Keyword)
+    left:
+      self: dataset (Identifier)
+    right:
+      self: s (Identifier)
+whens:
+- self: WHEN (WhenClause)
+  by_target_or_source:
+  - self: BY (Keyword)
+  - self: SOURCE (Keyword)
+  matched:
+    self: MATCHED (Keyword)
+  not:
+    self: NOT (Keyword)
+  then:
+    self: THEN (KeywordWithStatement)
+    stmt:
+      self: UPDATE (UpdateStatement)
+      set:
+        self: SET (KeywordWithExprs)
+        exprs:
+        - self: = (BinaryOperator)
+          left:
+            self: id (Identifier)
+          right:
+            self: 999 (NumericLiteral)
+- self: WHEN (WhenClause)
+  and:
+    self: AND (KeywordWithExpr)
+    expr:
+      self: TRUE (BooleanLiteral)
+  by_target_or_source:
+  - self: BY (Keyword)
+  - self: SOURCE (Keyword)
+  matched:
+    self: MATCHED (Keyword)
+  not:
+    self: NOT (Keyword)
+  then:
+    self: THEN (KeywordWithStatement)
+    stmt:
+      self: UPDATE (UpdateStatement)
+      set:
+        self: SET (KeywordWithExprs)
+        exprs:
+        - self: = (BinaryOperator)
+          comma:
+            self: , (Symbol)
+          left:
+            self: id (Identifier)
+          right:
+            self: 999 (NumericLiteral)
+        - self: = (BinaryOperator)
+          left:
+            self: value (Identifier)
+          right:
+            self: 999 (NumericLiteral)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -356,13 +589,6 @@ where:
 //            create function abc() returns int64 deterministic language js options(library=['dummy']) as '''return 1''';
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
-
-//            merge t using s on t.id=s.id when matched then delete;
-//            merge dataset.t t using dataset.s s on t.id=s.id
-//            when not matched then insert row
-//            when not matched by target then insert (id,value) values (1,2)
-//            when not matched by source then update set id=999
-//            when not matched by source and true then update set id=999,value=999
 
 //            create table example (x int64);create temp table example (x int64, y int64);
 //            CREATE  or replace TABLE dataset.example(x INT64 OPTIONS(description='dummy'))

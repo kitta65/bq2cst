@@ -570,62 +570,63 @@ impl Parser {
         update
     }
     fn parse_merge_statement(&mut self, root: bool) -> Node {
-        let mut merge = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("into") {
-            self.next_token(); // merge -> into
-            merge.push_node("into", self.construct_node(NodeType::Unknown));
+        let mut merge = self.construct_node(NodeType::MergeStatement);
+        if self.get_token(1).is("INTO") {
+            self.next_token(); // MERGE -> INTO
+            merge.push_node("into", self.construct_node(NodeType::Keyword));
         }
-        self.next_token(); // -> target_table
-        merge.push_node("target_name", self.parse_table(true));
-        self.next_token(); // -> using
-        let mut using = self.construct_node(NodeType::Unknown);
-        self.next_token(); // using -> expr
+        self.next_token(); // -> table_name
+        merge.push_node("table_name", self.parse_table(true));
+        self.next_token(); // -> USING
+        let mut using = self.construct_node(NodeType::KeywordWithExpr);
+        self.next_token(); // USING -> expr
         using.push_node("expr", self.parse_expr(999, &vec!["on"], true));
         merge.push_node("using", using);
         if self.get_token(1).is(";") {
             self.next_token(); // -> ;
             merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
-        self.next_token(); // -> on
-        let mut on = self.construct_node(NodeType::Unknown);
-        self.next_token(); // on -> expr
+        self.next_token(); // -> ON
+        let mut on = self.construct_node(NodeType::KeywordWithExpr);
+        self.next_token(); // ON -> expr
         on.push_node("expr", self.parse_expr(999, &vec!["when"], false));
         merge.push_node("on", on);
         let mut whens = Vec::new();
         while self.get_token(1).is("when") {
-            self.next_token(); // -> when
-            let mut when = self.construct_node(NodeType::Unknown);
-            if self.get_token(1).is("not") {
-                self.next_token(); // when -> not
-                when.push_node("not", self.construct_node(NodeType::Unknown));
+            self.next_token(); // -> WHEN
+            let mut when = self.construct_node(NodeType::WhenClause);
+            if self.get_token(1).is("NOT") {
+                self.next_token(); // WHEN -> NOT
+                when.push_node("not", self.construct_node(NodeType::Keyword));
             }
-            self.next_token(); // -> matched
-            when.push_node("matched", self.construct_node(NodeType::Unknown));
-            if self.get_token(1).is("by") {
-                self.next_token(); // -> by
-                let by = self.construct_node(NodeType::Unknown);
-                self.next_token(); // -> target, source
-                let target = self.construct_node(NodeType::Unknown);
-                when.push_node_vec("by_target", vec![by, target]);
+            self.next_token(); // -> MATCHED
+            when.push_node("matched", self.construct_node(NodeType::Keyword));
+            if self.get_token(1).is("BY") {
+                self.next_token(); // -> BY
+                let by = self.construct_node(NodeType::Keyword);
+                self.next_token(); // -> TARGET, SOURCE
+                let target = self.construct_node(NodeType::Keyword);
+                when.push_node_vec("by_target_or_source", vec![by, target]);
             }
-            if self.get_token(1).is("and") {
-                self.next_token(); // -> and
-                let mut and = self.construct_node(NodeType::Unknown);
+            if self.get_token(1).is("AND") {
+                self.next_token(); // -> AND
+                let mut and = self.construct_node(NodeType::KeywordWithExpr);
                 self.next_token(); // -> expr
                 let cond = self.parse_expr(999, &vec!["then"], false);
                 and.push_node("expr", cond);
                 when.push_node("and", and);
             }
-            self.next_token(); // -> then
-            when.push_node("then", self.construct_node(NodeType::Unknown));
-            self.next_token(); // then -> stmt
+            self.next_token(); // -> THEN
+            let mut then = self.construct_node(NodeType::KeywordWithStatement);
+            self.next_token(); // THEN -> stmt
             let stmt = match self.get_token(0).literal.to_uppercase().as_str() {
-                "DELETE" => self.construct_node(NodeType::Unknown),
+                "DELETE" => self.construct_node(NodeType::SingleTokenStatement),
                 "UPDATE" => self.parse_update_statement(false),
                 "INSERT" => self.parse_insert_statement(false),
                 _ => panic!(),
             };
-            when.push_node("stmt", stmt);
+            then.push_node("stmt", stmt);
+            when.push_node("then", then);
             whens.push(when);
         }
         merge.push_node_vec("whens", whens);
@@ -1190,7 +1191,10 @@ impl Parser {
         if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
 
         self.next_token(); // -> THEN
-        if_.push_node("then", self.parse_keyword_with_statements(&vec!["ELSEIF", "ELSE", "END"]));
+        if_.push_node(
+            "then",
+            self.parse_keyword_with_statements(&vec!["ELSEIF", "ELSE", "END"]),
+        );
 
         let mut elseifs = Vec::new();
         while self.get_token(1).is("ELSEIF") {
@@ -1199,7 +1203,10 @@ impl Parser {
             self.next_token(); // -> condition
             elseif.push_node("condition", self.parse_expr(999, &vec!["then"], false));
             self.next_token(); // -> THEN
-            elseif.push_node("then", self.parse_keyword_with_statements(&vec!["ELSEIF", "ELSE", "END"]));
+            elseif.push_node(
+                "then",
+                self.parse_keyword_with_statements(&vec!["ELSEIF", "ELSE", "END"]),
+            );
             elseifs.push(elseif);
         }
         if 0 < elseifs.len() {
@@ -1269,7 +1276,7 @@ impl Parser {
             self.next_token(); // -> USING
             let mut using = self.construct_node(NodeType::KeywordWithExpr);
             self.next_token(); // -> MESSAGE
-            // NOTE node_type of MESSAGE is not Keyword but Identifier
+                               // NOTE node_type of MESSAGE is not Keyword but Identifier
             using.push_node("expr", self.parse_expr(999, &vec![";"], false));
             raise.push_node("using", using);
         }
@@ -1282,7 +1289,7 @@ impl Parser {
     fn parse_call_statement(&mut self) -> Node {
         let mut call = self.construct_node(NodeType::CallStatement);
         self.next_token(); // -> procedure_name
-        // NOTE node_type of procedure is CallingFunction
+                           // NOTE node_type of procedure is CallingFunction
         let procedure = self.parse_expr(999, &vec![";"], false);
         call.push_node("procedure", procedure);
         if self.get_token(1).is(";") {

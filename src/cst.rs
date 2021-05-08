@@ -42,6 +42,7 @@ pub enum NodeType {
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2
     KeywordWithGroupedExprs, // EXCEPT (c1, c2)
+    KeywordWithStatement,    // THEN INSERT ROW
     KeywordWithStatements,   // THEN SELECT 1;
     Identifier,
     IfStatement,
@@ -50,6 +51,7 @@ pub enum NodeType {
     JoinOperator, // JOIN | ,
     LimitClause,
     LoopStatement,
+    MergeStatement,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
     OnClause,   // on x.c1 = y.c2
@@ -65,11 +67,12 @@ pub enum NodeType {
     TableSampleCaluse, // TABLESAMPLE SYSTEM (10 PERCENT)
     TableSampleRatio,  // (10 PERCENT)
     TruncateStatement,
-    Type,              // INT64
-    TypeDeclaration,   // x INT64
-    UnaryOperator,     // - | + | TIMESTAMP | ...
+    Type,            // INT64
+    TypeDeclaration, // x INT64
+    UnaryOperator,   // - | + | TIMESTAMP | ...
     Unknown,
     UpdateStatement,
+    WhenClause, // WHEN MATCHED THEN DELETE
     WhileStatement,
     WindowClause,        // WINDOW x AS (PARTITION BY c1)
     WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)
