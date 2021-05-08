@@ -26,6 +26,8 @@ pub enum NodeType {
     CaseArm,                 // WHEN a THEN b
     CaseExpr,                // CASE WHEN a then b ELSE c END
     CastArgument,            // x AS INT64
+    CreateSchemaStatement,
+    CreateTableStatement,
     Comment,
     DeclareStatement,
     DeleteStatement,
@@ -37,7 +39,7 @@ pub enum NodeType {
     GroupedExprs,            // (1, 2, 3)
     GroupedStatement,        // (SELECT 1)
     GroupedType,             // <INT64>
-    GroupedTypeDeclarations, // <x INT64, y FLOAT64>
+    GroupedTypeDeclarations, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
     Keyword,
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2

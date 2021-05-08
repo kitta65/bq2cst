@@ -14,6 +14,7 @@ pub struct Parser {
 }
 
 impl Parser {
+    // ----- core -----
     pub fn new(code: String) -> Parser {
         let mut l = Lexer::new(code);
         l.tokenize_code();
@@ -188,7 +189,8 @@ impl Parser {
                 }
                 // TODO separete functions
                 match target.as_str() {
-                    "SCHEMA" | "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
+                    "SCHEMA" => self.parse_create_schema_statement(),
+                    "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
                         self.parse_create_table_statement()
                     }
                     "FUNCTION" => self.parse_create_function_statement(),
@@ -221,6 +223,70 @@ impl Parser {
             ),
         };
         node
+    }
+    fn parse_n_keywords(&mut self, n: usize) -> Vec<Node> {
+        let mut nodes = Vec::new();
+        nodes.push(self.construct_node(NodeType::Keyword));
+        for _ in 1..n {
+            self.next_token();
+            nodes.push(self.construct_node(NodeType::Keyword));
+        }
+        nodes
+    }
+    fn parse_xxxby_exprs(&mut self) -> Node {
+        let mut xxxby = self.construct_node(NodeType::XXXByExprs);
+        self.next_token(); // xxx -> BY
+        xxxby.push_node("by", self.construct_node(NodeType::Keyword));
+        self.next_token(); // BY -> expr
+        xxxby.push_node_vec(
+            "exprs",
+            self.parse_exprs(&vec![], false),
+        );
+        xxxby
+    }
+    fn parse_grouped_type_declarations(&mut self, schema: bool) -> Node {
+        let mut group = self.construct_node(NodeType::GroupedTypeDeclarations);
+        self.next_token(); // -> ident | type
+        let mut type_declarations = Vec::new();
+        while !self.get_token(0).in_(&vec![">", ")"]) {
+            let mut type_declaration;
+            // `is_identifier` is not availabe here,
+            // because `INT64` is valid identifier
+            if self.get_token(1).in_(&vec![",", ">", "TYPE", "<"]) {
+                // , ... INT64,
+                // > ... INT64>
+                // <... STRUCT<> | ARRAY<>
+                // TYPE... ANY TYPE
+                type_declaration = Node::empty(NodeType::TypeDeclaration);
+            } else {
+                type_declaration = self.construct_node(NodeType::TypeDeclaration);
+                self.next_token(); // -> type
+            }
+            type_declaration.push_node("type", self.parse_type(schema));
+            self.next_token(); //  -> , | > | )
+            if self.get_token(0).is(",") {
+                type_declaration
+                    .push_node("comma", self.construct_node(NodeType::Symbol));
+                self.next_token(); // , -> type
+            }
+            type_declarations.push(type_declaration);
+        }
+        group.push_node("rparen", self.construct_node(NodeType::Symbol));
+        group.push_node_vec("declarations", type_declarations);
+        group
+    }
+    fn parse_keyword_with_grouped_exprs(&mut self) -> Node {
+        let mut keyword = self.construct_node(NodeType::KeywordWithGroupedExprs);
+        self.next_token(); // keyword -> (
+        let mut group = self.construct_node(NodeType::GroupedExprs);
+        if !self.get_token(1).is(")") {
+            self.next_token(); // ( -> expr
+            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
+        }
+        self.next_token(); // expr -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol));
+        keyword.push_node("group", group);
+        keyword
     }
     fn parse_keyword_with_statements(&mut self, until: &Vec<&str>) -> Node {
         let mut node = self.construct_node(NodeType::KeywordWithStatements);
@@ -637,7 +703,76 @@ impl Parser {
         merge
     }
     // ----- DDL -----
+    fn parse_create_schema_statement(&mut self) -> Node {
+        let mut create = self.construct_node(NodeType::CreateSchemaStatement);
+        self.next_token(); // -> SCHEMA
+        create.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token(); // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3));
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        if self.get_token(1).is("OPTIONS") {
+            self.next_token(); // OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+        }
+        if self.get_token(1).is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol))
+        }
+        create
+    }
     fn parse_create_table_statement(&mut self) -> Node {
+        let mut create = self.construct_node(NodeType::CreateTableStatement);
+        if self.get_token(1).is("OR") {
+            self.next_token(); // -> OR
+            create.push_node_vec("or_replace", self.parse_n_keywords(2));
+        }
+        if self.get_token(1).in_(&vec!["TEMP", "TEMPORARY"]) {
+            self.next_token(); // -> TEMP
+            create.push_node("temp", self.construct_node(NodeType::Keyword));
+        }
+        self.next_token(); // -> TABLE
+        create.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token(); // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3));
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        if self.get_token(1).is("(") {
+            self.next_token(); // -> (
+            create.push_node("column_schema_group", self.parse_grouped_type_declarations(true));
+        }
+        if self.get_token(1).is("PARTITION") {
+            self.next_token(); // -> PARTITON
+            // NOTE actually, PARTITON BY has only one expr
+            // but for simplicity use parse_xxxby_exprs() here
+            create.push_node("partitionby", self.parse_xxxby_exprs());
+        }
+        if self.get_token(1).is("CLUSTER") {
+            self.next_token(); // -> CLUSTER
+            create.push_node("clusterby", self.parse_xxxby_exprs());
+        }
+        if self.get_token(1).is("OPTIONS") {
+            self.next_token(); // -> OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+        }
+        if self.get_token(1).is("AS") {
+            self.next_token(); // -> AS
+            let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
+            self.next_token(); // -> SELECT
+            as_.push_node("stmt", self.parse_select_statement(false));
+            create.push_node("as", as_)
+        }
+        if self.get_token(1).is(";") {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol))
+        }
+        create
+    }
+    fn parse_create_table_statement_legacy(&mut self) -> Node {
         let mut create = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("or") {
             self.next_token(); // -> or
@@ -1467,6 +1602,8 @@ impl Parser {
         if self.get_token(1).is(",") {
             self.next_token(); // expr -> ,
             expr.push_node("comma", self.construct_node(NodeType::Symbol));
+        } else {
+            return vec![expr];
         }
         exprs.push(expr);
         // second expr and later
@@ -2011,24 +2148,14 @@ impl Parser {
         };
         if self.get_token(1).is("NOT") && schema {
             self.next_token(); // -> NOT
-            let not_ = self.construct_node(NodeType::Unknown);
+            let not_ = self.construct_node(NodeType::Keyword);
             self.next_token(); // -> null
-            let null = self.construct_node(NodeType::Unknown);
+            let null = self.construct_node(NodeType::Keyword);
             res.push_node_vec("not_null", vec![not_, null]);
         }
         if self.get_token(1).is("OPTIONS") && schema {
-            self.construct_node(NodeType::Unknown); // -> options
-            self.next_token(); // options
-            let mut options = self.construct_node(NodeType::Unknown);
-            self.next_token(); // options -> (
-            let mut group = self.construct_node(NodeType::Unknown);
-            if !self.get_token(1).is(")") {
-                self.next_token(); // ( -> expr
-                group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-            }
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Unknown));
-            options.push_node("group", group);
+            self.next_token(); // -> OPTIONS
+            let options = self.parse_keyword_with_grouped_exprs();
             res.push_node("options", options);
         }
         res

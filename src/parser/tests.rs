@@ -4,6 +4,7 @@ use difference::Changeset;
 mod tests_common;
 mod tests_select;
 mod tests_dml;
+mod tests_ddl;
 mod tests_script;
 
 struct TestCase {
