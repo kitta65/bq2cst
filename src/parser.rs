@@ -159,7 +159,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             // SELECT
-            "WITH" | "SELECT" | "(" => self.parse_select_statement(true),
+            "WITH" | "SELECT" | "(" => self.parse_select_statement(true, true),
             // DML
             "INSERT" => self.parse_insert_statement(true),
             "DELETE" => self.parse_delete_statement(),
@@ -301,21 +301,21 @@ impl Parser {
         node
     }
     // ----- SELECT statement -----
-    fn parse_select_statement(&mut self, root: bool) -> Node {
+    fn parse_select_statement(&mut self, semicolon: bool, root: bool) -> Node {
         if self.get_token(0).literal.to_uppercase() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement);
             self.next_token(); // ( -> SELECT
-            node.push_node("stmt", self.parse_select_statement(true));
+            node.push_node("stmt", self.parse_select_statement(false, true));
             self.next_token(); // stmt -> )
             node.push_node("rparen", self.construct_node(NodeType::Symbol));
-            while self.get_token(1).in_(&vec!["union", "intersect", "except"]) && root {
+            while self.get_token(1).in_(&vec!["UNION", "INTERSECT", "EXCEPT"]) && root {
                 self.next_token(); // stmt -> UNION
                 let mut operator = self.construct_node(NodeType::SetOperator);
                 self.next_token(); // UNION -> DISTINCT
                 operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword));
                 operator.push_node("left", node);
                 self.next_token(); // DISTINCT -> stmt
-                operator.push_node("right", self.parse_select_statement(false));
+                operator.push_node("right", self.parse_select_statement(false, false));
                 node = operator;
             }
             if self.get_token(1).is(";") && root {
@@ -333,7 +333,7 @@ impl Parser {
                 self.next_token(); // ident -> AS
                 query.push_node("as", self.construct_node(NodeType::Keyword));
                 self.next_token(); // AS -> (
-                query.push_node("stmt", self.parse_select_statement(true));
+                query.push_node("stmt", self.parse_select_statement(false, true));
                 if self.get_token(1).literal.as_str() == "," {
                     self.next_token(); // ) -> ,
                     query.push_node("comma", self.construct_node(NodeType::Symbol));
@@ -342,7 +342,7 @@ impl Parser {
             }
             with.push_node_vec("queries", queries);
             self.next_token(); // ) -> SELECT
-            let mut node = self.parse_select_statement(true);
+            let mut node = self.parse_select_statement(true, true);
             node.push_node("with", with);
             return node;
         }
@@ -494,15 +494,15 @@ impl Parser {
             operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword));
             operator.push_node("left", node);
             self.next_token(); // DISTINCT -> stmt
-            operator.push_node("right", self.parse_select_statement(false));
+            operator.push_node("right", self.parse_select_statement(false, false));
             node = operator;
-            if self.get_token(1).is(";") && root {
+            if self.get_token(1).is(";") && semicolon { // TODO maybe not needed
                 self.next_token(); // expr -> ;
                 node.push_node("semicolon", self.construct_node(NodeType::Symbol))
             }
         }
         // ;
-        if self.get_token(1).is(";") && root {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // expr -> ;
             node.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
@@ -548,12 +548,12 @@ impl Parser {
             }
             values.push_node_vec("exprs", lparens);
             insert.push_node("input", values);
-        } else if self.get_token(1).is("row") {
+        } else if self.get_token(1).is("ROW") {
             self.next_token(); // -> ROW
             insert.push_node("input", self.construct_node(NodeType::Keyword));
         } else {
             self.next_token(); // ) -> SELECT
-            insert.push_node("input", self.parse_select_statement(false));
+            insert.push_node("input", self.parse_select_statement(false, true));
         }
         if self.get_token(1).is(";") && root {
             self.next_token(); // -> ;
@@ -763,7 +763,7 @@ impl Parser {
             self.next_token(); // -> AS
             let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
             self.next_token(); // -> SELECT
-            as_.push_node("stmt", self.parse_select_statement(false));
+            as_.push_node("stmt", self.parse_select_statement(false, true));
             create.push_node("as", as_)
         }
         if self.get_token(1).is(";") {
@@ -893,11 +893,11 @@ impl Parser {
             options.push_node("group", group);
             create.push_node("options", options);
         }
-        if self.get_token(1).is("as") {
-            self.next_token(); // -> as
+        if self.get_token(1).is("AS") {
+            self.next_token(); // -> AS
             let mut as_ = self.construct_node(NodeType::Unknown);
             self.next_token(); // as -> stmt
-            as_.push_node("stmt", self.parse_select_statement(false));
+            as_.push_node("stmt", self.parse_select_statement(false, true));
             create.push_node("as", as_);
         }
         if self.get_token(1).is(";") {
@@ -1452,7 +1452,7 @@ impl Parser {
                 let mut group = self.construct_node(NodeType::GroupedStatement);
                 self.next_token(); // ( -> table
                 if self.get_token(0).is("SELECT") {
-                    group.push_node("stmt", self.parse_select_statement(true));
+                    group.push_node("stmt", self.parse_select_statement(false, true));
                 } else {
                     group.node_type = NodeType::GroupedExpr;
                     group.push_node("expr", self.parse_table(true));
@@ -1666,7 +1666,7 @@ impl Parser {
                 let mut exprs;
                 if self.get_token(0).in_(&vec!["WITH", "SELECT"]) {
                     left.node_type = NodeType::GroupedStatement;
-                    exprs = vec![self.parse_select_statement(true)];
+                    exprs = vec![self.parse_select_statement(false, true)];
                     left.push_node("stmt", exprs.pop().unwrap());
                 } else {
                     exprs = self.parse_exprs(&vec![")"], true); // parse alias in the case of struct
@@ -1746,7 +1746,7 @@ impl Parser {
                 }
             }
             "SELECT" => {
-                left = self.parse_select_statement(true);
+                left = self.parse_select_statement(false, true); // TODO maybe not needed
             }
             "NOT" => {
                 self.next_token(); // NOT -> boolean

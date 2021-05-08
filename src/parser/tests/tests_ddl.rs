@@ -163,16 +163,24 @@ what:
             "\
 CREATE TABLE IF NOT EXISTS example (x INT64 NOT NULL)
 CLUSTER BY x
-AS SELECT 1;
+AS SELECT 1 UNION ALL SELECT 2;
 ",
             "\
 self: CREATE (CreateTableStatement)
 as:
   self: AS (KeywordWithStatement)
   stmt:
-    self: SELECT (SelectStatement)
-    exprs:
-    - self: 1 (NumericLiteral)
+    self: UNION (SetOperator)
+    distinct_or_all:
+      self: ALL (Keyword)
+    left:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+    right:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
 clusterby:
   self: CLUSTER (XXXByExprs)
   by:
