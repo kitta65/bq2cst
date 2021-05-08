@@ -149,23 +149,23 @@ impl Parser {
     pub fn parse_code(&mut self) -> Vec<Node> {
         let mut stmts: Vec<Node> = Vec::new();
         while !self.is_eof(0) {
-            let stmt = self.parse_statement();
+            let stmt = self.parse_statement(true);
             stmts.push(stmt);
             self.next_token();
         }
         stmts.push(self.construct_node(NodeType::EOF));
         stmts
     }
-    fn parse_statement(&mut self) -> Node {
+    fn parse_statement(&mut self, semicolon: bool) -> Node {
         let node = match self.get_token(0).literal.to_uppercase().as_str() {
             // SELECT
-            "WITH" | "SELECT" | "(" => self.parse_select_statement(true, true),
+            "WITH" | "SELECT" | "(" => self.parse_select_statement(semicolon, true),
             // DML
-            "INSERT" => self.parse_insert_statement(true),
-            "DELETE" => self.parse_delete_statement(),
-            "TRUNCATE" => self.parse_truncate_statement(),
-            "UPDATE" => self.parse_update_statement(true),
-            "MERGE" => self.parse_merge_statement(true),
+            "INSERT" => self.parse_insert_statement(semicolon),
+            "DELETE" => self.parse_delete_statement(semicolon),
+            "TRUNCATE" => self.parse_truncate_statement(semicolon),
+            "UPDATE" => self.parse_update_statement(semicolon),
+            "MERGE" => self.parse_merge_statement(semicolon),
             // DDL
             "CREATE" => {
                 let mut offset = 1;
@@ -189,34 +189,34 @@ impl Parser {
                 }
                 // TODO separete functions
                 match target.as_str() {
-                    "SCHEMA" => self.parse_create_schema_statement(),
+                    "SCHEMA" => self.parse_create_schema_statement(semicolon),
                     "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
-                        self.parse_create_table_statement()
+                        self.parse_create_table_statement(semicolon)
                     }
-                    "FUNCTION" => self.parse_create_function_statement(),
-                    "PROCEDURE" => self.parse_create_procedure_statement(),
+                    "FUNCTION" => self.parse_create_function_statement(semicolon),
+                    "PROCEDURE" => self.parse_create_procedure_statement(semicolon),
                     _ => panic!("Cannot decide what to create."),
                 }
             }
-            "ALTER" => self.parse_alter_statement(),
-            "DROP" => self.parse_drop_statement(),
+            "ALTER" => self.parse_alter_statement(semicolon),
+            "DROP" => self.parse_drop_statement(semicolon),
             // DEBUG
             "ASSERT" => panic!("not implementd!"),
             // other
             "EXPORT" => panic!("not implementd!"),
             // script
-            "DECLARE" => self.parse_declare_statement(),
-            "SET" => self.parse_set_statement(),
-            "EXECUTE" => self.parse_execute_statement(),
-            "IF" => self.parse_if_statement(),
-            "BEGIN" => self.parse_begin_statement(true),
-            "LOOP" => self.parse_loop_statement(),
-            "WHILE" => self.parse_while_statement(),
+            "DECLARE" => self.parse_declare_statement(semicolon),
+            "SET" => self.parse_set_statement(semicolon),
+            "EXECUTE" => self.parse_execute_statement(semicolon),
+            "IF" => self.parse_if_statement(semicolon),
+            "BEGIN" => self.parse_begin_statement(semicolon),
+            "LOOP" => self.parse_loop_statement(semicolon),
+            "WHILE" => self.parse_while_statement(semicolon),
             "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" | "RETURN" => {
-                self.parse_single_token_statement()
+                self.parse_single_token_statement(semicolon)
             }
-            "RAISE" => self.parse_raise_statement(),
-            "CALL" => self.parse_call_statement(),
+            "RAISE" => self.parse_raise_statement(semicolon),
+            "CALL" => self.parse_call_statement(semicolon),
             _ => panic!(
                 "Calling `parse_staement()` is not allowed here: {:?}",
                 self.get_token(0)
@@ -238,10 +238,7 @@ impl Parser {
         self.next_token(); // xxx -> BY
         xxxby.push_node("by", self.construct_node(NodeType::Keyword));
         self.next_token(); // BY -> expr
-        xxxby.push_node_vec(
-            "exprs",
-            self.parse_exprs(&vec![], false),
-        );
+        xxxby.push_node_vec("exprs", self.parse_exprs(&vec![], false));
         xxxby
     }
     fn parse_grouped_type_declarations(&mut self, schema: bool) -> Node {
@@ -265,8 +262,7 @@ impl Parser {
             type_declaration.push_node("type", self.parse_type(schema));
             self.next_token(); //  -> , | > | )
             if self.get_token(0).is(",") {
-                type_declaration
-                    .push_node("comma", self.construct_node(NodeType::Symbol));
+                type_declaration.push_node("comma", self.construct_node(NodeType::Symbol));
                 self.next_token(); // , -> type
             }
             type_declarations.push(type_declaration);
@@ -293,7 +289,7 @@ impl Parser {
         let mut stmts = Vec::new();
         while !self.get_token(1).in_(until) {
             self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
+            stmts.push(self.parse_statement(true));
         }
         if 0 < stmts.len() {
             node.push_node_vec("stmts", stmts);
@@ -496,10 +492,6 @@ impl Parser {
             self.next_token(); // DISTINCT -> stmt
             operator.push_node("right", self.parse_select_statement(false, false));
             node = operator;
-            if self.get_token(1).is(";") && semicolon { // TODO maybe not needed
-                self.next_token(); // expr -> ;
-                node.push_node("semicolon", self.construct_node(NodeType::Symbol))
-            }
         }
         // ;
         if self.get_token(1).is(";") && semicolon {
@@ -509,7 +501,7 @@ impl Parser {
         node
     }
     // ----- DML -----
-    fn parse_insert_statement(&mut self, root: bool) -> Node {
+    fn parse_insert_statement(&mut self, semicolon: bool) -> Node {
         let mut insert = self.construct_node(NodeType::InsertStatement);
         if self.get_token(1).is("INTO") {
             self.next_token(); // INSERT -> INTO
@@ -555,13 +547,13 @@ impl Parser {
             self.next_token(); // ) -> SELECT
             insert.push_node("input", self.parse_select_statement(false, true));
         }
-        if self.get_token(1).is(";") && root {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             insert.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         insert
     }
-    fn parse_delete_statement(&mut self) -> Node {
+    fn parse_delete_statement(&mut self, semicolon: bool) -> Node {
         let mut delete = self.construct_node(NodeType::DeleteStatement);
         if self.get_token(1).is("FROM") {
             self.next_token(); // DELETE -> FROM
@@ -583,25 +575,25 @@ impl Parser {
         self.next_token(); // WHERE -> expr
         where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
         delete.push_node("where", where_);
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             delete.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         delete
     }
-    fn parse_truncate_statement(&mut self) -> Node {
+    fn parse_truncate_statement(&mut self, semicolon: bool) -> Node {
         let mut truncate = self.construct_node(NodeType::TruncateStatement);
         self.next_token(); // TRUNCATE -> TABLE
         truncate.push_node("table", self.construct_node(NodeType::Keyword));
         self.next_token(); // TABLE -> ident
         truncate.push_node("table_name", self.parse_identifier());
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             truncate.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         truncate
     }
-    fn parse_update_statement(&mut self, root: bool) -> Node {
+    fn parse_update_statement(&mut self, semicolon: bool) -> Node {
         let mut update = self.construct_node(NodeType::UpdateStatement);
         if !self.get_token(1).is("SET") {
             self.next_token(); // -> table_name
@@ -629,13 +621,13 @@ impl Parser {
             where_.push_node("expr", self.parse_expr(999, &vec![";"], false));
             update.push_node("where", where_);
         }
-        if self.get_token(1).is(";") && root {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             update.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         update
     }
-    fn parse_merge_statement(&mut self, root: bool) -> Node {
+    fn parse_merge_statement(&mut self, semicolon: bool) -> Node {
         let mut merge = self.construct_node(NodeType::MergeStatement);
         if self.get_token(1).is("INTO") {
             self.next_token(); // MERGE -> INTO
@@ -696,14 +688,14 @@ impl Parser {
             whens.push(when);
         }
         merge.push_node_vec("whens", whens);
-        if self.get_token(1).is(";") && root {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             merge.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         merge
     }
     // ----- DDL -----
-    fn parse_create_schema_statement(&mut self) -> Node {
+    fn parse_create_schema_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::CreateSchemaStatement);
         self.next_token(); // -> SCHEMA
         create.push_node("what", self.construct_node(NodeType::Keyword));
@@ -717,13 +709,13 @@ impl Parser {
             self.next_token(); // OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs());
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
         create
     }
-    fn parse_create_table_statement(&mut self) -> Node {
+    fn parse_create_table_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::CreateTableStatement);
         if self.get_token(1).is("OR") {
             self.next_token(); // -> OR
@@ -743,12 +735,15 @@ impl Parser {
         create.push_node("ident", self.parse_identifier());
         if self.get_token(1).is("(") {
             self.next_token(); // -> (
-            create.push_node("column_schema_group", self.parse_grouped_type_declarations(true));
+            create.push_node(
+                "column_schema_group",
+                self.parse_grouped_type_declarations(true),
+            );
         }
         if self.get_token(1).is("PARTITION") {
             self.next_token(); // -> PARTITON
-            // NOTE actually, PARTITON BY has only one expr
-            // but for simplicity use parse_xxxby_exprs() here
+                               // NOTE actually, PARTITON BY has only one expr
+                               // but for simplicity use parse_xxxby_exprs() here
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
         if self.get_token(1).is("CLUSTER") {
@@ -766,13 +761,13 @@ impl Parser {
             as_.push_node("stmt", self.parse_select_statement(false, true));
             create.push_node("as", as_)
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
         create
     }
-    fn parse_create_table_statement_legacy(&mut self) -> Node {
+    fn parse_create_table_statement_legacy(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("or") {
             self.next_token(); // -> or
@@ -900,13 +895,13 @@ impl Parser {
             as_.push_node("stmt", self.parse_select_statement(false, true));
             create.push_node("as", as_);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         create
     }
-    fn parse_create_function_statement(&mut self) -> Node {
+    fn parse_create_function_statement(&mut self, semicolon: bool) -> Node {
         let mut node = self.construct_node(NodeType::Unknown);
         if self.get_token(1).literal.to_uppercase() == "OR" {
             let mut or_replace = Vec::new();
@@ -1007,13 +1002,13 @@ impl Parser {
             as_.push_node("expr", self.construct_node(NodeType::Unknown));
             node.push_node("as", as_);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // ) -> ;
             node.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         node
     }
-    fn parse_create_procedure_statement(&mut self) -> Node {
+    fn parse_create_procedure_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("or") {
             self.next_token(); // -> or
@@ -1080,13 +1075,13 @@ impl Parser {
         }
         self.next_token(); // -> begin
         create.push_node("stmt", self.parse_begin_statement(false));
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         create
     }
-    fn parse_alter_statement(&mut self) -> Node {
+    fn parse_alter_statement(&mut self, semicolon: bool) -> Node {
         let mut alter = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("materialized") {
             self.next_token(); // -> materialized
@@ -1166,13 +1161,13 @@ impl Parser {
         if 0 < drop_columns.len() {
             alter.push_node_vec("drop_columns", drop_columns);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         alter
     }
-    fn parse_drop_statement(&mut self) -> Node {
+    fn parse_drop_statement(&mut self, semicolon: bool) -> Node {
         let mut drop = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("external") {
             self.next_token(); // -> external
@@ -1200,14 +1195,14 @@ impl Parser {
                 self.construct_node(NodeType::Unknown),
             );
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             drop.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         drop
     }
     // ----- script -----
-    fn parse_declare_statement(&mut self) -> Node {
+    fn parse_declare_statement(&mut self, semicolon: bool) -> Node {
         let mut declare = self.construct_node(NodeType::DeclareStatement);
         let mut idents = Vec::new();
         loop {
@@ -1234,23 +1229,23 @@ impl Parser {
             default.push_node("expr", self.parse_expr(999, &vec![";"], false));
             declare.push_node("default", default);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token();
             declare.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         declare
     }
-    fn parse_set_statement(&mut self) -> Node {
+    fn parse_set_statement(&mut self, semicolon: bool) -> Node {
         let mut set = self.construct_node(NodeType::SetStatement);
         self.next_token(); // set -> expr
         set.push_node("expr", self.parse_expr(999, &vec![";"], false));
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token();
             set.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         set
     }
-    fn parse_execute_statement(&mut self) -> Node {
+    fn parse_execute_statement(&mut self, semicolon: bool) -> Node {
         let mut execute = self.construct_node(NodeType::ExecuteStatement);
         self.next_token(); // EXECUTE -> IMMEDIATE
         execute.push_node("immediate", self.construct_node(NodeType::Keyword));
@@ -1285,18 +1280,18 @@ impl Parser {
             using.push_node_vec("exprs", self.parse_exprs(&vec![";"], true));
             execute.push_node("using", using);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token();
             execute.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         execute
     }
-    fn parse_begin_statement(&mut self, root: bool) -> Node {
+    fn parse_begin_statement(&mut self, semicolon: bool) -> Node {
         let mut begin = self.construct_node(NodeType::BeginStatement);
         let mut stmts = Vec::new();
         while !self.get_token(1).in_(&vec!["END", "EXCEPTION"]) {
             self.next_token(); // -> stmt
-            stmts.push(self.parse_statement());
+            stmts.push(self.parse_statement(true));
         }
         if 0 < stmts.len() {
             begin.push_node_vec("stmts", stmts);
@@ -1314,13 +1309,13 @@ impl Parser {
         }
         self.next_token(); // -> end
         begin.push_node("end", self.construct_node(NodeType::Keyword));
-        if self.get_token(1).is(";") && root {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             begin.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         begin
     }
-    fn parse_if_statement(&mut self) -> Node {
+    fn parse_if_statement(&mut self, semicolon: bool) -> Node {
         let mut if_ = self.construct_node(NodeType::IfStatement);
         self.next_token(); // -> condition
         if_.push_node("condition", self.parse_expr(999, &vec!["then"], false));
@@ -1348,7 +1343,7 @@ impl Parser {
             if_.push_node_vec("elseifs", elseifs);
         }
 
-        if self.get_token(1).is("ELSE") {
+        if self.get_token(1).is("ELSE") && semicolon {
             self.next_token(); // -> ELSE
             if_.push_node("else", self.parse_keyword_with_statements(&vec!["END"]));
         }
@@ -1362,7 +1357,7 @@ impl Parser {
         }
         if_
     }
-    fn parse_loop_statement(&mut self) -> Node {
+    fn parse_loop_statement(&mut self, semicolon: bool) -> Node {
         let mut loop_ = self.parse_keyword_with_statements(&vec!["END"]);
         loop_.node_type = NodeType::LoopStatement;
         self.next_token(); // -> END
@@ -1372,13 +1367,13 @@ impl Parser {
             "end_loop",
             vec![end, self.construct_node(NodeType::Keyword)],
         );
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             loop_.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         loop_
     }
-    fn parse_while_statement(&mut self) -> Node {
+    fn parse_while_statement(&mut self, semicolon: bool) -> Node {
         let mut while_ = self.construct_node(NodeType::WhileStatement);
         self.next_token(); // -> condition
         while_.push_node("condition", self.parse_expr(999, &vec!["do"], false)); // NOTE do is not reserved
@@ -1391,21 +1386,21 @@ impl Parser {
             "end_while",
             vec![end, self.construct_node(NodeType::Keyword)],
         );
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             while_.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         while_
     }
-    fn parse_single_token_statement(&mut self) -> Node {
+    fn parse_single_token_statement(&mut self, semicolon: bool) -> Node {
         let mut node = self.construct_node(NodeType::SingleTokenStatement);
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             node.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         node
     }
-    fn parse_raise_statement(&mut self) -> Node {
+    fn parse_raise_statement(&mut self, semicolon: bool) -> Node {
         let mut raise = self.construct_node(NodeType::RaiseStatement);
         if self.get_token(1).is("using") {
             self.next_token(); // -> USING
@@ -1415,19 +1410,19 @@ impl Parser {
             using.push_node("expr", self.parse_expr(999, &vec![";"], false));
             raise.push_node("using", using);
         }
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             raise.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         raise
     }
-    fn parse_call_statement(&mut self) -> Node {
+    fn parse_call_statement(&mut self, semicolon: bool) -> Node {
         let mut call = self.construct_node(NodeType::CallStatement);
         self.next_token(); // -> procedure_name
                            // NOTE node_type of procedure is CallingFunction
         let procedure = self.parse_expr(999, &vec![";"], false);
         call.push_node("procedure", procedure);
-        if self.get_token(1).is(";") {
+        if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             call.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
@@ -1746,7 +1741,8 @@ impl Parser {
                 }
             }
             "SELECT" => {
-                left = self.parse_select_statement(false, true); // TODO maybe not needed
+                // in the case of `ARRAY_AGG(SELECT 1)`
+                left = self.parse_select_statement(false, true);
             }
             "NOT" => {
                 self.next_token(); // NOT -> boolean
