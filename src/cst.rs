@@ -27,6 +27,7 @@ pub enum NodeType {
     CaseExpr,                // CASE WHEN a then b ELSE c END
     CastArgument,            // x AS INT64
     CreateFunctionStatement,
+    CreateProcedureStatement,
     CreateSchemaStatement,
     CreateTableStatement,
     CreateViewStatement,

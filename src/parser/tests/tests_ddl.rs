@@ -25,7 +25,7 @@ CREATE SCHEMA IF NOT EXISTS project_name.dataset_name OPTIONS();
             "\
 self: CREATE (CreateSchemaStatement)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: project_name (Identifier)
   right:
@@ -127,7 +127,7 @@ column_schema_group:
   rparen:
     self: ) (Symbol)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -225,7 +225,7 @@ self: CREATE (CreateTableStatement)
 external:
   self: EXTERNAL (Keyword)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -280,7 +280,7 @@ self: CREATE (CreateTableStatement)
 external:
   self: EXTERNAL (Keyword)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -353,7 +353,7 @@ as:
         right:
           self: table_name (Identifier)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -397,7 +397,7 @@ as:
         right:
           self: table_name (Identifier)
 ident:
-  self: . (Identifier)
+  self: . (BinaryOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -663,6 +663,96 @@ what:
   self: FUNCTION (Keyword)
 ",
         ),
+        // ----- CREATE PROCEDURE statement -----
+        TestCase::new(
+            "\
+CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
+",
+            "\
+self: CREATE (CreateProcedureStatement)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (BinaryOperator)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: procede (Identifier)
+semicolon:
+  self: ; (Symbol)
+stmt:
+  self: BEGIN (BeginStatement)
+  end:
+    self: END (Keyword)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+what:
+  self: PROCEDURE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE PROCEDURE dataset.procede(x INT64, INOUT y INT64)
+OPTIONS(dummy = 'dummy')
+BEGIN SELECT 1; END;
+",
+            "\
+self: CREATE (CreateProcedureStatement)
+group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    comma:
+      self: , (Symbol)
+    type:
+      self: INT64 (Type)
+  - self: y (TypeDeclaration)
+    in_out:
+      self: INOUT (Keyword)
+    type:
+      self: INT64 (Type)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (BinaryOperator)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: procede (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+stmt:
+  self: BEGIN (BeginStatement)
+  end:
+    self: END (Keyword)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+what:
+  self: PROCEDURE (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -670,8 +760,6 @@ what:
 }
 
 
-//            CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
-//            CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
 //            alter table example set options(dummy='dummy');
 //            alter view example set options(dummy='dummy',description='abc');
 //            alter materialized view example set options(dummy='dummy');
