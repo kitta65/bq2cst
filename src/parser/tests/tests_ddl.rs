@@ -210,6 +210,123 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // EXTERNAL
+        TestCase::new(
+            "\
+CREATE EXTERNAL TABLE dataset.new_table
+WITH PARTITION COLUMNS
+OPTIONS (
+  uris = ['dummy'],
+  format = csv
+);
+",
+            "\
+self: CREATE (CreateTableStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: . (Identifier)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: new_table (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      comma:
+        self: , (Symbol)
+      left:
+        self: uris (Identifier)
+      right:
+        self: [ (ArrayLiteral)
+        exprs:
+        - self: 'dummy' (StringLiteral)
+        rparen:
+          self: ] (Symbol)
+    - self: = (BinaryOperator)
+      left:
+        self: format (Identifier)
+      right:
+        self: csv (Identifier)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+with_partition_columns:
+  self: WITH (WithPartitionColumnsClause)
+  partition_columns:
+  - self: PARTITION (Keyword)
+  - self: COLUMNS (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE EXTERNAL TABLE dataset.new_table
+WITH PARTITION COLUMNS (
+    col1 string
+)
+OPTIONS (
+  uris = ['dummy'],
+  format = csv
+);
+",
+            "\
+self: CREATE (CreateTableStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: . (Identifier)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: new_table (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      comma:
+        self: , (Symbol)
+      left:
+        self: uris (Identifier)
+      right:
+        self: [ (ArrayLiteral)
+        exprs:
+        - self: 'dummy' (StringLiteral)
+        rparen:
+          self: ] (Symbol)
+    - self: = (BinaryOperator)
+      left:
+        self: format (Identifier)
+      right:
+        self: csv (Identifier)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+with_partition_columns:
+  self: WITH (WithPartitionColumnsClause)
+  column_schema_group:
+    self: ( (GroupedTypeDeclarations)
+    declarations:
+    - self: col1 (TypeDeclaration)
+      type:
+        self: string (Type)
+    rparen:
+      self: ) (Symbol)
+  partition_columns:
+  - self: PARTITION (Keyword)
+  - self: COLUMNS (Keyword)
+",
+        ),
         // ----- CREATE VIEW statement -----
         TestCase::new(
             "\
@@ -247,6 +364,7 @@ what:
   self: VIEW (Keyword)
 ",
         ),
+        // MATERIALIZED
         TestCase::new(
             "\
 CREATE MATERIALIZED VIEW dataset.view_name
@@ -315,20 +433,6 @@ what:
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
 
-//            CREATE EXTERNAL TABLE dataset.new_table
-//            WITH PARTITION COLUMNS
-//            OPTIONS (
-//              uris=['dummy'],
-//              format=csv
-//            );
-//            CREATE EXTERNAL TABLE dataset.new_table
-//            WITH PARTITION COLUMNS (
-//                col1 string
-//            )
-//            OPTIONS (
-//              uris=['dummy'],
-//              format=csv
-//            );
 //            CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
 //            CREATE PROCEDURE dataset.procede(x int64, inout y int64) options(dummy='dummy') BEGIN SELECT 1; END;
 //            alter table example set options(dummy='dummy');

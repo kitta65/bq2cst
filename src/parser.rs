@@ -192,9 +192,7 @@ impl Parser {
                     "SCHEMA" => self.parse_create_schema_statement(semicolon),
                     "TABLE" => self.parse_create_table_statement(semicolon),
                     "MATERIALIZED" | "VIEW" => self.parse_create_view_statement(semicolon),
-                    "EXTERNAL" => {
-                        self.parse_create_table_statement(semicolon)
-                    }
+                    "EXTERNAL" => self.parse_create_table_statement(semicolon),
                     "FUNCTION" => self.parse_create_function_statement(semicolon),
                     "PROCEDURE" => self.parse_create_procedure_statement(semicolon),
                     _ => panic!("Cannot decide what to create."),
@@ -719,13 +717,21 @@ impl Parser {
     }
     fn parse_create_table_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::CreateTableStatement);
+        let mut external = false;
         if self.get_token(1).is("OR") {
             self.next_token(); // -> OR
             create.push_node_vec("or_replace", self.parse_n_keywords(2));
         }
+        // NOTE actually, TEMP is not allowed in CREATE EXTERNAL TABLE statement
+        // but it is allowed here for simplicity
         if self.get_token(1).in_(&vec!["TEMP", "TEMPORARY"]) {
             self.next_token(); // -> TEMP
             create.push_node("temp", self.construct_node(NodeType::Keyword));
+        }
+        if self.get_token(1).is("EXTERNAL") {
+            external = true;
+            self.next_token(); // -> EXTERNAL
+            create.push_node("external", self.construct_node(NodeType::Keyword));
         }
         self.next_token(); // -> TABLE
         create.push_node("what", self.construct_node(NodeType::Keyword));
@@ -742,15 +748,26 @@ impl Parser {
                 self.parse_grouped_type_declarations(true),
             );
         }
-        // NOTE actually, PARTITON BY has only one expr
+        // NOTE actually, PARTITION BY has only one expr
         // but for simplicity use parse_xxxby_exprs() here
-        if self.get_token(1).is("PARTITION") {
-            self.next_token(); // -> PARTITON
+        if self.get_token(1).is("PARTITION") && !external {
+            self.next_token(); // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
-        if self.get_token(1).is("CLUSTER") {
+        if self.get_token(1).is("CLUSTER") && !external {
             self.next_token(); // -> CLUSTER
             create.push_node("clusterby", self.parse_xxxby_exprs());
+        }
+        if self.get_token(1).is("WITH") && external {
+            self.next_token(); // -> WITH
+            let mut with = self.construct_node(NodeType::WithPartitionColumnsClause);
+            self.next_token(); // -> PARTITION
+            with.push_node_vec("partition_columns", self.parse_n_keywords(2));
+            if self.get_token(1).is("(") {
+                self.next_token(); // -> (
+                with.push_node("column_schema_group", self.parse_grouped_type_declarations(false));
+            }
+            create.push_node("with_partition_columns", with);
         }
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // -> OPTIONS
@@ -772,6 +789,8 @@ impl Parser {
     fn parse_create_view_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::CreateViewStatement);
         let mut materialized = false;
+        // NOTE actually, OR REPLACE is not allowed in CREATE MATERIALIZED VIEW statement
+        // but it is allowed here for simplicity
         if self.get_token(1).is("OR") {
             self.next_token(); // -> OR
             create.push_node_vec("or_replace", self.parse_n_keywords(2));
@@ -790,7 +809,7 @@ impl Parser {
         self.next_token(); // -> ident
         create.push_node("ident", self.parse_identifier());
         if self.get_token(1).is("PARTITION") && materialized {
-            self.next_token(); // -> PARTITON
+            self.next_token(); // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
         if self.get_token(1).is("CLUSTER") && materialized {
@@ -2037,7 +2056,7 @@ impl Parser {
             if self.get_token(1).is("PARTITION") {
                 self.next_token(); // ( -> PARTITION
                 let mut partition = self.construct_node(NodeType::XXXByExprs);
-                self.next_token(); // PARTITON -> BY
+                self.next_token(); // PARTITION -> BY
                 partition.push_node("by", self.construct_node(NodeType::Keyword));
                 self.next_token(); // BY -> exprs
                 partition.push_node_vec("exprs", self.parse_exprs(&vec!["order", ")"], false));
