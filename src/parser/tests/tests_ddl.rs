@@ -487,9 +487,9 @@ what:
         ),
         TestCase::new(
             "\
-CREATE FUNCTION IF NOT EXISTS abc(x ARRAY<INT64>, y INT64)
+CREATE FUNCTION IF NOT EXISTS abc(x ARRAY<INT64>, y ANY TYPE)
 RETURNS INT64
-AS (x + y);
+AS ('dummy');
 ",
             "\
 self: CREATE (CreateFunctionStatement)
@@ -498,11 +498,7 @@ as:
   group:
     self: ( (GroupedExpr)
     expr:
-      self: + (BinaryOperator)
-      left:
-        self: x (Identifier)
-      right:
-        self: y (Identifier)
+      self: 'dummy' (StringLiteral)
     rparen:
       self: ) (Symbol)
 group:
@@ -521,7 +517,9 @@ group:
           self: INT64 (Type)
   - self: y (TypeDeclaration)
     type:
-      self: INT64 (Type)
+      self: ANY (Type)
+      type:
+        self: TYPE (Keyword)
   rparen:
     self: ) (Symbol)
 ident:
@@ -753,6 +751,205 @@ what:
   self: PROCEDURE (Keyword)
 ",
         ),
+        // ----- ALTER SCHEMA statement -----
+        TestCase::new(
+            "\
+ALTER SCHEMA dataset_name SET OPTIONS();
+",
+            "\
+self: ALTER (AlterSchemaStatement)
+ident:
+  self: dataset_name (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: SCHEMA (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+ALTER SCHEMA IF EXISTS dataset_name SET OPTIONS(dummy = 'dummy');
+",
+            "\
+self: ALTER (AlterSchemaStatement)
+ident:
+  self: dataset_name (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: SCHEMA (Keyword)
+",
+        ),
+        // ----- ALTER TABLE statement -----
+        // SET
+        TestCase::new(
+            "\
+ALTER TABLE example SET OPTIONS(dummy='dummy');
+",
+            "\
+self: ALTER (AlterTableStatement)
+ident:
+  self: example (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // ADD COLUMN
+        TestCase::new(
+            "\
+ALTER TABLE example
+ADD COLUMN x INT64;
+",
+            "\
+self: ALTER (AlterTableStatement)
+add_columns:
+- self: ADD (AddColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  type_declaration:
+    self: x (Identifier)
+    type:
+      self: INT64 (Type)
+ident:
+  self: example (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+ALTER TABLE example
+ADD COLUMN IF NOT EXISTS x INT64 OPTIONS(description = 'dummy'),
+ADD COLUMN y STRUCT<z INT64 NOT NULL>;
+",
+            "\
+self: ALTER (AlterTableStatement)
+add_columns:
+- self: ADD (AddColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  comma:
+    self: , (Symbol)
+  if_not_exists:
+  - self: IF (Keyword)
+  - self: NOT (Keyword)
+  - self: EXISTS (Keyword)
+  type_declaration:
+    self: x (Identifier)
+    type:
+      self: INT64 (Type)
+      options:
+        self: OPTIONS (KeywordWithGroupedExprs)
+        group:
+          self: ( (GroupedExprs)
+          exprs:
+          - self: = (BinaryOperator)
+            left:
+              self: description (Identifier)
+            right:
+              self: 'dummy' (StringLiteral)
+          rparen:
+            self: ) (Symbol)
+- self: ADD (AddColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  type_declaration:
+    self: y (Identifier)
+    type:
+      self: STRUCT (Type)
+      type_declaration:
+        self: < (GroupedTypeDeclarations)
+        declarations:
+        - self: z (TypeDeclaration)
+          type:
+            self: INT64 (Type)
+            not_null:
+            - self: NOT (Keyword)
+            - self: NULL (Keyword)
+        rparen:
+          self: > (Symbol)
+ident:
+  self: example (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // DROP
+        TestCase::new(
+            "\
+ALTER TABLE example
+DROP COLUMN IF EXISTS x,
+DROP COLUMN y
+",
+            "\
+self: ALTER (AlterTableStatement)
+drop_columns:
+- self: DROP (DropColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  comma:
+    self: , (Symbol)
+  ident:
+    self: x (Identifier)
+  if_exists:
+  - self: IF (Keyword)
+  - self: EXISTS (Keyword)
+- self: DROP (DropColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  ident:
+    self: y (Identifier)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -760,11 +957,7 @@ what:
 }
 
 
-//            alter table example set options(dummy='dummy');
 //            alter view example set options(dummy='dummy',description='abc');
 //            alter materialized view example set options(dummy='dummy');
-//            alter table example add column x int64;
-//            alter table example add column if not exists x int64 options(description='dummy'),add column y struct<z int64 not null>;
-//            alter table example drop column if exists x,drop column y;
 //            drop table example;drop external table if exists example;drop materialized view example;
 //            drop schema dataset_name cascade;

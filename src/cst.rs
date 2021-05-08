@@ -14,6 +14,10 @@ pub enum ContentType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
+    AddColumnClause, // ADD COLUMN x INT64 OPTIONS()
+    AlterSchemaStatement,
+    AlterTableStatement,
+    AlterViewStatement,
     ArrayAccessing,
     ArrayLiteral,   // [1, 2]
     BinaryOperator, // + | - | = | ...
@@ -34,6 +38,7 @@ pub enum NodeType {
     Comment,
     DeclareStatement,
     DeleteStatement,
+    DropColumnClause, // DROP COLUMN x
     EOF,
     ExecuteStatement,        // EXECUTE IMMEDIATE 'SELECT 1;'
     ExtractArgument,         // DAY FROM expr
