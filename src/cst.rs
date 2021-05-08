@@ -28,6 +28,7 @@ pub enum NodeType {
     CastArgument,            // x AS INT64
     CreateSchemaStatement,
     CreateTableStatement,
+    CreateViewStatement,
     Comment,
     DeclareStatement,
     DeleteStatement,

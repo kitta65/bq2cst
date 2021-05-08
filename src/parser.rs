@@ -190,7 +190,9 @@ impl Parser {
                 // TODO separete functions
                 match target.as_str() {
                     "SCHEMA" => self.parse_create_schema_statement(semicolon),
-                    "TABLE" | "VIEW" | "MATERIALIZED" | "EXTERNAL" => {
+                    "TABLE" => self.parse_create_table_statement(semicolon),
+                    "MATERIALIZED" | "VIEW" => self.parse_create_view_statement(semicolon),
+                    "EXTERNAL" => {
                         self.parse_create_table_statement(semicolon)
                     }
                     "FUNCTION" => self.parse_create_function_statement(semicolon),
@@ -740,13 +742,58 @@ impl Parser {
                 self.parse_grouped_type_declarations(true),
             );
         }
+        // NOTE actually, PARTITON BY has only one expr
+        // but for simplicity use parse_xxxby_exprs() here
         if self.get_token(1).is("PARTITION") {
             self.next_token(); // -> PARTITON
-                               // NOTE actually, PARTITON BY has only one expr
-                               // but for simplicity use parse_xxxby_exprs() here
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
         if self.get_token(1).is("CLUSTER") {
+            self.next_token(); // -> CLUSTER
+            create.push_node("clusterby", self.parse_xxxby_exprs());
+        }
+        if self.get_token(1).is("OPTIONS") {
+            self.next_token(); // -> OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+        }
+        if self.get_token(1).is("AS") {
+            self.next_token(); // -> AS
+            let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
+            self.next_token(); // -> SELECT
+            as_.push_node("stmt", self.parse_select_statement(false, true));
+            create.push_node("as", as_)
+        }
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol))
+        }
+        create
+    }
+    fn parse_create_view_statement(&mut self, semicolon: bool) -> Node {
+        let mut create = self.construct_node(NodeType::CreateViewStatement);
+        let mut materialized = false;
+        if self.get_token(1).is("OR") {
+            self.next_token(); // -> OR
+            create.push_node_vec("or_replace", self.parse_n_keywords(2));
+        }
+        if self.get_token(1).is("MATERIALIZED") {
+            materialized = true;
+            self.next_token(); // -> MATERIALIZED
+            create.push_node("materialized", self.construct_node(NodeType::Keyword));
+        }
+        self.next_token(); // -> VIEW
+        create.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token(); // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3));
+        }
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        if self.get_token(1).is("PARTITION") && materialized {
+            self.next_token(); // -> PARTITON
+            create.push_node("partitionby", self.parse_xxxby_exprs());
+        }
+        if self.get_token(1).is("CLUSTER") && materialized {
             self.next_token(); // -> CLUSTER
             create.push_node("clusterby", self.parse_xxxby_exprs());
         }

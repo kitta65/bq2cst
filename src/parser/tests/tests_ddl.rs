@@ -210,6 +210,100 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // ----- CREATE VIEW statement -----
+        TestCase::new(
+            "\
+CREATE VIEW dataset.view_name
+AS
+  SELECT *
+  FROM dataset.table_name
+;
+",
+            "\
+self: CREATE (CreateViewStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: * (Symbol)
+    from:
+      self: FROM (KeywordWithExpr)
+      expr:
+        self: . (BinaryOperator)
+        left:
+          self: dataset (Identifier)
+        right:
+          self: table_name (Identifier)
+ident:
+  self: . (Identifier)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: view_name (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: VIEW (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE MATERIALIZED VIEW dataset.view_name
+OPTIONS(dummy = 'dummy')
+AS
+    SELECT COUNT(*)
+    FROM dataset.table_name
+;
+",
+            "\
+self: CREATE (CreateViewStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: ( (CallingFunction)
+      args:
+      - self: * (Symbol)
+      func:
+        self: COUNT (Identifier)
+      rparen:
+        self: ) (Symbol)
+    from:
+      self: FROM (KeywordWithExpr)
+      expr:
+        self: . (BinaryOperator)
+        left:
+          self: dataset (Identifier)
+        right:
+          self: table_name (Identifier)
+ident:
+  self: . (Identifier)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: view_name (Identifier)
+materialized:
+  self: MATERIALIZED (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: VIEW (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -221,8 +315,6 @@ what:
 //            create function abc() returns int64 language js options() as '''return 1''';
 //            create function abc() returns int64 not deterministic language js as '''return 1''';
 
-//            create view dataset.new_table as select * from dataset.old_table;
-//            create materialized view dataset.new_table options(dummy='dummy') as select count(*) from dataset.old_table;
 //            CREATE EXTERNAL TABLE dataset.new_table
 //            WITH PARTITION COLUMNS
 //            OPTIONS (
