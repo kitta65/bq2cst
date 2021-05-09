@@ -18,8 +18,9 @@ pub enum NodeType {
     AlterSchemaStatement,
     AlterTableStatement,
     AlterViewStatement,
-    ArrayAccessing,
+    ArrayAccessing, // arr[OFFSET(1)]
     ArrayLiteral,   // [1, 2]
+    AssertStatement,
     BinaryOperator, // + | - | = | ...
     BeginStatement,
     BetweenOperator,
