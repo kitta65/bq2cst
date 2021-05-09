@@ -42,7 +42,8 @@ pub enum NodeType {
     DropColumnClause, // DROP COLUMN x
     DropStatement,
     EOF,
-    ExecuteStatement,        // EXECUTE IMMEDIATE 'SELECT 1;'
+    ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'
+    ExportStatement,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     GroupedExpr,             // (1)

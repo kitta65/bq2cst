@@ -207,7 +207,7 @@ impl Parser {
             // DEBUG
             "ASSERT" => self.parse_assert_satement(semicolon),
             // other
-            "EXPORT" => panic!("not implementd!"),
+            "EXPORT" => self.parse_export_statement(semicolon),
             // script
             "DECLARE" => self.parse_declare_statement(semicolon),
             "SET" => self.parse_set_statement(semicolon),
@@ -1112,6 +1112,23 @@ impl Parser {
             assert.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         assert
+    }
+    fn parse_export_statement(&mut self, semicolon: bool ) -> Node {
+        let mut export = self.construct_node(NodeType::ExportStatement);
+        self.next_token(); // -> DATA
+        export.push_node("data", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> OPTIONS
+        export.push_node("options", self.parse_keyword_with_grouped_exprs());
+        self.next_token(); // -> AS
+        let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
+        self.next_token(); // -> stmt
+        as_.push_node("stmt", self.parse_statement(false));
+        export.push_node("as", as_);
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            export.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        export
     }
     // ----- script -----
     fn parse_declare_statement(&mut self, semicolon: bool) -> Node {
