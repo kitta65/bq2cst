@@ -950,6 +950,76 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // ----- ALTER VIEW statement -----
+        TestCase::new(
+            "\
+ALTER VIEW example SET OPTIONS(
+  dummy = 'dummy',
+  description = 'abc'
+);
+",
+            "\
+self: ALTER (AlterViewStatement)
+ident:
+  self: example (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      comma:
+        self: , (Symbol)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    - self: = (BinaryOperator)
+      left:
+        self: description (Identifier)
+      right:
+        self: 'abc' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: VIEW (Keyword)
+",
+        ),
+        // MATERIALIZED
+        TestCase::new(
+            "\
+ALTER MATERIALIZED VIEW example SET OPTIONS(dummy = 'dummy');
+",
+            "\
+self: ALTER (AlterViewStatement)
+ident:
+  self: example (Identifier)
+materialized:
+  self: MATERIALIZED (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: VIEW (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
@@ -957,7 +1027,5 @@ what:
 }
 
 
-//            alter view example set options(dummy='dummy',description='abc');
-//            alter materialized view example set options(dummy='dummy');
 //            drop table example;drop external table if exists example;drop materialized view example;
 //            drop schema dataset_name cascade;

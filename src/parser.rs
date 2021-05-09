@@ -1044,98 +1044,28 @@ impl Parser {
     }
     fn parse_alter_view_statement(&mut self, semicolon: bool) -> Node {
         let mut alter = self.construct_node(NodeType::AlterViewStatement);
+        if self.get_token(1).is("MATERIALIZED") {
+            self.next_token(); // -> MATERIALIZED
+            alter.push_node("materialized", self.construct_node(NodeType::Keyword));
+        }
+        self.next_token(); // -> VIEW
+        alter.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token(); // -> IF
+            alter.push_node_vec("if_exists", self.parse_n_keywords(2));
+        }
+        self.next_token(); // -> ident
+        alter.push_node("ident", self.parse_identifier());
+        self.next_token(); // -> SET
+        alter.push_node("set", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> OPTIONS
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs());
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         alter
     }
-    //fn parse_alter_statement(&mut self, semicolon: bool) -> Node {
-    //    let mut alter = self.construct_node(NodeType::Unknown);
-    //    if self.get_token(1).is("materialized") {
-    //        self.next_token(); // -> materialized
-    //        alter.push_node("materialized", self.construct_node(NodeType::Unknown));
-    //    }
-    //    self.next_token(); // -> table, view
-    //    alter.push_node("what", self.construct_node(NodeType::Unknown));
-    //    self.next_token(); // -> ident
-    //    alter.push_node("ident", self.parse_identifier());
-    //    if self.get_token(1).is("set") {
-    //        self.next_token(); // -> set
-    //        alter.push_node("set", self.construct_node(NodeType::Unknown));
-    //        self.next_token(); // js -> options
-    //        let mut options = self.construct_node(NodeType::Unknown);
-    //        self.next_token(); // options -> (
-    //        let mut group = self.construct_node(NodeType::Unknown);
-    //        if !self.get_token(1).is(")") {
-    //            self.next_token(); // ( -> expr
-    //            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], false));
-    //        }
-    //        self.next_token(); // expr -> )
-    //        group.push_node("rparen", self.construct_node(NodeType::Unknown));
-    //        options.push_node("group", group);
-    //        alter.push_node("options", options);
-    //    }
-    //    let mut add_columns = Vec::new();
-    //    while self.get_token(1).is("add") {
-    //        self.next_token(); // -> add
-    //        let mut add_column = self.construct_node(NodeType::Unknown);
-    //        self.next_token();
-    //        add_column.push_node("column", self.construct_node(NodeType::Unknown));
-    //        if self.get_token(1).is("if") {
-    //            self.next_token(); // -> if
-    //            let if_ = self.construct_node(NodeType::Unknown);
-    //            self.next_token(); // -> not
-    //            let not = self.construct_node(NodeType::Unknown);
-    //            self.next_token(); // -> exists
-    //            let exists = self.construct_node(NodeType::Unknown);
-    //            add_column.push_node_vec("if_not_exists", vec![if_, not, exists]);
-    //        }
-    //        self.next_token(); // -> column_name
-    //        let mut column = self.construct_node(NodeType::Unknown);
-    //        self.next_token(); // -> schema
-    //        column.push_node("type", self.parse_type(true));
-    //        add_column.push_node("column_definition", column);
-    //        if self.get_token(1).is(",") {
-    //            self.next_token(); // -> ,
-    //            add_column.push_node("comma", self.construct_node(NodeType::Unknown));
-    //        }
-    //        add_columns.push(add_column);
-    //    }
-    //    if 0 < add_columns.len() {
-    //        alter.push_node_vec("add_columns", add_columns);
-    //    }
-    //    let mut drop_columns = Vec::new();
-    //    // TODO check when it becomes GA
-    //    while self.get_token(1).is("drop") {
-    //        self.next_token(); // -> drop
-    //        let mut drop_column = self.construct_node(NodeType::Unknown);
-    //        self.next_token();
-    //        drop_column.push_node("column", self.construct_node(NodeType::Unknown));
-    //        if self.get_token(1).is("if") {
-    //            self.next_token(); // -> if
-    //            let if_ = self.construct_node(NodeType::Unknown);
-    //            self.next_token(); // -> exists
-    //            let exists = self.construct_node(NodeType::Unknown);
-    //            drop_column.push_node_vec("if_exists", vec![if_, exists]);
-    //        }
-    //        self.next_token(); // -> column_name
-    //        drop_column.push_node("column_name", self.construct_node(NodeType::Unknown));
-    //        if self.get_token(1).is(",") {
-    //            self.next_token(); // -> ,
-    //            drop_column.push_node("comma", self.construct_node(NodeType::Unknown));
-    //        }
-    //        drop_columns.push(drop_column);
-    //    }
-    //    if 0 < drop_columns.len() {
-    //        alter.push_node_vec("drop_columns", drop_columns);
-    //    }
-    //    if self.get_token(1).is(";") && semicolon {
-    //        self.next_token(); // -> ;
-    //        alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
-    //    }
-    //    alter
-    //}
     fn parse_drop_statement(&mut self, semicolon: bool) -> Node {
         let mut drop = self.construct_node(NodeType::Unknown);
         if self.get_token(1).is("external") {
