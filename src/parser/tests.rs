@@ -54,5 +54,22 @@ impl TestCase {
         assert_eq!(2, stmts.len());
         assert_eq!(self.expected_output, result);
     }
+    pub fn test_empty(&self) {
+        let mut p = Parser::new(self.code.clone());
+        let stmts = p.parse_code();
+        println!(
+            "\
+========== testing ==========
+{}
+=============================
+",
+            self.code.trim()
+        );
+        let result = stmts[0].to_string();
+        let changeset = Changeset::new(self.expected_output.as_str(), result.as_str(), "\n");
+        println!("{}\n", changeset.to_string());
+        assert_eq!(1, stmts.len());
+        assert_eq!(self.expected_output, result);
+    }
 }
 

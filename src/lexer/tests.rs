@@ -237,6 +237,8 @@ SELECT f(a1, a2)",
                 Token::from_str(1, 16, ")"),
             ],
         ),
+        // empty
+        TestCase::new("", vec![]),
     ];
     for t in test_cases {
         t.test();

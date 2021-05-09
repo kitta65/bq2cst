@@ -1,4 +1,11 @@
 use super::*;
+#[test]
+fn test_parse_code_empty() {
+    let test_cases = vec![TestCase::new("", "")];
+    for t in test_cases {
+        t.test_empty();
+    }
+}
 
 #[test]
 fn test_parse_code_eof() {
@@ -1186,4 +1193,3 @@ exprs:
         t.test();
     }
 }
-
