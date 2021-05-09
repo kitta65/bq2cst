@@ -8,21 +8,21 @@ Parse standard SQL, which is a dialect of [BigQuery](https://cloud.google.com/bi
 - developed in Rust, using [wasm-pack](https://github.com/rustwasm/wasm-pack)
 
 ## Install
-```
+```shell
 npm install @dr666m1/bq2cst
 ```
 
 ## Usage
-```
+```javascript
 const parser = require("@dr666m1/bq2cst");
-parser.parse("select 1;")
+parser.parse("SELECT 1;")
 
 //[
 //  {
 //    "token": {
 //      "line":1,
 //      "column":1,
-//      "literal":"select"
+//      "literal":"SELECT"
 //    },
 //    "node_type":"SelectStatement",
 //    "children":{
