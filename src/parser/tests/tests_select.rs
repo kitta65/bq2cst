@@ -15,6 +15,32 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // trailing comma
+        TestCase::new(
+            "\
+SELECT
+  1,
+  2,
+FROM t;
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 1 (NumericLiteral)
+  comma:
+    self: , (Symbol)
+- self: 2 (NumericLiteral)
+  comma:
+    self: , (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
+        // grouped
         TestCase::new(
             "\
 (SELECT 1);
