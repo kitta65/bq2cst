@@ -16,4 +16,36 @@ npm install @dr666m1/bq2cst
 ```
 const parser = require("@dr666m1/bq2cst");
 parser.parse("select 1;")
+
+//[
+//  {
+//    "token": {
+//      "line":1,
+//      "column":1,
+//      "literal":"select"
+//    },
+//    "node_type":"SelectStatement",
+//    "children":{
+//      "semicolon":{
+//        "Node":{
+//          "token":{"line":1,"column":9,"literal":";"},
+//          "node_type":"Symbol",
+//          "children":{}
+//        }
+//      },
+//      "exprs":{
+//        "NodeVec":[{
+//          "token":{"line":1,"column":8,"literal":"1"},
+//          "node_type":"NumericLiteral",
+//          "children":{}
+//        }]
+//      }
+//    }
+//  },
+//  {
+//    "token":null,
+//    "node_type":"EOF",
+//    "children":{}
+//  }
+//]
 ```
