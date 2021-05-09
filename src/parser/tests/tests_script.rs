@@ -696,6 +696,6 @@ then:
         ),
     ];
     for t in test_cases {
-        t.test();
+        t.test(0);
     }
 }

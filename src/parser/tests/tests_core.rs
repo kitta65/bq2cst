@@ -1,6 +1,6 @@
 use super::*;
 #[test]
-fn test_parse_code_empty() {
+fn test_parse_code_no_statement() {
     let test_cases = vec![
         TestCase::new(
             "",
@@ -20,7 +20,7 @@ leading_comments:
         ),
     ];
     for t in test_cases {
-        t.test_empty();
+        t.test(0);
     }
 }
 
@@ -48,7 +48,7 @@ leading_comments:
         ),
     ];
     for t in test_cases {
-        t.test_eof();
+        t.test(1);
     }
 }
 
@@ -1207,6 +1207,6 @@ exprs:
         ),
     ];
     for t in test_cases {
-        t.test();
+        t.test(0);
     }
 }
