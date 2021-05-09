@@ -1020,12 +1020,75 @@ what:
   self: VIEW (Keyword)
 ",
         ),
+        // ----- DROP statement -----
+        TestCase::new(
+            "\
+DROP TABLE example;
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: example (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+DROP EXTERNAL TABLE IF EXISTS example;
+",
+            "\
+self: DROP (DropStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: example (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+DROP MATERIALIZED VIEW example;
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: example (Identifier)
+materialized:
+  self: MATERIALIZED (Keyword)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: VIEW (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+DROP SCHEMA example CASCADE;
+",
+            "\
+self: DROP (DropStatement)
+cascade_or_restrict:
+  self: CASCADE (Keyword)
+ident:
+  self: example (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: SCHEMA (Keyword)
+",
+        ),
     ];
     for t in test_cases {
         t.test();
     }
 }
 
-
-//            drop table example;drop external table if exists example;drop materialized view example;
-//            drop schema dataset_name cascade;

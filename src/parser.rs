@@ -1067,31 +1067,27 @@ impl Parser {
         alter
     }
     fn parse_drop_statement(&mut self, semicolon: bool) -> Node {
-        let mut drop = self.construct_node(NodeType::Unknown);
-        if self.get_token(1).is("external") {
-            self.next_token(); // -> external
-            drop.push_node("external", self.construct_node(NodeType::Unknown));
+        let mut drop = self.construct_node(NodeType::DropStatement);
+        if self.get_token(1).is("EXTERNAL") {
+            self.next_token(); // -> EXTERNAL
+            drop.push_node("external", self.construct_node(NodeType::Keyword));
+        } else if self.get_token(1).is("MATERIALIZED") {
+            self.next_token(); // -> MATERIALIZED
+            drop.push_node("materialized", self.construct_node(NodeType::Keyword));
         }
-        if self.get_token(1).is("materialized") {
-            self.next_token(); // -> materialized
-            drop.push_node("materialized", self.construct_node(NodeType::Unknown));
-        }
-        self.next_token(); // -> table, view, function, procedure
-        drop.push_node("what", self.construct_node(NodeType::Unknown));
-        if self.get_token(1).is("if") {
-            self.next_token(); // -> if
-            let if_ = self.construct_node(NodeType::Unknown);
-            self.next_token(); // -> exists
-            let exists = self.construct_node(NodeType::Unknown);
-            drop.push_node_vec("if_exists", vec![if_, exists]);
+        self.next_token(); // -> SCHEMA, TABLE, VIEW, FUNCTION, PROCEDURE
+        drop.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token(); // -> IF
+            drop.push_node_vec("if_exists", self.parse_n_keywords(2));
         }
         self.next_token(); // -> ident
         drop.push_node("ident", self.parse_identifier());
-        if self.get_token(1).in_(&vec!["cascade", "restrict"]) {
-            self.next_token(); // -> cascade, restrict
+        if self.get_token(1).in_(&vec!["CASCADE", "RESTRICT"]) {
+            self.next_token(); // -> CASCADE, RESTRICT
             drop.push_node(
                 "cascade_or_restrict",
-                self.construct_node(NodeType::Unknown),
+                self.construct_node(NodeType::Keyword),
             );
         }
         if self.get_token(1).is(";") && semicolon {

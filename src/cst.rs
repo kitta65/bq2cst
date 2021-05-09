@@ -39,6 +39,7 @@ pub enum NodeType {
     DeclareStatement,
     DeleteStatement,
     DropColumnClause, // DROP COLUMN x
+    DropStatement,
     EOF,
     ExecuteStatement,        // EXECUTE IMMEDIATE 'SELECT 1;'
     ExtractArgument,         // DAY FROM expr
