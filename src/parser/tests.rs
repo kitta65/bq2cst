@@ -1,7 +1,7 @@
 use super::*;
 use difference::Changeset;
 
-mod tests_common;
+mod tests_core;
 mod tests_select;
 mod tests_dml;
 mod tests_ddl;
