@@ -1,7 +1,24 @@
 use super::*;
 #[test]
 fn test_parse_code_empty() {
-    let test_cases = vec![TestCase::new("", "")];
+    let test_cases = vec![
+        TestCase::new(
+            "",
+            "\
+self: None (EOF)
+",
+        ),
+        TestCase::new(
+            "\
+-- comment
+",
+            "\
+self: None (EOF)
+leading_comments:
+- self: -- comment (Comment)
+",
+        ),
+    ];
     for t in test_cases {
         t.test_empty();
     }

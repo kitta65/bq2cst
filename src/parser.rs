@@ -28,6 +28,9 @@ impl Parser {
             p.position += 1;
         }
         let mut trailing_comment_idx = p.position + 1;
+        if p.position == p.tokens.len() - 1 {
+            return p // no statement was found
+        }
         while p.tokens[trailing_comment_idx].is_comment() {
             p.trailing_comment_indices.push(trailing_comment_idx);
             trailing_comment_idx += 1;
