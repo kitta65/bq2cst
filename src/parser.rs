@@ -380,7 +380,7 @@ impl Parser {
                 }
                 let mut else_ = self.construct_node(NodeType::CaseArm);
                 self.next_token(); // ELSE -> result_expr
-                else_.push_node("result", self.construct_node(NodeType::Unknown));
+                else_.push_node("result", self.parse_expr(usize::MAX, false));
                 arms.push(else_);
                 left.push_node_vec("arms", arms);
                 self.next_token(); // result_expr -> end

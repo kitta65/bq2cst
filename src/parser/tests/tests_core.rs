@@ -671,7 +671,7 @@ exprs:
         ),
         TestCase::new(
             "\
-SELECT CASE WHEN c1 = 1 THEN 'one' ELSE NULL END
+SELECT CASE WHEN c1 = 1 THEN 'one' ELSE f() END
 ",
             "\
 self: SELECT (SelectStatement)
@@ -691,7 +691,11 @@ exprs:
       self: THEN (Keyword)
   - self: ELSE (CaseArm)
     result:
-      self: NULL (NullLiteral)
+      self: ( (CallingFunction)
+      func:
+        self: f (Identifier)
+      rparen:
+        self: ) (Symbol)
   end:
     self: END (Keyword)
 ",
