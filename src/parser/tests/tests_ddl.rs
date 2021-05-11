@@ -364,6 +364,45 @@ what:
   self: VIEW (Keyword)
 ",
         ),
+        TestCase::new(
+            "\
+CREATE VIEW dataset_name.view_name(uno, dos)
+AS SELECT 1 ONE, 2 TWO
+",
+            "\
+self: CREATE (CreateViewStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+      alias:
+        self: ONE (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+      alias:
+        self: TWO (Identifier)
+column_name_list:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: uno (Identifier)
+    comma:
+      self: , (Symbol)
+  - self: dos (Identifier)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (BinaryOperator)
+  left:
+    self: dataset_name (Identifier)
+  right:
+    self: view_name (Identifier)
+what:
+  self: VIEW (Keyword)
+",
+        ),
         // MATERIALIZED
         TestCase::new(
             "\

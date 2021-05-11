@@ -1525,6 +1525,12 @@ impl Parser {
             self.next_token(); // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
+        if self.get_token(1).is("(") && !materialized {
+            self.next_token(); // -> (
+            let mut column_name_list = self.parse_expr(usize::MAX, false);
+            column_name_list.node_type = NodeType::GroupedExprs;
+            create.push_node("column_name_list", column_name_list);
+        }
         if self.get_token(1).is("CLUSTER") && materialized {
             self.next_token(); // -> CLUSTER
             create.push_node("clusterby", self.parse_xxxby_exprs());
