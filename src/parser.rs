@@ -1104,6 +1104,7 @@ impl Parser {
                     "WHERE",
                     "GROUP",
                     "HAVING",
+                    "QUALIFY",
                     "WINDOW",
                     "ORDER",
                     "LIMIT",
@@ -1149,6 +1150,15 @@ impl Parser {
             self.next_token(); // HAVING -> expr
             having.push_node("expr", self.parse_expr(usize::MAX, false));
             node.push_node("having", having);
+        }
+        // QUALIFY
+        // TODO check when it becomes GA
+        if self.get_token(1).is("QUALIFY") {
+            self.next_token(); // -> QUALIFY
+            let mut qualify = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> expr
+            qualify.push_node("expr", self.parse_expr(usize::MAX, false));
+            node.push_node("qualify", qualify);
         }
         // WINDOW
         if self.get_token(1).is("WINDOW") {
