@@ -17,6 +17,7 @@ pub enum NodeType {
     AddColumnClause, // ADD COLUMN x INT64 OPTIONS()
     AlterSchemaStatement,
     AlterTableStatement,
+    AlterColumnStatement,
     AlterViewStatement,
     ArrayAccessing, // arr[OFFSET(1)]
     ArrayLiteral,   // [1, 2]

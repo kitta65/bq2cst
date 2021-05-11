@@ -989,6 +989,61 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // ----- ALTER COLUMN statement -----
+        TestCase::new(
+            "\
+ALTER TABLE t
+ALTER COLUMN c DROP NOT NULL;
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  drop_not_null:
+  - self: DROP (Keyword)
+  - self: NOT (Keyword)
+  - self: NULL (Keyword)
+  ident:
+    self: c (Identifier)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+ALTER TABLE IF EXISTS t
+ALTER COLUMN IF EXISTS c DROP NOT NULL
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  drop_not_null:
+  - self: DROP (Keyword)
+  - self: NOT (Keyword)
+  - self: NULL (Keyword)
+  ident:
+    self: c (Identifier)
+  if_exists:
+  - self: IF (Keyword)
+  - self: EXISTS (Keyword)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+        ),
         // ----- ALTER VIEW statement -----
         TestCase::new(
             "\

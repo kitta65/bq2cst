@@ -29,7 +29,7 @@ impl Parser {
         }
         let mut trailing_comment_idx = p.position + 1;
         if p.position == p.tokens.len() - 1 {
-            return p // no statement was found
+            return p; // no statement was found
         }
         while p.tokens[trailing_comment_idx].is_comment() {
             p.trailing_comment_indices.push(trailing_comment_idx);
@@ -719,6 +719,7 @@ impl Parser {
                     match self.get_token(offset).literal.to_uppercase().as_str() {
                         "SCHEMA" => return self.parse_alter_schema_statement(semicolon),
                         "TABLE" => return self.parse_alter_table_statement(semicolon),
+                        "COLUMN" => return self.parse_alter_column_statement(semicolon),
                         "VIEW" => return self.parse_alter_view_statement(semicolon),
                         _ => {
                             offset += 1;
@@ -1732,11 +1733,33 @@ impl Parser {
                 }
                 alter.push_node_vec("drop_columns", drop_columns);
             }
+            "ALTER" => {
+                self.next_token(); // -> ALTER
+                alter.push_node("alter_column_stmt", self.parse_alter_column_statement(false));
+            }
             _ => panic!(
                 "Expected `SET`, `ADD` or `DROP` but got: {:?}",
                 self.get_token(1)
             ),
         }
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        alter
+    }
+    fn parse_alter_column_statement(&mut self, semicolon: bool) -> Node {
+        let mut alter = self.construct_node(NodeType::AlterColumnStatement);
+        self.next_token(); // -> COLUMN
+        alter.push_node("what", self.construct_node(NodeType::Keyword));
+        if self.get_token(1).is("IF") {
+            self.next_token();
+            alter.push_node_vec("if_exists", self.parse_n_keywords(2));
+        }
+        self.next_token(); // -> ident
+        alter.push_node("ident", self.construct_node(NodeType::Identifier));
+        self.next_token(); // -> DROP
+        alter.push_node_vec("drop_not_null", self.parse_n_keywords(3));
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
