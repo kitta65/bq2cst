@@ -678,6 +678,248 @@ from:
       - self: OF (Keyword)
 ",
         ),
+        // PIVOT
+        TestCase::new(
+            "\
+SELECT * FROM t PIVOT (COUNT(*) FOR x IN ('v1', 'v2'))
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    pivot:
+      self: PIVOT (PivotOperator)
+      config:
+        self: ( (PivotConfig)
+        exprs:
+        - self: ( (CallingFunction)
+          args:
+          - self: * (Symbol)
+          func:
+            self: COUNT (Identifier)
+          rparen:
+            self: ) (Symbol)
+        for:
+          self: FOR (KeywordWithExpr)
+          expr:
+            self: x (Identifier)
+        in:
+          self: IN (KeywordWithGroupedExprs)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: 'v1' (StringLiteral)
+              comma:
+                self: , (Symbol)
+            - self: 'v2' (StringLiteral)
+            rparen:
+              self: ) (Symbol)
+        rparen:
+          self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT * FROM t AS t1 PIVOT (SUM(x) s, COUNT(*) AS c FOR y IN (1 one, 2 AS two)) t2
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    alias:
+      self: t1 (Identifier)
+    as:
+      self: AS (Keyword)
+    pivot:
+      self: PIVOT (PivotOperator)
+      alias:
+        self: t2 (Identifier)
+      config:
+        self: ( (PivotConfig)
+        exprs:
+        - self: ( (CallingFunction)
+          alias:
+            self: s (Identifier)
+          args:
+          - self: x (Identifier)
+          comma:
+            self: , (Symbol)
+          func:
+            self: SUM (Identifier)
+          rparen:
+            self: ) (Symbol)
+        - self: ( (CallingFunction)
+          alias:
+            self: c (Identifier)
+          args:
+          - self: * (Symbol)
+          as:
+            self: AS (Keyword)
+          func:
+            self: COUNT (Identifier)
+          rparen:
+            self: ) (Symbol)
+        for:
+          self: FOR (KeywordWithExpr)
+          expr:
+            self: y (Identifier)
+        in:
+          self: IN (KeywordWithGroupedExprs)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: 1 (NumericLiteral)
+              alias:
+                self: one (Identifier)
+              comma:
+                self: , (Symbol)
+            - self: 2 (NumericLiteral)
+              alias:
+                self: two (Identifier)
+              as:
+                self: AS (Keyword)
+            rparen:
+              self: ) (Symbol)
+        rparen:
+          self: ) (Symbol)
+",
+        ),
+        // UNPIVOT
+        TestCase::new(
+            "\
+SELECT *
+FROM t UNPIVOT (
+  c1
+  FOR v
+  IN (v1 1, v2 AS 2)
+) AS unpivot
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    unpivot:
+      self: UNPIVOT (UnpivotOperator)
+      alias:
+        self: unpivot (Identifier)
+      as:
+        self: AS (Keyword)
+      config:
+        self: ( (UnpivotConfig)
+        expr:
+          self: c1 (Identifier)
+        for:
+          self: FOR (KeywordWithExpr)
+          expr:
+            self: v (Identifier)
+        in:
+          self: IN (KeywordWithGroupedExprs)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: v1 (Identifier)
+              comma:
+                self: , (Symbol)
+              row_value_alias:
+                self: 1 (NumericLiteral)
+            - self: v2 (Identifier)
+              as:
+                self: AS (Keyword)
+              row_value_alias:
+                self: 2 (NumericLiteral)
+            rparen:
+              self: ) (Symbol)
+        rparen:
+          self: ) (Symbol)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT * FROM t UNPIVOT INCLUDE NULLS (
+  (c1, c2)
+  FOR v
+  IN ((v1, v2) AS 'A', (v3, v4) 'B')
+) AS unpivot
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    unpivot:
+      self: UNPIVOT (UnpivotOperator)
+      alias:
+        self: unpivot (Identifier)
+      as:
+        self: AS (Keyword)
+      config:
+        self: ( (UnpivotConfig)
+        expr:
+          self: ( (StructLiteral)
+          exprs:
+          - self: c1 (Identifier)
+            comma:
+              self: , (Symbol)
+          - self: c2 (Identifier)
+          rparen:
+            self: ) (Symbol)
+        for:
+          self: FOR (KeywordWithExpr)
+          expr:
+            self: v (Identifier)
+        in:
+          self: IN (KeywordWithGroupedExprs)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: ( (StructLiteral)
+              as:
+                self: AS (Keyword)
+              comma:
+                self: , (Symbol)
+              exprs:
+              - self: v1 (Identifier)
+                comma:
+                  self: , (Symbol)
+              - self: v2 (Identifier)
+              row_value_alias:
+                self: 'A' (StringLiteral)
+              rparen:
+                self: ) (Symbol)
+            - self: ( (StructLiteral)
+              exprs:
+              - self: v3 (Identifier)
+                comma:
+                  self: , (Symbol)
+              - self: v4 (Identifier)
+              row_value_alias:
+                self: 'B' (StringLiteral)
+              rparen:
+                self: ) (Symbol)
+            rparen:
+              self: ) (Symbol)
+        rparen:
+          self: ) (Symbol)
+      include_or_exclude_nulls:
+      - self: INCLUDE (Keyword)
+      - self: NULLS (Keyword)
+",
+        ),
         // TABLESAMPLE
         TestCase::new(
             "\

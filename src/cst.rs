@@ -73,6 +73,8 @@ pub enum NodeType {
     NullLiteral,
     OnClause,   // on x.c1 = y.c2
     OverCaluse, // OVER (PARTITON BY x, y)
+    PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
+    PivotOperator,
     RaiseStatement,
     SelectStatement,      // SELECT 1;
     SetOperator,          // UNION | INTERSECT | EXCEPT
@@ -88,6 +90,8 @@ pub enum NodeType {
     TypeDeclaration, // x INT64
     UnaryOperator,   // - | + | TIMESTAMP | ...
     Unknown,
+    UnpivotOperator,
+    UnpivotConfig, // ((c1, c2) FOR v IN ((v1, v2) 1, (v3, v4) 3))
     UpdateStatement,
     WhenClause, // WHEN MATCHED THEN DELETE
     WhileStatement,

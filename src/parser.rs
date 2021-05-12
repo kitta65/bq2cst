@@ -151,7 +151,7 @@ impl Parser {
         let idx = match self.get_offset_index(offset) {
             Some(i) => i,
             None => panic!(
-                "{}st token was not found. Current token is: {:?}",
+                "{}th token was not found. Current token is: {:?}",
                 offset,
                 self.get_token(0)
             ),
@@ -649,13 +649,13 @@ impl Parser {
         node.push_node("right", right);
         node
     }
-    fn parse_keyword_with_grouped_exprs(&mut self) -> Node {
+    fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> Node {
         let mut keyword = self.construct_node(NodeType::KeywordWithGroupedExprs);
         self.next_token(); // keyword -> (
         let mut group = self.construct_node(NodeType::GroupedExprs);
         if !self.get_token(1).is(")") {
             self.next_token(); // ( -> expr
-            group.push_node_vec("exprs", self.parse_exprs(&vec![], false));
+            group.push_node_vec("exprs", self.parse_exprs(&vec![], alias));
         }
         self.next_token(); // expr -> )
         group.push_node("rparen", self.construct_node(NodeType::Symbol));
@@ -753,7 +753,7 @@ impl Parser {
             "RAISE" => self.parse_raise_statement(semicolon),
             "CALL" => self.parse_call_statement(semicolon),
             _ => panic!(
-                "Calling `parse_staement()` is not allowed here: {:?}",
+                "Calling `parse_statement()` is not allowed here: {:?}",
                 self.get_token(0)
             ),
         };
@@ -773,20 +773,13 @@ impl Parser {
                 }
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node(NodeType::Symbol));
-                if self.get_token(1).is("AS") {
-                    self.next_token(); // -> AS
-                    group.push_node("as", self.construct_node(NodeType::Keyword));
-                }
-                if self.get_token(1).is_identifier() {
-                    self.next_token(); // -> ident
-                    group.push_node("alias", self.construct_node(NodeType::Identifier));
-                }
                 left = group;
             }
             _ => {
-                left = self.parse_expr(usize::MAX, true);
+                left = self.parse_expr(usize::MAX, false);
             }
         }
+        // FOR SYSTEM_TiME AS OF
         if self.get_token(1).literal.to_uppercase() == "FOR" {
             self.next_token(); // TABLE -> FOR
             let mut for_ = self.construct_node(NodeType::ForSystemTimeAsOfClause);
@@ -802,22 +795,12 @@ impl Parser {
             for_.push_node("expr", self.parse_expr(usize::MAX, false));
             left.push_node("for_system_time_as_of", for_);
         }
-        if self.get_token(1).is("tablesample") {
-            // TODO check when it becomes GA
-            self.next_token(); // -> TABLESAMPLE
-            let mut tablesample = self.construct_node(NodeType::TableSampleCaluse);
-            self.next_token(); // -> SYSTEM
-            tablesample.push_node("system", self.construct_node(NodeType::Keyword));
-            self.next_token(); // -> (
-            let mut group = self.construct_node(NodeType::TableSampleRatio);
-            self.next_token(); // -> expr
-            group.push_node("expr", self.parse_expr(usize::MAX, false));
-            self.next_token(); // -> PERCENT
-            group.push_node("percent", self.construct_node(NodeType::Keyword));
-            self.next_token(); // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Symbol));
-            tablesample.push_node("group", group);
-            left.push_node("tablesample", tablesample);
+        // alias
+        // NOTE PIVOT and UNPIVOT are not reserved keywords
+        if !(self.get_token(1).in_(&vec!["PIVOT", "UNPIVOT"])
+            && self.get_token(2).in_(&vec!["(", "INCLUDE", "EXCLUDE"]))
+        {
+            left = self.push_trailing_alias(left);
         }
         if self.get_token(1).literal.to_uppercase() == "WITH" {
             self.next_token(); // UNNEST() -> WITH
@@ -835,6 +818,105 @@ impl Parser {
             }
             left.push_node_vec("with_offset", vec![with, offset]);
         }
+        // PIVOT, UNPIVOT
+        if self.get_token(1).is("PIVOT") {
+            self.next_token(); // -> PIVOT
+            let mut pivot = self.construct_node(NodeType::PivotOperator);
+            self.next_token(); // -> (
+            let mut config = self.construct_node(NodeType::PivotConfig);
+            self.next_token(); // -> expr
+            config.push_node_vec("exprs", self.parse_exprs(&vec![], true)); // NOTE is alias really allowed?
+            self.next_token(); // -> FOR
+            let mut for_ = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> expr
+            for_.push_node("expr", self.construct_node(NodeType::Identifier));
+            config.push_node("for", for_);
+            self.next_token(); // -> IN
+            config.push_node("in", self.parse_keyword_with_grouped_exprs(true));
+            self.next_token(); // -> )
+            config.push_node("rparen", self.construct_node(NodeType::Symbol));
+            pivot.push_node("config", config);
+            pivot = self.push_trailing_alias(pivot);
+            left.push_node("pivot", pivot);
+        } else if self.get_token(1).is("UNPIVOT") {
+            self.next_token(); // -> UNPIVOT
+            let mut unpivot = self.construct_node(NodeType::UnpivotOperator);
+            if self.get_token(1).in_(&vec!["INCLUDE", "EXCLUDE"]) {
+                self.next_token(); // -> INCLUDE | EXCLUDE
+                unpivot.push_node_vec("include_or_exclude_nulls", self.parse_n_keywords(2));
+            }
+            self.next_token(); // -> (
+            let mut config = self.construct_node(NodeType::UnpivotConfig);
+            self.next_token(); // -> expr
+            config.push_node("expr", self.parse_expr(usize::MAX, true)); // NOTE when parsing multi_colomn_unpivot, the node_type is StructLiteral
+            self.next_token(); // -> FOR
+            let mut for_ = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> expr
+            for_.push_node("expr", self.construct_node(NodeType::Identifier));
+            config.push_node("for", for_);
+            self.next_token(); // -> IN
+            let mut in_ = self.construct_node(NodeType::KeywordWithGroupedExprs);
+            self.next_token(); // -> (
+            let mut group = self.construct_node(NodeType::GroupedExprs);
+            let mut exprs = Vec::new();
+            while !self.get_token(1).is(")") {
+                self.next_token(); // -> expr
+                let mut expr = self.parse_expr(usize::MAX, false);
+                if self.get_token(1).is("AS") {
+                    self.next_token(); // -> AS
+                    expr.push_node("as", self.construct_node(NodeType::Keyword));
+                    if self.get_token(1).is_string() || self.get_token(1).is_numeric() {
+                        self.next_token(); // -> row_value_alias
+                        expr.push_node("row_value_alias", self.parse_expr(usize::MAX, false));
+                    } else {
+                        panic!(
+                            "Only STRING and INT64 are allowed here but got: {:?}",
+                            self.get_token(1)
+                        );
+                    }
+                } else if self.get_token(1).is_string() || self.get_token(1).is_numeric() {
+                    self.next_token(); // -> row_value_alias
+                    expr.push_node("row_value_alias", self.parse_expr(usize::MAX, false));
+                }
+                if self.get_token(1).is(",") {
+                    self.next_token(); // -> ,
+                    expr.push_node("comma", self.construct_node(NodeType::Symbol));
+                } else {
+                    exprs.push(expr);
+                    break;
+                }
+                exprs.push(expr);
+            }
+            self.next_token(); // -> )
+            group.push_node("rparen", self.construct_node(NodeType::Symbol));
+            group.push_node_vec("exprs", exprs);
+            in_.push_node("group", group);
+            config.push_node("in", in_);
+            self.next_token(); // -> )
+            config.push_node("rparen", self.construct_node(NodeType::Symbol));
+            unpivot.push_node("config", config);
+            unpivot = self.push_trailing_alias(unpivot);
+            left.push_node("unpivot", unpivot);
+        }
+        // TABLESAMPLE
+        if self.get_token(1).is("tablesample") {
+            // TODO check when it becomes GA
+            self.next_token(); // -> TABLESAMPLE
+            let mut tablesample = self.construct_node(NodeType::TableSampleCaluse);
+            self.next_token(); // -> SYSTEM
+            tablesample.push_node("system", self.construct_node(NodeType::Keyword));
+            self.next_token(); // -> (
+            let mut group = self.construct_node(NodeType::TableSampleRatio);
+            self.next_token(); // -> expr
+            group.push_node("expr", self.parse_expr(usize::MAX, false));
+            self.next_token(); // -> PERCENT
+            group.push_node("percent", self.construct_node(NodeType::Keyword));
+            self.next_token(); // -> )
+            group.push_node("rparen", self.construct_node(NodeType::Symbol));
+            tablesample.push_node("group", group);
+            left.push_node("tablesample", tablesample);
+        }
+        // JOIN
         while self.get_token(1).in_(&vec![
             "left", "right", "cross", "inner", "full", "join", ",",
         ]) && root
@@ -936,7 +1018,7 @@ impl Parser {
         }
         if self.get_token(1).is("OPTIONS") && schema {
             self.next_token(); // -> OPTIONS
-            let options = self.parse_keyword_with_grouped_exprs();
+            let options = self.parse_keyword_with_grouped_exprs(false);
             res.push_node("options", options);
         }
         res
@@ -1027,6 +1109,18 @@ impl Parser {
         self.next_token(); // BY -> expr
         xxxby.push_node_vec("exprs", self.parse_exprs(&vec![], false));
         xxxby
+    }
+    fn push_trailing_alias(&mut self, mut node: Node) -> Node {
+        if self.get_token(1).is("AS") {
+            self.next_token(); // -> AS
+            node.push_node("as", self.construct_node(NodeType::Keyword));
+            self.next_token(); // AS -> ident
+            node.push_node("alias", self.construct_node(NodeType::Identifier));
+        } else if self.get_token(1).is_identifier() {
+            self.next_token(); // -> ident
+            node.push_node("alias", self.construct_node(NodeType::Identifier));
+        }
+        node
     }
     // ----- SELECT statement -----
     fn parse_select_statement(&mut self, semicolon: bool, root: bool) -> Node {
@@ -1428,7 +1522,7 @@ impl Parser {
         create.push_node("ident", self.parse_identifier());
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // OPTIONS
-            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         }
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
@@ -1495,7 +1589,7 @@ impl Parser {
         }
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // -> OPTIONS
-            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         }
         if self.get_token(1).is("AS") {
             self.next_token(); // -> AS
@@ -1548,7 +1642,7 @@ impl Parser {
         }
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // -> OPTIONS
-            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         }
         if self.get_token(1).is("AS") {
             self.next_token(); // -> AS
@@ -1619,7 +1713,7 @@ impl Parser {
             node.push_node("language", language);
             if self.get_token(1).is("OPTIONS") {
                 self.next_token(); // -> OPTIONS
-                node.push_node("options", self.parse_keyword_with_grouped_exprs());
+                node.push_node("options", self.parse_keyword_with_grouped_exprs(false));
             }
             self.next_token(); // -> AS
             let mut as_ = self.construct_node(NodeType::KeywordWithExpr);
@@ -1651,7 +1745,7 @@ impl Parser {
         create.push_node("group", self.parse_grouped_type_declarations(true));
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // -> OPTIONS
-            create.push_node("options", self.parse_keyword_with_grouped_exprs());
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         }
         self.next_token(); // -> BEGIN
         create.push_node("stmt", self.parse_begin_statement(false));
@@ -1674,7 +1768,7 @@ impl Parser {
         self.next_token(); // -> SET
         alter.push_node("set", self.construct_node(NodeType::Keyword));
         self.next_token(); // -> OPTIONS
-        alter.push_node("options", self.parse_keyword_with_grouped_exprs());
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
@@ -1696,7 +1790,7 @@ impl Parser {
                 self.next_token(); // -> SET
                 alter.push_node("set", self.construct_node(NodeType::Keyword));
                 self.next_token(); // -> OPTIONS
-                alter.push_node("options", self.parse_keyword_with_grouped_exprs());
+                alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
             }
             "ADD" => {
                 let mut add_columns = Vec::new();
@@ -1745,7 +1839,10 @@ impl Parser {
             }
             "ALTER" => {
                 self.next_token(); // -> ALTER
-                alter.push_node("alter_column_stmt", self.parse_alter_column_statement(false));
+                alter.push_node(
+                    "alter_column_stmt",
+                    self.parse_alter_column_statement(false),
+                );
             }
             _ => panic!(
                 "Expected `SET`, `ADD` or `DROP` but got: {:?}",
@@ -1793,7 +1890,7 @@ impl Parser {
         self.next_token(); // -> SET
         alter.push_node("set", self.construct_node(NodeType::Keyword));
         self.next_token(); // -> OPTIONS
-        alter.push_node("options", self.parse_keyword_with_grouped_exprs());
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));
@@ -1852,7 +1949,7 @@ impl Parser {
         self.next_token(); // -> DATA
         export.push_node("data", self.construct_node(NodeType::Keyword));
         self.next_token(); // -> OPTIONS
-        export.push_node("options", self.parse_keyword_with_grouped_exprs());
+        export.push_node("options", self.parse_keyword_with_grouped_exprs(false));
         self.next_token(); // -> AS
         let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
         self.next_token(); // -> stmt
