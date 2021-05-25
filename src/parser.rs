@@ -779,6 +779,13 @@ impl Parser {
                 left = self.parse_expr(usize::MAX, false);
             }
         }
+        // alias
+        // NOTE PIVOT and UNPIVOT are not reserved keywords
+        if !(self.get_token(1).in_(&vec!["PIVOT", "UNPIVOT"])
+            && self.get_token(2).in_(&vec!["(", "INCLUDE", "EXCLUDE"]))
+        {
+            left = self.push_trailing_alias(left);
+        }
         // FOR SYSTEM_TiME AS OF
         if self.get_token(1).literal.to_uppercase() == "FOR" {
             self.next_token(); // TABLE -> FOR
@@ -795,13 +802,7 @@ impl Parser {
             for_.push_node("expr", self.parse_expr(usize::MAX, false));
             left.push_node("for_system_time_as_of", for_);
         }
-        // alias
-        // NOTE PIVOT and UNPIVOT are not reserved keywords
-        if !(self.get_token(1).in_(&vec!["PIVOT", "UNPIVOT"])
-            && self.get_token(2).in_(&vec!["(", "INCLUDE", "EXCLUDE"]))
-        {
-            left = self.push_trailing_alias(left);
-        }
+        // WITH, OFFSET
         if self.get_token(1).literal.to_uppercase() == "WITH" {
             self.next_token(); // UNNEST() -> WITH
             let with = self.construct_node(NodeType::Keyword);
