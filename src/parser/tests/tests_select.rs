@@ -678,6 +678,34 @@ from:
       - self: OF (Keyword)
 ",
         ),
+        TestCase::new(
+            "\
+SELECT c1 FROM table_name t FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: c1 (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: table_name (Identifier)
+    alias:
+      self: t (Identifier)
+    for_system_time_as_of:
+      self: FOR (ForSystemTimeAsOfClause)
+      expr:
+        self: ( (CallingFunction)
+        func:
+          self: CURRENT_TIMESTAMP (Identifier)
+        rparen:
+          self: ) (Symbol)
+      system_time_as_of:
+      - self: SYSTEM_TIME (Keyword)
+      - self: AS (Keyword)
+      - self: OF (Keyword)
+",
+        ),
         // PIVOT
         TestCase::new(
             "\
