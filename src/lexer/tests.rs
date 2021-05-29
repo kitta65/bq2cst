@@ -61,7 +61,7 @@ SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
 SELECT 1 /*
   comment
 */
-; -- comment",
+; -- comment ",
             vec![
                 Token::from_str(1, 1, "#standardSQL"),
                 Token::from_str(2, 1, "SELECT"),

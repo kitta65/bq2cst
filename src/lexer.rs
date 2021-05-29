@@ -349,7 +349,9 @@ impl Lexer {
         }
         self.input[first_position..self.position]
             .into_iter()
-            .collect()
+            .collect::<String>()
+            .trim_end()
+            .to_string()
     }
     fn read_multiline_comment(&mut self) -> String {
         let first_position = self.position;
