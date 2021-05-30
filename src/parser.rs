@@ -858,16 +858,8 @@ impl Parser {
                 if self.get_token(1).is("AS") {
                     self.next_token(); // -> AS
                     expr.push_node("as", self.construct_node(NodeType::Keyword));
-                    if self.get_token(1).is_string() || self.get_token(1).is_numeric() {
-                        self.next_token(); // -> row_value_alias
-                        expr.push_node("row_value_alias", self.parse_expr(usize::MAX, false));
-                    } else {
-                        panic!(
-                            "Only STRING and INT64 are allowed here but got: {:?}",
-                            self.get_token(1)
-                        );
-                    }
-                } else if self.get_token(1).is_string() || self.get_token(1).is_numeric() {
+                }
+                if self.get_token(1).is_string() || self.get_token(1).is_numeric() {
                     self.next_token(); // -> row_value_alias
                     expr.push_node("row_value_alias", self.parse_expr(usize::MAX, false));
                 }
