@@ -53,7 +53,7 @@ leading_comments:
 }
 
 #[test]
-fn test_parse_code_common() {
+fn test_parse_code_core() {
     let test_cases = vec![
         // ----- comment -----
         TestCase::new(
@@ -160,9 +160,10 @@ exprs:
     self: , (Symbol)
   left:
     self: 1 (NumericLiteral)
-  right:
-  - self: 0 (NumericLiteral)
-  - self: 3 (NumericLiteral)
+  right_max:
+    self: 3 (NumericLiteral)
+  right_min:
+    self: 0 (NumericLiteral)
 - self: BETWEEN (BetweenOperator)
   and:
     self: AND (Keyword)
@@ -172,9 +173,10 @@ exprs:
     self: 1 (NumericLiteral)
   not:
     self: NOT (Keyword)
-  right:
-  - self: 0 (NumericLiteral)
-  - self: 3 (NumericLiteral)
+  right_max:
+    self: 3 (NumericLiteral)
+  right_min:
+    self: 0 (NumericLiteral)
 ",
         ),
         // IN
@@ -398,17 +400,18 @@ exprs:
         self: 3 (NumericLiteral)
     not:
       self: NOT (Keyword)
-    right:
-    - self: + (BinaryOperator)
-      left:
-        self: 10 (NumericLiteral)
-      right:
-        self: 0 (NumericLiteral)
-    - self: + (BinaryOperator)
+    right_max:
+      self: + (BinaryOperator)
       left:
         self: 11 (NumericLiteral)
       right:
         self: 2 (NumericLiteral)
+    right_min:
+      self: + (BinaryOperator)
+      left:
+        self: 10 (NumericLiteral)
+      right:
+        self: 0 (NumericLiteral)
   right:
     self: TRUE (BooleanLiteral)
 ",

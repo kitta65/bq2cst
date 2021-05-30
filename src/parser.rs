@@ -202,14 +202,12 @@ impl Parser {
         let mut between = self.construct_node(NodeType::BetweenOperator);
         between.push_node("left", left);
         self.next_token(); // BETWEEN -> expr1
-        let mut exprs = Vec::new();
-        // NOTE `AND` is not parsed as binary operator because of precedence
-        exprs.push(self.parse_expr(precedence, false));
+                           // NOTE `AND` is not parsed as binary operator because of precedence
+        between.push_node("right_min", self.parse_expr(precedence, false));
         self.next_token(); // expr1 -> AND
         between.push_node("and", self.construct_node(NodeType::Keyword));
         self.next_token(); // AND -> expr2
-        exprs.push(self.parse_expr(precedence, false));
-        between.push_node_vec("right", exprs);
+        between.push_node("right_max", self.parse_expr(precedence, false));
         between
     }
     fn parse_binary_operator(&mut self, left: Node) -> Node {
@@ -236,29 +234,14 @@ impl Parser {
                         self.next_token(); // * -> REPLACE
                         let mut replace = self.construct_node(NodeType::KeywordWithGroupedExprs);
                         self.next_token(); // REPLACE -> (
-                        let mut group = self.construct_node(NodeType::GroupedExprs);
-                        let mut exprs = Vec::new();
-                        while self.get_token(1).literal.as_str() != ")" {
-                            self.next_token(); // ( -> expr, ident -> expr
-                            let expr = self.parse_expr(usize::MAX, true);
-                            exprs.push(expr);
-                        }
-                        self.next_token(); // ident -> )
-                        group.push_node("rparen", self.construct_node(NodeType::Symbol));
-                        group.push_node_vec("exprs", exprs);
-                        replace.push_node("group", group);
+                        replace.push_node("group", self.parse_grouped_exprs(true));
                         left.push_node("replace", replace);
                     }
                     "EXCEPT" => {
                         self.next_token(); // * -> except
                         let mut except = self.construct_node(NodeType::KeywordWithGroupedExprs);
                         self.next_token(); // except -> (
-                        let mut group = self.construct_node(NodeType::GroupedExprs);
-                        self.next_token(); // ( -> exprs
-                        group.push_node_vec("exprs", self.parse_exprs(&vec![], false));
-                        self.next_token(); // exprs -> )
-                        group.push_node("rparen", self.construct_node(NodeType::Symbol));
-                        except.push_node("group", group);
+                        except.push_node("group", self.parse_grouped_exprs(false));
                         left.push_node("except", except);
                     }
                     _ => (),
@@ -584,6 +567,16 @@ impl Parser {
         }
         exprs
     }
+    fn parse_grouped_exprs(&mut self, alias: bool) -> Node {
+        let mut group = self.construct_node(NodeType::GroupedExprs);
+        if !self.get_token(1).is(")") {
+            self.next_token(); // ( -> exprs
+            group.push_node_vec("exprs", self.parse_exprs(&vec![], alias));
+        }
+        self.next_token(); // exprs -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol));
+        group
+    }
     fn parse_grouped_type_declarations(&mut self, schema: bool) -> Node {
         let mut group = self.construct_node(NodeType::GroupedTypeDeclarations);
         self.next_token(); // ( -> INOUT | ident | type
@@ -639,27 +632,15 @@ impl Parser {
     }
     fn parse_in_operator(&mut self, left: Node) -> Node {
         let mut node = self.construct_node(NodeType::InOperator);
-        self.next_token(); // IN -> (
         node.push_node("left", left);
-        let mut right = self.construct_node(NodeType::GroupedExprs);
-        self.next_token(); // ( -> expr
-        right.push_node_vec("exprs", self.parse_exprs(&vec![], false));
-        self.next_token(); // expr -> )
-        right.push_node("rparen", self.construct_node(NodeType::Symbol));
-        node.push_node("right", right);
+        self.next_token(); // IN -> (
+        node.push_node("right", self.parse_grouped_exprs(false));
         node
     }
     fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> Node {
         let mut keyword = self.construct_node(NodeType::KeywordWithGroupedExprs);
         self.next_token(); // keyword -> (
-        let mut group = self.construct_node(NodeType::GroupedExprs);
-        if !self.get_token(1).is(")") {
-            self.next_token(); // ( -> expr
-            group.push_node_vec("exprs", self.parse_exprs(&vec![], alias));
-        }
-        self.next_token(); // expr -> )
-        group.push_node("rparen", self.construct_node(NodeType::Symbol));
-        keyword.push_node("group", group);
+        keyword.push_node("group", self.parse_grouped_exprs(alias));
         keyword
     }
     fn parse_keyword_with_statements(&mut self, until: &Vec<&str>) -> Node {
@@ -826,7 +807,7 @@ impl Parser {
             self.next_token(); // -> (
             let mut config = self.construct_node(NodeType::PivotConfig);
             self.next_token(); // -> expr
-            config.push_node_vec("exprs", self.parse_exprs(&vec![], true)); // NOTE is alias really allowed?
+            config.push_node_vec("exprs", self.parse_exprs(&vec![], true));
             self.next_token(); // -> FOR
             let mut for_ = self.construct_node(NodeType::KeywordWithExpr);
             self.next_token(); // -> expr
@@ -849,7 +830,12 @@ impl Parser {
             self.next_token(); // -> (
             let mut config = self.construct_node(NodeType::UnpivotConfig);
             self.next_token(); // -> expr
-            config.push_node("expr", self.parse_expr(usize::MAX, true)); // NOTE when parsing multi_colomn_unpivot, the node_type is StructLiteral
+            if self.get_token(0).is("(") {
+                // in the case of multi column unpivot
+                config.push_node("expr", self.parse_grouped_exprs(false));
+            } else {
+                config.push_node("expr", self.parse_expr(usize::MAX, true));
+            }
             self.next_token(); // -> FOR
             let mut for_ = self.construct_node(NodeType::KeywordWithExpr);
             self.next_token(); // -> expr
@@ -862,7 +848,13 @@ impl Parser {
             let mut exprs = Vec::new();
             while !self.get_token(1).is(")") {
                 self.next_token(); // -> expr
-                let mut expr = self.parse_expr(usize::MAX, false);
+                let mut expr;
+                if self.get_token(0).is("(") {
+                    // in the case of multi column unpivot
+                    expr = self.parse_grouped_exprs(false);
+                } else {
+                    expr = self.parse_expr(usize::MAX, false);
+                }
                 if self.get_token(1).is("AS") {
                     self.next_token(); // -> AS
                     expr.push_node("as", self.construct_node(NodeType::Keyword));
@@ -1333,12 +1325,7 @@ impl Parser {
         }
         if self.get_token(1).is("(") {
             self.next_token(); // identifier -> (
-            let mut group = self.construct_node(NodeType::GroupedExprs);
-            self.next_token(); // ( -> columns
-            group.push_node_vec("exprs", self.parse_exprs(&vec![], false));
-            self.next_token(); // columns -> )
-            group.push_node("rparen", self.construct_node(NodeType::Symbol));
-            insert.push_node("columns", group);
+            insert.push_node("columns", self.parse_grouped_exprs(false));
         }
         if self.get_token(1).is("VALUES") {
             self.next_token(); // ) -> values
@@ -1346,11 +1333,7 @@ impl Parser {
             let mut lparens = Vec::new();
             while self.get_token(1).is("(") {
                 self.next_token(); // VALUES -> (, ',' -> (
-                let mut lparen = self.construct_node(NodeType::GroupedExprs);
-                self.next_token(); // -> expr
-                lparen.push_node_vec("exprs", self.parse_exprs(&vec![], false));
-                self.next_token(); // expr -> )
-                lparen.push_node("rparen", self.construct_node(NodeType::Symbol));
+                let mut lparen = self.parse_grouped_exprs(false);
                 if self.get_token(1).is(",") {
                     self.next_token(); // ) -> ,
                     lparen.push_node("comma", self.construct_node(NodeType::Symbol));
@@ -1627,15 +1610,13 @@ impl Parser {
         }
         self.next_token(); // -> ident
         create.push_node("ident", self.parse_identifier());
+        if self.get_token(1).is("(") && !materialized {
+            self.next_token(); // -> (
+            create.push_node("column_name_list", self.parse_grouped_exprs(false));
+        }
         if self.get_token(1).is("PARTITION") && materialized {
             self.next_token(); // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs());
-        }
-        if self.get_token(1).is("(") && !materialized {
-            self.next_token(); // -> (
-            let mut column_name_list = self.parse_expr(usize::MAX, false);
-            column_name_list.node_type = NodeType::GroupedExprs;
-            create.push_node("column_name_list", column_name_list);
         }
         if self.get_token(1).is("CLUSTER") && materialized {
             self.next_token(); // -> CLUSTER

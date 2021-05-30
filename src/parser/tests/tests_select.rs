@@ -898,7 +898,7 @@ from:
       config:
         self: ( (UnpivotConfig)
         expr:
-          self: ( (StructLiteral)
+          self: ( (GroupedExprs)
           exprs:
           - self: c1 (Identifier)
             comma:
@@ -915,7 +915,7 @@ from:
           group:
             self: ( (GroupedExprs)
             exprs:
-            - self: ( (StructLiteral)
+            - self: ( (GroupedExprs)
               as:
                 self: AS (Keyword)
               comma:
@@ -929,7 +929,7 @@ from:
                 self: 'A' (StringLiteral)
               rparen:
                 self: ) (Symbol)
-            - self: ( (StructLiteral)
+            - self: ( (GroupedExprs)
               exprs:
               - self: v3 (Identifier)
                 comma:
