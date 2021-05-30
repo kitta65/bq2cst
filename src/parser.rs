@@ -271,8 +271,20 @@ impl Parser {
             "STRUCT" => {
                 let type_ = self.parse_type(false);
                 self.next_token(); // STRUCT -> (, > -> (
-                let mut struct_literal = self.parse_expr(usize::MAX, false);
-                struct_literal.node_type = NodeType::StructLiteral; // in the case of `(1)`
+                let mut struct_literal = self.construct_node(NodeType::StructLiteral);
+                let mut exprs = vec![];
+                while !self.get_token(1).is(")") {
+                    self.next_token(); // -> expr
+                    let mut expr = self.parse_expr(usize::MAX, true);
+                    if self.get_token(1).is(",") {
+                        self.next_token(); // -> ,
+                        expr.push_node("comma", self.construct_node(NodeType::Symbol));
+                    }
+                    exprs.push(expr)
+                }
+                self.next_token(); // -> )
+                struct_literal.push_node("rparen", self.construct_node(NodeType::Symbol));
+                struct_literal.push_node_vec("exprs", exprs);
                 struct_literal.push_node("type", type_);
                 left = struct_literal;
             }

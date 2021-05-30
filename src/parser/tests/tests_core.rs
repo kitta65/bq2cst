@@ -581,8 +581,8 @@ SELECT STRUCT<INT64>(1)
 self: SELECT (SelectStatement)
 exprs:
 - self: ( (StructLiteral)
-  expr:
-    self: 1 (NumericLiteral)
+  exprs:
+  - self: 1 (NumericLiteral)
   rparen:
     self: ) (Symbol)
   type:
