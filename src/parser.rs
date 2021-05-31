@@ -473,7 +473,7 @@ impl Parser {
                     node.push_node("rparen", self.construct_node(NodeType::Symbol));
                     if self.get_token(1).is("over") {
                         self.next_token(); // ) -> OVER
-                        let mut over = self.construct_node(NodeType::OverCaluse);
+                        let mut over = self.construct_node(NodeType::OverClause);
                         self.next_token(); // OVER -> (, OVER -> named_expr
                         over.push_node("window", self.parse_window_expr());
                         node.push_node("over", over);
@@ -899,7 +899,7 @@ impl Parser {
         if self.get_token(1).is("tablesample") {
             // TODO check when it becomes GA
             self.next_token(); // -> TABLESAMPLE
-            let mut tablesample = self.construct_node(NodeType::TableSampleCaluse);
+            let mut tablesample = self.construct_node(NodeType::TableSampleClause);
             self.next_token(); // -> SYSTEM
             tablesample.push_node("system", self.construct_node(NodeType::Keyword));
             self.next_token(); // -> (

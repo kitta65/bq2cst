@@ -73,7 +73,7 @@ pub enum NodeType {
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
     OnClause,   // on x.c1 = y.c2
-    OverCaluse, // OVER (PARTITON BY x, y)
+    OverClause, // OVER (PARTITON BY x, y)
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
@@ -84,7 +84,7 @@ pub enum NodeType {
     StringLiteral,
     StructLiteral,
     Symbol,            // ) | ] | * | ...
-    TableSampleCaluse, // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSampleClause, // TABLESAMPLE SYSTEM (10 PERCENT)
     TableSampleRatio,  // (10 PERCENT)
     TruncateStatement,
     Type,            // INT64

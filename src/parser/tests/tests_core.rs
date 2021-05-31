@@ -952,7 +952,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       rparen:
@@ -975,7 +975,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       partitionby:
@@ -1003,7 +1003,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       orderby:
@@ -1033,7 +1033,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       orderby:
@@ -1071,7 +1071,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       frame:
@@ -1099,7 +1099,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       frame:
@@ -1151,7 +1151,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: named_window (Identifier)
   rparen:
@@ -1162,7 +1162,7 @@ exprs:
   func:
     self: SUM (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       name:
@@ -1186,7 +1186,7 @@ exprs:
   func:
     self: last_value (Identifier)
   over:
-    self: OVER (OverCaluse)
+    self: OVER (OverClause)
     window:
       self: ( (WindowSpecification)
       frame:

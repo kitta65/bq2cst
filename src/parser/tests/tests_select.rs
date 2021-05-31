@@ -963,7 +963,7 @@ from:
   expr:
     self: t (Identifier)
     tablesample:
-      self: TABLESAMPLE (TableSampleCaluse)
+      self: TABLESAMPLE (TableSampleClause)
       group:
         self: ( (TableSampleRatio)
         expr:
@@ -1338,7 +1338,7 @@ qualify:
       func:
         self: ROW_NUMBER (Identifier)
       over:
-        self: OVER (OverCaluse)
+        self: OVER (OverClause)
         window:
           self: ( (WindowSpecification)
           orderby:
