@@ -822,7 +822,7 @@ exprs:
         // ARRAY_AGG
         TestCase::new(
             "\
-SELECT ARRAY_AGG(DISTINCT x, y IGNORE NULLS ORDER BY z DESC LIMIT 100)
+SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY z DESC LIMIT 100)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -830,9 +830,6 @@ exprs:
 - self: ( (CallingFunction)
   args:
   - self: x (Identifier)
-    comma:
-      self: , (Symbol)
-  - self: y (Identifier)
   distinct:
     self: DISTINCT (Keyword)
   func:
@@ -924,7 +921,7 @@ exprs:
   - self: dt (Identifier)
     comma:
       self: , (Symbol)
-  - self: INTERVAL (Keyword)
+  - self: INTERVAL (IntervalLiteral)
     date_part:
       self: DAY (Keyword)
     right:

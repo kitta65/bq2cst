@@ -63,6 +63,7 @@ pub enum NodeType {
     Identifier,
     IfStatement,
     InsertStatement,
+    IntervalLiteral,
     InOperator,
     JoinOperator,      // JOIN | ,
     LanguageSpecifier, // LANGUAGE js

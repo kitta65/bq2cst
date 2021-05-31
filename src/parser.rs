@@ -329,7 +329,7 @@ impl Parser {
                 }
             }
             "INTERVAL" => {
-                left.node_type = NodeType::Keyword;
+                left.node_type = NodeType::IntervalLiteral;
                 self.next_token(); // INTERVAL -> expr
                 let right = self.parse_expr(usize::MAX, false);
                 self.next_token(); // expr -> HOUR
