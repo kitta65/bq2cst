@@ -1082,6 +1082,7 @@ exprs:
             self: 1 (NumericLiteral)
           right:
             self: 1 (NumericLiteral)
+        - self: PRECEDING (Keyword)
       rparen:
         self: ) (Symbol)
   rparen:

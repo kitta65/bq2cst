@@ -1087,6 +1087,7 @@ impl Parser {
                             frame_start.push(self.parse_expr(usize::MAX, false));
                         }
                         self.next_token(); // -> PRECEDING, ROW
+                        frame_start.push(self.construct_node(NodeType::Keyword));
                         frame.push_node_vec("start", frame_start);
                     }
                 }
