@@ -228,7 +228,7 @@ impl Parser {
         let mut left = self.construct_node(NodeType::Unknown);
         match self.get_token(0).literal.to_uppercase().as_str() {
             "*" => {
-                left.node_type = NodeType::Symbol;
+                left.node_type = NodeType::Asterisk;
                 match self.get_token(1).literal.to_uppercase().as_str() {
                     "REPLACE" => {
                         self.next_token(); // * -> REPLACE

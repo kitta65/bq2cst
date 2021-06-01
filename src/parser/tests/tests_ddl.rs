@@ -343,7 +343,7 @@ as:
   stmt:
     self: SELECT (SelectStatement)
     exprs:
-    - self: * (Symbol)
+    - self: * (Asterisk)
     from:
       self: FROM (KeywordWithExpr)
       expr:
@@ -422,7 +422,7 @@ as:
     exprs:
     - self: ( (CallingFunction)
       args:
-      - self: * (Symbol)
+      - self: * (Asterisk)
       func:
         self: COUNT (Identifier)
       rparen:

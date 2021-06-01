@@ -151,7 +151,7 @@ where:
       args:
       - self: SELECT (SelectStatement)
         exprs:
-        - self: * (Symbol)
+        - self: * (Asterisk)
         from:
           self: FROM (KeywordWithExpr)
           expr:

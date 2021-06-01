@@ -320,7 +320,7 @@ SELECT * EXCEPT (col1)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
   except:
     self: EXCEPT (KeywordWithGroupedExprs)
     group:
@@ -342,7 +342,7 @@ exprs:
   left:
     self: t (Identifier)
   right:
-    self: * (Symbol)
+    self: * (Asterisk)
     except:
       self: EXCEPT (KeywordWithGroupedExprs)
       group:
@@ -364,7 +364,7 @@ SELECT * REPLACE (col1 * 2 AS _col1)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
   replace:
     self: REPLACE (KeywordWithGroupedExprs)
     group:
@@ -394,7 +394,7 @@ exprs:
   left:
     self: t (Identifier)
   right:
-    self: * (Symbol)
+    self: * (Asterisk)
     replace:
       self: REPLACE (KeywordWithGroupedExprs)
       group:
@@ -546,7 +546,7 @@ SELECT * FROM (SELECT 1,2)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -573,7 +573,7 @@ exprs:
   left:
     self: SUB (Identifier)
   right:
-    self: * (Symbol)
+    self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -604,7 +604,7 @@ WHERE NOT EXISTS(SELECT 1 FROM sub s WHERE s.x = m.x);
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -714,7 +714,7 @@ SELECT * FROM t PIVOT (COUNT(*) FOR x IN ('v1', 'v2'))
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -726,7 +726,7 @@ from:
         exprs:
         - self: ( (CallingFunction)
           args:
-          - self: * (Symbol)
+          - self: * (Asterisk)
           func:
             self: COUNT (Identifier)
           rparen:
@@ -757,7 +757,7 @@ SELECT * FROM t AS t1 PIVOT (SUM(x) s, COUNT(*) AS c FOR y IN (1 one, 2 AS two))
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -788,7 +788,7 @@ from:
           alias:
             self: c (Identifier)
           args:
-          - self: * (Symbol)
+          - self: * (Asterisk)
           as:
             self: AS (Keyword)
           func:
@@ -833,7 +833,7 @@ FROM t UNPIVOT (
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -884,7 +884,7 @@ SELECT * FROM t UNPIVOT INCLUDE NULLS (
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -957,7 +957,7 @@ FROM t TABLESAMPLE SYSTEM (20 PERCENT)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -984,7 +984,7 @@ SELECT * FROM UNNEST([1,2])
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1011,7 +1011,7 @@ SELECT * FROM UNNEST([1]) WITH OFFSET
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1038,7 +1038,7 @@ SELECT * FROM UNNEST([1]) a WITH OFFSET AS b
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1072,7 +1072,7 @@ SELECT * FROM (SELECT 1 FROM t1) INNER JOIN t2 ON TRUE;
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1108,7 +1108,7 @@ SELECT * FROM t1 AS one JOIN t2 two ON TRUE
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1136,7 +1136,7 @@ SELECT * FROM data1 AS one LEFT JOIN data2 two USING(col) LEFT OUTER JOIN data3 
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1182,7 +1182,7 @@ SELECT * FROM data1 AS one , data2 two JOIN (data3 FULL OUTER JOIN data4 ON col1
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1288,7 +1288,7 @@ exprs:
   alias:
     self: cnt (Identifier)
   args:
-  - self: * (Symbol)
+  - self: * (Asterisk)
   func:
     self: COUNT (Identifier)
   rparen:
@@ -1377,7 +1377,7 @@ WINDOW
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:
@@ -1428,7 +1428,7 @@ WINDOW
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: * (Symbol)
+- self: * (Asterisk)
 from:
   self: FROM (KeywordWithExpr)
   expr:

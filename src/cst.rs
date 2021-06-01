@@ -22,6 +22,7 @@ pub enum NodeType {
     ArrayAccessing, // arr[OFFSET(1)]
     ArrayLiteral,   // [1, 2]
     AssertStatement,
+    Asterisk,
     BinaryOperator, // + | - | = | ...
     BeginStatement,
     BetweenOperator,
