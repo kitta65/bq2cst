@@ -62,8 +62,12 @@ impl Parser {
                     node.node_type = NodeType::StringLiteral;
                 } else if curr_token.is_boolean() {
                     node.node_type = NodeType::BooleanLiteral;
+                } else if curr_token.is_parameter() {
+                    node.node_type = NodeType::Parameter;
                 } else if curr_token.literal.to_uppercase() == "NULL" {
                     node.node_type = NodeType::NullLiteral;
+                } else if let "(" | "." = self.get_token(1).literal.as_str() {
+                    node.node_type = NodeType::Identifier;
                 }
                 node
             }
@@ -220,7 +224,6 @@ impl Parser {
         self.next_token(); // binary_operator -> expr
         node.push_node("left", left);
         node.push_node("right", self.parse_expr(precedence, false));
-        node.node_type = NodeType::BinaryOperator;
         node
     }
     fn parse_expr(&mut self, precedence: usize, alias: bool) -> Node {
@@ -388,11 +391,6 @@ impl Parser {
             match self.get_token(1).literal.to_uppercase().as_str() {
                 "(" => {
                     let func = self.get_token(0).literal.to_uppercase();
-                    if func != "." {
-                        // some functions (CAST, EXTRACT and so on) are reserved keywords
-                        // but handle them as if they were identifiers
-                        left.node_type = NodeType::Identifier;
-                    }
                     self.next_token(); // ident -> (
                     let mut node = self.construct_node(NodeType::CallingFunction);
                     if self.get_token(1).is("distinct") {
@@ -490,8 +488,20 @@ impl Parser {
                     node.push_node("rparen", self.construct_node(NodeType::Symbol));
                     left = node;
                 }
-                "." | "*" | "/" | "||" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" | "=" | "<"
-                | ">" | "<=" | ">=" | "<>" | "!=" | "LIKE" | "IS" | "AND" | "OR" | "=>" => {
+                "." => {
+                    self.next_token(); // -> .
+                    let mut dot = self.construct_node(NodeType::DotOperator);
+                    self.next_token(); // -> identifier
+                    dot.push_node("left", left);
+                    if self.get_token(0).literal.as_str() == "*" {
+                        dot.push_node("right", self.parse_expr(usize::MAX, false));
+                    } else {
+                        dot.push_node("right", self.construct_node(NodeType::Identifier));
+                    }
+                    left = dot;
+                }
+                "*" | "/" | "||" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" | "=" | "<" | ">"
+                | "<=" | ">=" | "<>" | "!=" | "LIKE" | "IS" | "AND" | "OR" | "=>" => {
                     self.next_token(); // expr -> binary_operator
                     left = self.parse_binary_operator(left);
                 }
@@ -634,7 +644,7 @@ impl Parser {
         let mut left = self.construct_node(NodeType::Identifier);
         while self.get_token(1).is(".") {
             self.next_token(); // ident -> .
-            let mut operator = self.construct_node(NodeType::BinaryOperator);
+            let mut operator = self.construct_node(NodeType::DotOperator);
             operator.push_node("left", left);
             self.next_token(); // . -> ident
             operator.push_node("right", self.construct_node(NodeType::Identifier));
@@ -767,6 +777,10 @@ impl Parser {
                 self.next_token(); // table -> )
                 group.push_node("rparen", self.construct_node(NodeType::Symbol));
                 left = group;
+            }
+            "UNNEST" => {
+                left = self.parse_expr(usize::MAX, false);
+                left.node_type = NodeType::CallingUnnest;
             }
             _ => {
                 left = self.parse_expr(usize::MAX, false);

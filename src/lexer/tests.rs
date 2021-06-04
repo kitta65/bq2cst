@@ -185,14 +185,16 @@ FROM t",
         TestCase::new(
             "\
 SELECT ?;
-SELECT @param;",
+SELECT @param1, @`param2`;",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "?"),
                 Token::from_str(1, 9, ";"),
                 Token::from_str(2, 1, "SELECT"),
-                Token::from_str(2, 8, "@param"),
-                Token::from_str(2, 14, ";"),
+                Token::from_str(2, 8, "@param1"),
+                Token::from_str(2, 15, ","),
+                Token::from_str(2, 17, "@`param2`"),
+                Token::from_str(2, 26, ";"),
             ],
         ),
         // operator

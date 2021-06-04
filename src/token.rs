@@ -75,6 +75,13 @@ impl Token {
         }
         true
     }
+    pub fn is_parameter(&self) -> bool {
+        let mut iterator = self.literal.chars();
+        match iterator.next() {
+            Some('?') | Some('@') => return true,
+            _ => return false
+        }
+    }
     pub fn is_numeric(&self) -> bool {
         let re = Regex::new(r"^([0-9]+|([0-9]*\.[0-9]+))([eE][\+\-]?[0-9]+)?$").unwrap();
         re.is_match(self.literal.as_str())

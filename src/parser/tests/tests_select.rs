@@ -338,7 +338,7 @@ SELECT t.* EXCEPT(col1, col2)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (BinaryOperator)
+- self: . (DotOperator)
   left:
     self: t (Identifier)
   right:
@@ -390,7 +390,7 @@ SELECT t.* REPLACE (col2 * 2 AS _col2)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (BinaryOperator)
+- self: . (DotOperator)
   left:
     self: t (Identifier)
   right:
@@ -564,14 +564,14 @@ from:
         ),
         TestCase::new(
             "\
-SELECT SUB.* FROM (SELECT 1,2) AS SUB;
+SELECT sub.* FROM (SELECT 1,2) AS sub;
 ",
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (BinaryOperator)
+- self: . (DotOperator)
   left:
-    self: SUB (Identifier)
+    self: sub (Identifier)
   right:
     self: * (Asterisk)
 from:
@@ -579,7 +579,7 @@ from:
   expr:
     self: ( (GroupedStatement)
     alias:
-      self: SUB (Identifier)
+      self: sub (Identifier)
     as:
       self: AS (Keyword)
     rparen:
@@ -634,13 +634,13 @@ where:
           expr:
             self: = (BinaryOperator)
             left:
-              self: . (BinaryOperator)
+              self: . (DotOperator)
               left:
                 self: s (Identifier)
               right:
                 self: x (Identifier)
             right:
-              self: . (BinaryOperator)
+              self: . (DotOperator)
               left:
                 self: m (Identifier)
               right:
@@ -988,7 +988,7 @@ exprs:
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: ( (CallingFunction)
+    self: ( (CallingUnnest)
     args:
     - self: [ (ArrayLiteral)
       exprs:
@@ -1015,7 +1015,7 @@ exprs:
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: ( (CallingFunction)
+    self: ( (CallingUnnest)
     args:
     - self: [ (ArrayLiteral)
       exprs:
@@ -1042,7 +1042,7 @@ exprs:
 from:
   self: FROM (KeywordWithExpr)
   expr:
-    self: ( (CallingFunction)
+    self: ( (CallingUnnest)
     alias:
       self: a (Identifier)
     args:

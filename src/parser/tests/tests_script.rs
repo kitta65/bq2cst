@@ -616,7 +616,7 @@ procedure:
   args:
   - self: 1 (NumericLiteral)
   func:
-    self: . (Identifier)
+    self: . (DotOperator)
     left:
       self: mydataset (Identifier)
     right:
@@ -685,9 +685,9 @@ then:
   stmts:
   - self: SELECT (SelectStatement)
     exprs:
-    - self: . (BinaryOperator)
+    - self: . (DotOperator)
       left:
-        self: @@error (Unknown)
+        self: @@error (Parameter)
       right:
         self: message (Identifier)
     semicolon:

@@ -109,7 +109,11 @@ impl Lexer {
         while self.get_char(0) == Some('@') {
             self.read_char();
         }
-        self.read_identifier();
+        if self.get_char(0) == Some('`') {
+            self.read_quoted();
+        } else {
+            self.read_identifier();
+        }
         self.input[first_position..self.position]
             .into_iter()
             .collect()

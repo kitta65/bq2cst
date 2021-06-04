@@ -29,6 +29,7 @@ pub enum NodeType {
     BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (
     CallingDatePartFunction, // WEEK(SUNDAY)
+    CallingUnnest, // UNNEST([1, 2])
     CallStatement,           // CALL procedure_name (arg);
     CaseArm,                 // WHEN a THEN b
     CaseExpr,                // CASE WHEN a then b ELSE c END
@@ -41,6 +42,7 @@ pub enum NodeType {
     Comment,
     DeclareStatement,
     DeleteStatement,
+    DotOperator,
     DropColumnClause, // DROP COLUMN x
     DropStatement,
     EOF,
@@ -75,6 +77,7 @@ pub enum NodeType {
     NullLiteral,
     OnClause,   // on x.c1 = y.c2
     OverClause, // OVER (PARTITON BY x, y)
+    Parameter, // ? | @param
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,

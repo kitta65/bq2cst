@@ -242,13 +242,13 @@ set:
   exprs:
   - self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: one (Identifier)
       right:
         self: value (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: two (Identifier)
       right:
@@ -264,13 +264,13 @@ where:
   expr:
     self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: one (Identifier)
       right:
         self: id (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: two (Identifier)
       right:
@@ -299,13 +299,13 @@ from:
       expr:
         self: = (BinaryOperator)
         left:
-          self: . (BinaryOperator)
+          self: . (DotOperator)
           left:
             self: t2 (Identifier)
           right:
             self: id (Identifier)
         right:
-          self: . (BinaryOperator)
+          self: . (DotOperator)
           left:
             self: t3 (Identifier)
           right:
@@ -319,7 +319,7 @@ set:
   exprs:
   - self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t1 (Identifier)
       right:
@@ -333,13 +333,13 @@ where:
   expr:
     self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t1 (Identifier)
       right:
         self: id (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t3 (Identifier)
       right:
@@ -361,13 +361,13 @@ on:
   expr:
     self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t (Identifier)
       right:
         self: id (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: s (Identifier)
       right:
@@ -405,13 +405,13 @@ on:
   expr:
     self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t (Identifier)
       right:
         self: id (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: s (Identifier)
       right:
@@ -494,19 +494,19 @@ on:
   expr:
     self: = (BinaryOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t (Identifier)
       right:
         self: id (Identifier)
     right:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: s (Identifier)
       right:
         self: id (Identifier)
 table_name:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   alias:
     self: t (Identifier)
   left:
@@ -516,7 +516,7 @@ table_name:
 using:
   self: USING (KeywordWithExpr)
   expr:
-    self: . (BinaryOperator)
+    self: . (DotOperator)
     alias:
       self: s (Identifier)
     as:

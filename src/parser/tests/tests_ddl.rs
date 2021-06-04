@@ -25,7 +25,7 @@ CREATE SCHEMA IF NOT EXISTS project_name.dataset_name OPTIONS();
             "\
 self: CREATE (CreateSchemaStatement)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: project_name (Identifier)
   right:
@@ -127,7 +127,7 @@ column_schema_group:
   rparen:
     self: ) (Symbol)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -225,7 +225,7 @@ self: CREATE (CreateTableStatement)
 external:
   self: EXTERNAL (Keyword)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -280,7 +280,7 @@ self: CREATE (CreateTableStatement)
 external:
   self: EXTERNAL (Keyword)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -347,13 +347,13 @@ as:
     from:
       self: FROM (KeywordWithExpr)
       expr:
-        self: . (BinaryOperator)
+        self: . (DotOperator)
         left:
           self: dataset (Identifier)
         right:
           self: table_name (Identifier)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -394,7 +394,7 @@ column_name_list:
   rparen:
     self: ) (Symbol)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset_name (Identifier)
   right:
@@ -430,13 +430,13 @@ as:
     from:
       self: FROM (KeywordWithExpr)
       expr:
-        self: . (BinaryOperator)
+        self: . (DotOperator)
         left:
           self: dataset (Identifier)
         right:
           self: table_name (Identifier)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -712,7 +712,7 @@ group:
   rparen:
     self: ) (Symbol)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:
@@ -757,7 +757,7 @@ group:
   rparen:
     self: ) (Symbol)
 ident:
-  self: . (BinaryOperator)
+  self: . (DotOperator)
   left:
     self: dataset (Identifier)
   right:

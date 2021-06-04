@@ -307,9 +307,9 @@ exprs:
   comma:
     self: , (Symbol)
   left:
-    self: . (BinaryOperator)
+    self: . (DotOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t (Identifier)
       right:
@@ -324,9 +324,9 @@ exprs:
   left:
     self: 1 (NumericLiteral)
   right:
-    self: . (BinaryOperator)
+    self: . (DotOperator)
     left:
-      self: . (BinaryOperator)
+      self: . (DotOperator)
       left:
         self: t (Identifier)
       right:
