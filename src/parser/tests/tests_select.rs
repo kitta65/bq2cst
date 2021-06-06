@@ -1143,8 +1143,6 @@ from:
     self: JOIN (JoinOperator)
     join_type:
       self: LEFT (Keyword)
-      outer:
-        self: OUTER (Keyword)
     left:
       self: JOIN (JoinOperator)
       join_type:
@@ -1171,6 +1169,8 @@ from:
       self: ON (OnClause)
       expr:
         self: TRUE (BooleanLiteral)
+    outer:
+      self: OUTER (Keyword)
     right:
       self: data3 (Identifier)
 ",
@@ -1209,8 +1209,6 @@ from:
         self: JOIN (JoinOperator)
         join_type:
           self: FULL (Keyword)
-          outer:
-            self: OUTER (Keyword)
         left:
           self: data3 (Identifier)
         on:
@@ -1221,6 +1219,8 @@ from:
               self: col1 (Identifier)
             right:
               self: col2 (Identifier)
+        outer:
+          self: OUTER (Keyword)
         right:
           self: data4 (Identifier)
       rparen:

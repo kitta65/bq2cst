@@ -937,15 +937,20 @@ impl Parser {
                 let join = self.construct_node(NodeType::JoinOperator);
                 join
             } else {
-                let mut type_ = self.construct_node(NodeType::Keyword);
+                let type_ = self.construct_node(NodeType::Keyword);
                 self.next_token(); // join_type -> OUTER, JOIN
                 if self.get_token(0).is("OUTER") {
-                    type_.push_node("outer", self.construct_node(NodeType::Keyword));
+                    let outer = self.construct_node(NodeType::Keyword);
                     self.next_token(); // OUTER -> JOIN
+                    let mut join = self.construct_node(NodeType::JoinOperator);
+                    join.push_node("join_type", type_);
+                    join.push_node("outer", outer);
+                    join
+                } else {
+                    let mut join = self.construct_node(NodeType::JoinOperator);
+                    join.push_node("join_type", type_);
+                    join
                 }
-                let mut join = self.construct_node(NodeType::JoinOperator);
-                join.push_node("join_type", type_);
-                join
             };
             self.next_token(); // -> table
             let right = self.parse_table(false);
