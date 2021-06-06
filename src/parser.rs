@@ -956,7 +956,7 @@ impl Parser {
             let right = self.parse_table(false);
             if self.get_token(1).is("on") {
                 self.next_token(); // `table` -> ON
-                let mut on = self.construct_node(NodeType::OnClause);
+                let mut on = self.construct_node(NodeType::KeywordWithExpr);
                 self.next_token(); // ON -> expr
                 on.push_node("expr", self.parse_expr(usize::MAX, false));
                 join.push_node("on", on);

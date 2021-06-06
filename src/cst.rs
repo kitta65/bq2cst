@@ -75,7 +75,6 @@ pub enum NodeType {
     MergeStatement,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
-    OnClause,   // on x.c1 = y.c2
     OverClause, // OVER (PARTITON BY x, y)
     Parameter, // ? | @param
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))

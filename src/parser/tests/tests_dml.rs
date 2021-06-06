@@ -295,7 +295,7 @@ from:
     left:
       self: t2 (Identifier)
     on:
-      self: ON (OnClause)
+      self: ON (KeywordWithExpr)
       expr:
         self: = (BinaryOperator)
         left:

@@ -1092,7 +1092,7 @@ from:
           expr:
             self: t1 (Identifier)
     on:
-      self: ON (OnClause)
+      self: ON (KeywordWithExpr)
       expr:
         self: TRUE (BooleanLiteral)
     right:
@@ -1120,7 +1120,7 @@ from:
       as:
         self: AS (Keyword)
     on:
-      self: ON (OnClause)
+      self: ON (KeywordWithExpr)
       expr:
         self: TRUE (BooleanLiteral)
     right:
@@ -1166,7 +1166,7 @@ from:
         rparen:
           self: ) (Symbol)
     on:
-      self: ON (OnClause)
+      self: ON (KeywordWithExpr)
       expr:
         self: TRUE (BooleanLiteral)
     outer:
@@ -1200,7 +1200,7 @@ from:
         alias:
           self: two (Identifier)
     on:
-      self: ON (OnClause)
+      self: ON (KeywordWithExpr)
       expr:
         self: TRUE (BooleanLiteral)
     right:
@@ -1212,7 +1212,7 @@ from:
         left:
           self: data3 (Identifier)
         on:
-          self: ON (OnClause)
+          self: ON (KeywordWithExpr)
           expr:
             self: = (BinaryOperator)
             left:
