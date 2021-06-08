@@ -154,7 +154,7 @@ immediate:
   self: IMMEDIATE (Keyword)
 into:
   self: INTO (KeywordWithExprs)
-  idents:
+  exprs:
   - self: x (Identifier)
     comma:
       self: , (Symbol)
@@ -182,7 +182,7 @@ immediate:
   self: IMMEDIATE (Keyword)
 into:
   self: INTO (KeywordWithExprs)
-  idents:
+  exprs:
   - self: x (Identifier)
 semicolon:
   self: ; (Symbol)
@@ -198,6 +198,7 @@ using:
       self: AS (Keyword)
 ",
         ),
+        // ----- BEGIN statement -----
         TestCase::new(
             "\
 BEGIN
@@ -224,7 +225,6 @@ stmts:
     self: ; (Symbol)
 ",
         ),
-        // ----- BEGIN statement -----
         TestCase::new(
             "\
 BEGIN

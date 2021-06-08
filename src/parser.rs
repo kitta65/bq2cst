@@ -2033,7 +2033,7 @@ impl Parser {
                     break;
                 }
             }
-            into.push_node_vec("idents", idents);
+            into.push_node_vec("exprs", idents);
             execute.push_node("into", into);
         }
         if self.get_token(1).is("USING") {
