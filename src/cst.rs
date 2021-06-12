@@ -45,6 +45,7 @@ pub enum NodeType {
     DotOperator,
     DropColumnClause, // DROP COLUMN x
     DropStatement,
+    ElseIfClause, // ELSEIF true SELECT;
     EOF,
     ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'
     ExportStatement,

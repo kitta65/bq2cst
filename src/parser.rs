@@ -2092,7 +2092,7 @@ impl Parser {
         let mut elseifs = Vec::new();
         while self.get_token(1).is("ELSEIF") {
             self.next_token(); // -> ELSEIF
-            let mut elseif = self.construct_node(NodeType::Keyword);
+            let mut elseif = self.construct_node(NodeType::ElseIfClause);
             self.next_token(); // -> condition
             elseif.push_node("condition", self.parse_expr(usize::MAX, false));
             self.next_token(); // -> THEN

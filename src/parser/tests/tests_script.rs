@@ -338,7 +338,7 @@ self: IF (IfStatement)
 condition:
   self: TRUE (BooleanLiteral)
 elseifs:
-- self: ELSEIF (Keyword)
+- self: ELSEIF (ElseIfClause)
   condition:
     self: TRUE (BooleanLiteral)
   then:
@@ -376,7 +376,7 @@ condition:
 else:
   self: ELSE (KeywordWithStatements)
 elseifs:
-- self: ELSEIF (Keyword)
+- self: ELSEIF (ElseIfClause)
   condition:
     self: TRUE (BooleanLiteral)
   then:
@@ -387,7 +387,7 @@ elseifs:
       - self: 1 (NumericLiteral)
       semicolon:
         self: ; (Symbol)
-- self: ELSEIF (Keyword)
+- self: ELSEIF (ElseIfClause)
   condition:
     self: TRUE (BooleanLiteral)
   then:
