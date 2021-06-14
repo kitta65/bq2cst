@@ -599,7 +599,7 @@ ident:
 language:
   self: LAGUAGE (LanguageSpecifier)
   language:
-    self: js (Keyword)
+    self: js (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedExprs)
   group:
@@ -639,7 +639,7 @@ ident:
 language:
   self: LANGUAGE (LanguageSpecifier)
   language:
-    self: js (Keyword)
+    self: js (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedExprs)
   group:
@@ -689,7 +689,7 @@ ident:
 language:
   self: LANGUAGE (LanguageSpecifier)
   language:
-    self: js (Keyword)
+    self: js (Identifier)
 returns:
   self: RETURNS (KeywordWithType)
   type:

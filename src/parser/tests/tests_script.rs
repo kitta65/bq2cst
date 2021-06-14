@@ -575,7 +575,7 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
-        // ----- WHILE statement -----
+        // ----- RAISE statement -----
         TestCase::new(
             "\
 RAISE;

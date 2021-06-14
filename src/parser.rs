@@ -1715,7 +1715,7 @@ impl Parser {
             self.next_token(); // -> LANGUAGE
             let mut language = self.construct_node(NodeType::LanguageSpecifier);
             self.next_token(); // -> js
-            language.push_node("language", self.construct_node(NodeType::Keyword));
+            language.push_node("language", self.construct_node(NodeType::Identifier));
             node.push_node("language", language);
             if self.get_token(1).is("OPTIONS") {
                 self.next_token(); // -> OPTIONS
