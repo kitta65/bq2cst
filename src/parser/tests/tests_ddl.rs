@@ -887,7 +887,7 @@ add_columns:
   column:
     self: COLUMN (Keyword)
   type_declaration:
-    self: x (Identifier)
+    self: x (TypeDeclaration)
     type:
       self: INT64 (Type)
 ident:
@@ -917,7 +917,7 @@ add_columns:
   - self: NOT (Keyword)
   - self: EXISTS (Keyword)
   type_declaration:
-    self: x (Identifier)
+    self: x (TypeDeclaration)
     type:
       self: INT64 (Type)
       options:
@@ -936,7 +936,7 @@ add_columns:
   column:
     self: COLUMN (Keyword)
   type_declaration:
-    self: y (Identifier)
+    self: y (TypeDeclaration)
     type:
       self: STRUCT (Type)
       type_declaration:

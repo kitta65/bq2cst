@@ -1810,7 +1810,7 @@ impl Parser {
                         add_column.push_node_vec("if_not_exists", self.parse_n_keywords(3));
                     }
                     self.next_token(); // -> ident
-                    let mut ident = self.construct_node(NodeType::Identifier);
+                    let mut ident = self.construct_node(NodeType::TypeDeclaration);
                     self.next_token(); // -> type
                     ident.push_node("type", self.parse_type(true));
                     add_column.push_node("type_declaration", ident);
