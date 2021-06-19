@@ -1822,6 +1822,15 @@ impl Parser {
                 }
                 alter.push_node_vec("add_columns", add_columns);
             }
+            "RENAME" => {
+                self.next_token(); // -> RENAME
+                alter.push_node("rename", self.construct_node(NodeType::Keyword));
+                self.next_token(); // -> TO
+                let mut to = self.construct_node(NodeType::KeywordWithExpr);
+                self.next_token(); // -> ident
+                to.push_node("expr", self.parse_identifier());
+                alter.push_node("to", to);
+            }
             "DROP" => {
                 let mut drop_columns = Vec::new();
                 while self.get_token(1).is("DROP") {

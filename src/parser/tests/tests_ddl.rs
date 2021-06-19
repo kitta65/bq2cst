@@ -958,6 +958,32 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // RENAME
+        TestCase::new(
+            "\
+ALTER TABLE dataset_name.t
+RENAME TO u;
+",
+            "\
+self: ALTER (AlterTableStatement)
+ident:
+  self: . (DotOperator)
+  left:
+    self: dataset_name (Identifier)
+  right:
+    self: t (Identifier)
+rename:
+  self: RENAME (Keyword)
+semicolon:
+  self: ; (Symbol)
+to:
+  self: TO (KeywordWithExpr)
+  expr:
+    self: u (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+        ),
         // DROP
         TestCase::new(
             "\
