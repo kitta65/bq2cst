@@ -6,7 +6,7 @@ fn test_parse_code_dml() {
         // ----- INSERT statement -----
         TestCase::new(
             "\
-INSERT INTO TABLE VALUES(1,2);
+INSERT INTO table_name VALUES(1,2);
 ",
             "\
 self: INSERT (InsertStatement)
@@ -26,7 +26,7 @@ into:
 semicolon:
   self: ; (Symbol)
 target_name:
-  self: TABLE (Identifier)
+  self: table_name (Identifier)
 ",
         ),
         TestCase::new(
@@ -169,14 +169,14 @@ where:
         // ----- TRUNCATE statement -----
         TestCase::new(
             "\
-TRUNCATE table_name t;
+TRUNCATE TABLE t;
 ",
             "\
 self: TRUNCATE (TruncateStatement)
 semicolon:
   self: ; (Symbol)
 table:
-  self: table_name (Keyword)
+  self: TABLE (Keyword)
 table_name:
   self: t (Identifier)
 ",
@@ -350,7 +350,7 @@ where:
         // DELETE
         TestCase::new(
             "\
-MERGE t 
+MERGE t
 USING s ON t.id = s.id
 WHEN MATCHED THEN DELETE;
 ",
