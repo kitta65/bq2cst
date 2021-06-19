@@ -59,13 +59,17 @@ fn test_parse_code_core() {
         TestCase::new(
             "\
 #standardSQL
-SELECT /* */ 1
+SELECT /* */
+  -- leading_comments
+  1
 ; -- end of statement
 ",
             "\
 self: SELECT (SelectStatement)
 exprs:
 - self: 1 (NumericLiteral)
+  leading_comments:
+  - self: -- leading_comments (Comment)
 leading_comments:
 - self: #standardSQL (Comment)
 semicolon:

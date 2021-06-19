@@ -27,11 +27,13 @@ impl Parser {
             p.leading_comment_indices.push(p.position);
             p.position += 1;
         }
-        let mut trailing_comment_idx = p.position + 1;
         if p.position == p.tokens.len() - 1 {
             return p; // no statement was found
         }
-        while p.tokens[trailing_comment_idx].is_comment() {
+        let mut trailing_comment_idx = p.position + 1;
+        while p.tokens[trailing_comment_idx].is_comment()
+            && p.tokens[p.position].line == p.tokens[trailing_comment_idx].line
+        {
             p.trailing_comment_indices.push(trailing_comment_idx);
             trailing_comment_idx += 1;
         }
@@ -1030,7 +1032,7 @@ impl Parser {
                     res.push_node("parameter", self.parse_grouped_exprs(false));
                 }
                 res
-            },
+            }
         };
         if self.get_token(1).is("NOT") && schema {
             self.next_token(); // -> NOT
