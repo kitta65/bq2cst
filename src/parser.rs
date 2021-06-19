@@ -1023,7 +1023,14 @@ impl Parser {
                 res.push_node("type", self.construct_node(NodeType::Keyword));
                 res
             }
-            _ => self.construct_node(NodeType::Type),
+            _ => {
+                let mut res = self.construct_node(NodeType::Type);
+                if self.get_token(1).is("(") {
+                    self.next_token(); // -> (
+                    res.push_node("parameter", self.parse_grouped_exprs(false));
+                }
+                res
+            },
         };
         if self.get_token(1).is("NOT") && schema {
             self.next_token(); // -> NOT

@@ -71,7 +71,7 @@ what:
         ),
         TestCase::new(
             "\
-CREATE TEMP TABLE example (x INT64, y INT64);
+CREATE TEMP TABLE example (x INT64, y STRING(10));
 ",
             "\
 self: CREATE (CreateTableStatement)
@@ -85,7 +85,13 @@ column_schema_group:
       self: INT64 (Type)
   - self: y (TypeDeclaration)
     type:
-      self: INT64 (Type)
+      self: STRING (Type)
+      parameter:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: 10 (NumericLiteral)
+        rparen:
+          self: ) (Symbol)
   rparen:
     self: ) (Symbol)
 ident:
