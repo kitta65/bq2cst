@@ -413,13 +413,7 @@ impl Parser {
                                 node.push_node_vec("args", vec![as_]);
                             }
                             "EXTRACT" => {
-                                let mut datepart;
-                                if self.get_token(1).is("(") {
-                                    datepart = self.parse_expr(usize::MAX, false);
-                                    datepart.node_type = NodeType::CallingDatePartFunction;
-                                } else {
-                                    datepart = self.construct_node(NodeType::Keyword);
-                                }
+                                let datepart = self.parse_expr(usize::MAX, false);
                                 self.next_token(); // expr -> FROM
                                 let mut from = self.construct_node(NodeType::ExtractArgument);
                                 self.next_token(); // FROM -> timestamp_expr

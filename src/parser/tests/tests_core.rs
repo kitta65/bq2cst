@@ -762,7 +762,7 @@ exprs:
   args:
   - self: FROM (ExtractArgument)
     extract_datepart:
-      self: DAY (Keyword)
+      self: DAY (Identifier)
     extract_from:
       self: ts (Identifier)
   func:
@@ -782,7 +782,7 @@ exprs:
   args:
   - self: FROM (ExtractArgument)
     extract_datepart:
-      self: ( (CallingDatePartFunction)
+      self: ( (CallingFunction)
       args:
       - self: SUNDAY (Identifier)
       func:
@@ -812,7 +812,7 @@ exprs:
     - self: TIME (Keyword)
     - self: ZONE (Keyword)
     extract_datepart:
-      self: DAY (Keyword)
+      self: DAY (Identifier)
     extract_from:
       self: ts (Identifier)
     time_zone:

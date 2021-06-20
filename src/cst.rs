@@ -28,7 +28,6 @@ pub enum NodeType {
     BetweenOperator,
     BooleanLiteral,          // TRUE | FALSE
     CallingFunction,         // (
-    CallingDatePartFunction, // WEEK(SUNDAY)
     CallingUnnest, // UNNEST([1, 2])
     CallStatement,           // CALL procedure_name (arg);
     CaseArm,                 // WHEN a THEN b
