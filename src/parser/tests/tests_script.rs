@@ -56,6 +56,7 @@ expr:
             "\
 SET (x,y) = (1,2)
 ",
+            // NOTE (x, y) is not GroupedExpr but StructLiteral
             "\
 self: SET (SetStatement)
 expr:

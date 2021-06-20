@@ -208,7 +208,8 @@ impl Parser {
         let mut between = self.construct_node(NodeType::BetweenOperator);
         between.push_node("left", left);
         self.next_token(); // BETWEEN -> expr1
-                           // NOTE `AND` is not parsed as binary operator because of precedence
+
+        // NOTE `AND` is not parsed as binary operator because of precedence
         between.push_node("right_min", self.parse_expr(precedence, false));
         self.next_token(); // expr1 -> AND
         between.push_node("and", self.construct_node(NodeType::Keyword));
