@@ -1,13 +1,14 @@
+mod constants;
 mod cst;
 mod lexer;
 mod parser;
 mod token;
+mod types;
 mod utils;
-mod constants;
 
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
+#[wasm_bindgen(skip_typescript)]
 pub fn parse(code: String) -> JsValue {
     utils::set_panic_hook();
     let mut p = parser::Parser::new(code);
@@ -17,3 +18,4 @@ pub fn parse(code: String) -> JsValue {
         Err(error) => panic!("Probrem converting struct to json: {:?}", error),
     }
 }
+
