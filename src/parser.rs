@@ -220,7 +220,7 @@ impl Parser {
     fn parse_binary_operator(&mut self, left: Node) -> Node {
         let precedence = self.get_precedence(0);
         let mut node = self.construct_node(NodeType::BinaryOperator);
-        if self.get_token(1).is("NOT") {
+        if self.get_token(0).is("IS") && self.get_token(1).is("NOT") {
             self.next_token(); // IS -> NOT
             node.push_node("not", self.construct_node(NodeType::Keyword));
         }

@@ -2,9 +2,9 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
 const NODES: &'static str = r#"
-export function parse(code: string): UnknownNodes;
+export function parse(code: string): UnknownNode;
 
-export type UnknownNodes =
+export type UnknownNode =
   | AddColumnClause
   | AlterColumnStatement
   | AlterSchemaStatement
@@ -15,7 +15,7 @@ export type UnknownNodes =
   | AssertStatement
   | Asterisk
   | BinaryOperator
-  | BeginStataement
+  | BeginStatement
   | BetweenOperator
   | BooleanLiteral
   | CallingFunction
@@ -155,14 +155,6 @@ export type IdentifierGeneral = FromItemExpr & {
   };
 };
 
-export type XXXByExprs = Keyword & {
-  token: Token;
-  children: {
-    by: NodeChild;
-    exprs: { NodeVec: Expr[] };
-  };
-};
-
 export type XXXStatement = BaseNode & {
   token: Token;
   children: {
@@ -283,8 +275,8 @@ export type BinaryOperator = Expr & {
   };
 };
 
-export type BeginStataement = XXXStatement & {
-  node_type: "BeginStataement";
+export type BeginStatement = XXXStatement & {
+  node_type: "BeginStatement";
   children: {
     stmts?: NodeVecChild;
     exception_when_error?: NodeVecChild;
@@ -465,15 +457,13 @@ export type DeleteStatement = XXXStatement & {
   };
 };
 
-export type DotOperator = IdentifierGeneral &
-  BinaryOperator & {
-    node_type: "DotOperator";
-    children: {
-      not: undefined;
-      left: { Node: IdentifierGeneral };
-      right: { Node: IdentifierGeneral };
-    };
+export type DotOperator = IdentifierGeneral & {
+  node_type: "DotOperator";
+  children: {
+    left: { Node: IdentifierGeneral };
+    right: { Node: IdentifierGeneral };
   };
+};
 
 export type DropColumnClause = BaseNode & {
   node_type: "DropColumnClause";
@@ -1026,6 +1016,15 @@ export type WithQuery = BaseNode & {
     as: NodeChild;
     stmt: NodeChild;
     comma: NodeChild;
+  };
+};
+
+export type XXXByExprs = BaseNode & {
+  token: Token;
+  node_type: "XXXByExpr";
+  children: {
+    by: NodeChild;
+    exprs: { NodeVec: Expr[] };
   };
 };
 "#;
