@@ -95,7 +95,8 @@ export type UnknownNode =
   | WindowSpecification
   | WithClause
   | WithPartitionColumnsClause
-  | WithQuery;
+  | WithQuery
+  | XXXByExprs;
 
 export type Token = {
   line: number;
@@ -103,14 +104,14 @@ export type Token = {
   literal: string;
 };
 
-export type BaseNode = {
+export interface BaseNode {
   token: Token | null;
   node_type: string;
   children: {
     leading_comments?: { NodeVec: Comment[] };
     trailing_comments?: { NodeVec: Comment[] };
   };
-};
+}
 
 export type NodeChild = { Node: BaseNode };
 export type NodeVecChild = { NodeVec: BaseNode[] };
@@ -118,7 +119,7 @@ export type NodeVecChild = { NodeVec: BaseNode[] };
 // ----- sub types of BaseNode (abstract) -----
 export type CallingFunctionGeneral = Expr & {
   children: {
-    func: { Node: Identifier };
+    func: { Node: Identifier | DotOperator };
     distinct?: NodeChild;
     args?: { NodeVec: Expr[] };
     ignore_nulls?: NodeVecChild;
@@ -460,8 +461,8 @@ export type DeleteStatement = XXXStatement & {
 export type DotOperator = IdentifierGeneral & {
   node_type: "DotOperator";
   children: {
-    left: { Node: IdentifierGeneral };
-    right: { Node: IdentifierGeneral };
+    left: { Node: Identifier | DotOperator };
+    right: { Node: Identifier | DotOperator };
   };
 };
 
@@ -808,8 +809,9 @@ export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
   children: {
     distinct_or_all: NodeChild;
-    left: NodeChild;
-    right: NodeChild;
+    left: { Node: SetOperator | SelectStatement };
+    right: { Node: SetOperator | SelectStatement };
+
   };
 };
 
@@ -1021,7 +1023,7 @@ export type WithQuery = BaseNode & {
 
 export type XXXByExprs = BaseNode & {
   token: Token;
-  node_type: "XXXByExpr";
+  node_type: "XXXByExprs";
   children: {
     by: NodeChild;
     exprs: { NodeVec: Expr[] };
