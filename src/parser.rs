@@ -238,14 +238,14 @@ impl Parser {
                 match self.get_token(1).literal.to_uppercase().as_str() {
                     "REPLACE" => {
                         self.next_token(); // * -> REPLACE
-                        let mut replace = self.construct_node(NodeType::KeywordWithGroupedExprs);
+                        let mut replace = self.construct_node(NodeType::KeywordWithGroupedXXX);
                         self.next_token(); // REPLACE -> (
                         replace.push_node("group", self.parse_grouped_exprs(true));
                         left.push_node("replace", replace);
                     }
                     "EXCEPT" => {
                         self.next_token(); // * -> except
-                        let mut except = self.construct_node(NodeType::KeywordWithGroupedExprs);
+                        let mut except = self.construct_node(NodeType::KeywordWithGroupedXXX);
                         self.next_token(); // except -> (
                         except.push_node("group", self.parse_grouped_exprs(false));
                         left.push_node("except", except);
@@ -657,7 +657,7 @@ impl Parser {
         node
     }
     fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> Node {
-        let mut keyword = self.construct_node(NodeType::KeywordWithGroupedExprs);
+        let mut keyword = self.construct_node(NodeType::KeywordWithGroupedXXX);
         self.next_token(); // keyword -> (
         keyword.push_node("group", self.parse_grouped_exprs(alias));
         keyword
@@ -865,7 +865,7 @@ impl Parser {
             for_.push_node("expr", self.construct_node(NodeType::Identifier));
             config.push_node("for", for_);
             self.next_token(); // -> IN
-            let mut in_ = self.construct_node(NodeType::KeywordWithGroupedExprs);
+            let mut in_ = self.construct_node(NodeType::KeywordWithGroupedXXX);
             self.next_token(); // -> (
             let mut group = self.construct_node(NodeType::GroupedExprs);
             let mut exprs = Vec::new();
@@ -1710,7 +1710,7 @@ impl Parser {
         if self.get_token(1).is("AS") {
             // sql function definition
             self.next_token(); // -> AS
-            let mut as_ = self.construct_node(NodeType::KeywordWithGroupedExpr);
+            let mut as_ = self.construct_node(NodeType::KeywordWithGroupedXXX);
             self.next_token(); // -> (
             let mut group = self.construct_node(NodeType::GroupedExpr);
             self.next_token(); // ( -> expr

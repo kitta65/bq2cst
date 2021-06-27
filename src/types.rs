@@ -55,8 +55,7 @@ export type UnknownNode =
   | Keyword
   | KeywordWithExpr
   | KeywordWithExprs
-  | KeywordWithGroupedExpr
-  | KeywordWithGroupedExprs
+  | KeywordWithGroupedXXX
   | KeywordWithStatement
   | KeywordWithStatements
   | KeywordWithType
@@ -671,15 +670,8 @@ export type KeywordWithExprs = BaseNode & {
   };
 };
 
-export type KeywordWithGroupedExpr = BaseNode & {
-  node_type: "KeywordWithGroupedExpr";
-  children: {
-    group: NodeChild;
-  };
-};
-
-export type KeywordWithGroupedExprs = BaseNode & {
-  node_type: "KeywordWithGroupedExprs";
+export type KeywordWithGroupedXXX = BaseNode & {
+  node_type: "KeywordWithGroupedXXX";
   children: {
     group: NodeChild;
   };

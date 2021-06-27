@@ -59,8 +59,7 @@ pub enum NodeType {
     KeywordWithExpr,         // WHEN expr
     KeywordWithExprs,        // USING 1, 2
     KeywordWithType,         // RETURNS INT64
-    KeywordWithGroupedExpr,  // AS (1 + 1)
-    KeywordWithGroupedExprs, // EXCEPT (c1, c2)
+    KeywordWithGroupedXXX,  // AS (1 + 1)
     KeywordWithStatement,    // THEN INSERT ROW
     KeywordWithStatements,   // THEN SELECT 1;
     Identifier,

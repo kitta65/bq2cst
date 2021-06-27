@@ -322,7 +322,7 @@ self: SELECT (SelectStatement)
 exprs:
 - self: * (Asterisk)
   except:
-    self: EXCEPT (KeywordWithGroupedExprs)
+    self: EXCEPT (KeywordWithGroupedXXX)
     group:
       self: ( (GroupedExprs)
       exprs:
@@ -344,7 +344,7 @@ exprs:
   right:
     self: * (Asterisk)
     except:
-      self: EXCEPT (KeywordWithGroupedExprs)
+      self: EXCEPT (KeywordWithGroupedXXX)
       group:
         self: ( (GroupedExprs)
         exprs:
@@ -366,7 +366,7 @@ self: SELECT (SelectStatement)
 exprs:
 - self: * (Asterisk)
   replace:
-    self: REPLACE (KeywordWithGroupedExprs)
+    self: REPLACE (KeywordWithGroupedXXX)
     group:
       self: ( (GroupedExprs)
       exprs:
@@ -396,7 +396,7 @@ exprs:
   right:
     self: * (Asterisk)
     replace:
-      self: REPLACE (KeywordWithGroupedExprs)
+      self: REPLACE (KeywordWithGroupedXXX)
       group:
         self: ( (GroupedExprs)
         exprs:
@@ -736,7 +736,7 @@ from:
           expr:
             self: x (Identifier)
         in:
-          self: IN (KeywordWithGroupedExprs)
+          self: IN (KeywordWithGroupedXXX)
           group:
             self: ( (GroupedExprs)
             exprs:
@@ -800,7 +800,7 @@ from:
           expr:
             self: y (Identifier)
         in:
-          self: IN (KeywordWithGroupedExprs)
+          self: IN (KeywordWithGroupedXXX)
           group:
             self: ( (GroupedExprs)
             exprs:
@@ -853,7 +853,7 @@ from:
           expr:
             self: v (Identifier)
         in:
-          self: IN (KeywordWithGroupedExprs)
+          self: IN (KeywordWithGroupedXXX)
           group:
             self: ( (GroupedExprs)
             exprs:
@@ -911,7 +911,7 @@ from:
           expr:
             self: v (Identifier)
         in:
-          self: IN (KeywordWithGroupedExprs)
+          self: IN (KeywordWithGroupedXXX)
           group:
             self: ( (GroupedExprs)
             exprs:

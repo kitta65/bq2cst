@@ -35,7 +35,7 @@ if_not_exists:
 - self: NOT (Keyword)
 - self: EXISTS (Keyword)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     rparen:
@@ -119,7 +119,7 @@ column_schema_group:
     type:
       self: INT64 (Type)
       options:
-        self: OPTIONS (KeywordWithGroupedExprs)
+        self: OPTIONS (KeywordWithGroupedXXX)
         group:
           self: ( (GroupedExprs)
           exprs:
@@ -139,7 +139,7 @@ ident:
   right:
     self: example (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -283,7 +283,7 @@ clone:
 ident:
   self: snap (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     rparen:
@@ -315,7 +315,7 @@ ident:
   right:
     self: new_table (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -370,7 +370,7 @@ ident:
   right:
     self: new_table (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -528,7 +528,7 @@ ident:
 materialized:
   self: MATERIALIZED (Keyword)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -554,7 +554,7 @@ CREATE OR REPLACE FUNCTION abc() AS (1);
             "\
 self: CREATE (CreateFunctionStatement)
 as:
-  self: AS (KeywordWithGroupedExpr)
+  self: AS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExpr)
     expr:
@@ -583,7 +583,7 @@ CREATE TEMP FUNCTION abc(x INT64) AS (x);
             "\
 self: CREATE (CreateFunctionStatement)
 as:
-  self: AS (KeywordWithGroupedExpr)
+  self: AS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExpr)
     expr:
@@ -617,7 +617,7 @@ AS ('dummy');
             "\
 self: CREATE (CreateFunctionStatement)
 as:
-  self: AS (KeywordWithGroupedExpr)
+  self: AS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExpr)
     expr:
@@ -685,7 +685,7 @@ language:
   language:
     self: js (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     rparen:
@@ -725,7 +725,7 @@ language:
   language:
     self: js (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -847,7 +847,7 @@ ident:
   right:
     self: procede (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -884,7 +884,7 @@ self: ALTER (AlterSchemaStatement)
 ident:
   self: dataset_name (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     rparen:
@@ -909,7 +909,7 @@ if_exists:
 - self: IF (Keyword)
 - self: EXISTS (Keyword)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -939,7 +939,7 @@ self: ALTER (AlterTableStatement)
 ident:
   self: example (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -1005,7 +1005,7 @@ add_columns:
     type:
       self: INT64 (Type)
       options:
-        self: OPTIONS (KeywordWithGroupedExprs)
+        self: OPTIONS (KeywordWithGroupedXXX)
         group:
           self: ( (GroupedExprs)
           exprs:
@@ -1167,7 +1167,7 @@ self: ALTER (AlterViewStatement)
 ident:
   self: example (Identifier)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
@@ -1205,7 +1205,7 @@ ident:
 materialized:
   self: MATERIALIZED (Keyword)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:

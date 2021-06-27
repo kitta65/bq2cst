@@ -55,7 +55,7 @@ as:
 data:
   self: DATA (Keyword)
 options:
-  self: OPTIONS (KeywordWithGroupedExprs)
+  self: OPTIONS (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedExprs)
     exprs:
