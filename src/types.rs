@@ -410,12 +410,14 @@ export type CreateTableStatement = XXXStatement & {
   node_type: "CreateTableStatement";
   children: {
     or_replace?: NodeVecChild;
-    external?: NodeChild;
     temp?: NodeChild;
+    external?: NodeChild;
+    snapshot?: NodeChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
     column_schema_group?: NodeChild;
+    clone?: NodeChild;
     partitionby?: NodeChild;
     clusterby?: NodeChild;
     with_partition_columns?: NodeChild;

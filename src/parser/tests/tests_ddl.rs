@@ -216,6 +216,84 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        TestCase::new(
+            "\
+CREATE TABLE from_snap CLONE snap
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: snap (Identifier)
+ident:
+  self: from_snap (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // SNAPSHOT
+        TestCase::new(
+            "\
+CREATE SNAPSHOT TABLE snap
+CLONE source_table
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: source_table (Identifier)
+ident:
+  self: snap (Identifier)
+snapshot:
+  self: SNAPSHOT (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+CREATE SNAPSHOT TABLE snap
+CLONE dataset.source_table FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
+OPTIONS ()
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: . (DotOperator)
+    for_system_time_as_of:
+      self: FOR (ForSystemTimeAsOfClause)
+      expr:
+        self: ( (CallingFunction)
+        func:
+          self: CURRENT_TIMESTAMP (Identifier)
+        rparen:
+          self: ) (Symbol)
+      system_time_as_of:
+      - self: SYSTEM_TIME (Keyword)
+      - self: AS (Keyword)
+      - self: OF (Keyword)
+    left:
+      self: dataset (Identifier)
+    right:
+      self: source_table (Identifier)
+ident:
+  self: snap (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedExprs)
+  group:
+    self: ( (GroupedExprs)
+    rparen:
+      self: ) (Symbol)
+snapshot:
+  self: SNAPSHOT (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+        ),
         // EXTERNAL
         TestCase::new(
             "\

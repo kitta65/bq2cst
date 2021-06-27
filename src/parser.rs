@@ -1545,6 +1545,7 @@ impl Parser {
     fn parse_create_table_statement(&mut self, semicolon: bool) -> Node {
         let mut create = self.construct_node(NodeType::CreateTableStatement);
         let mut external = false;
+        let mut snapshot = false;
         if self.get_token(1).is("OR") {
             self.next_token(); // -> OR
             create.push_node_vec("or_replace", self.parse_n_keywords(2));
@@ -1559,6 +1560,11 @@ impl Parser {
             external = true;
             self.next_token(); // -> EXTERNAL
             create.push_node("external", self.construct_node(NodeType::Keyword));
+        }
+        if self.get_token(1).is("SNAPSHOT") {
+            snapshot = true;
+            self.next_token(); // -> SNAPSHOT
+            create.push_node("snapshot", self.construct_node(NodeType::Keyword));
         }
         self.next_token(); // -> TABLE
         create.push_node("what", self.construct_node(NodeType::Keyword));
@@ -1577,11 +1583,11 @@ impl Parser {
         }
         // NOTE actually, PARTITION BY has only one expr
         // but for simplicity use parse_xxxby_exprs() here
-        if self.get_token(1).is("PARTITION") && !external {
+        if self.get_token(1).is("PARTITION") && !external && !snapshot {
             self.next_token(); // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs());
         }
-        if self.get_token(1).is("CLUSTER") && !external {
+        if self.get_token(1).is("CLUSTER") && !external && !snapshot {
             self.next_token(); // -> CLUSTER
             create.push_node("clusterby", self.parse_xxxby_exprs());
         }
@@ -1598,6 +1604,13 @@ impl Parser {
                 );
             }
             create.push_node("with_partition_columns", with);
+        }
+        if self.get_token(1).is("CLONE") {
+            self.next_token(); // -> CLONE
+            let mut clone = self.construct_node(NodeType::KeywordWithExpr);
+            self.next_token(); // -> identifier
+            clone.push_node("expr", self.parse_table(true));
+            create.push_node("clone", clone);
         }
         if self.get_token(1).is("OPTIONS") {
             self.next_token(); // -> OPTIONS
