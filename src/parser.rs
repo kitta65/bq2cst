@@ -480,7 +480,9 @@ impl Parser {
                     let mut node = self.construct_node(NodeType::ArrayAccessing);
                     node.push_node("left", left);
                     self.next_token(); // [ -> index_expr
-                    node.push_node("right", self.parse_expr(usize::MAX, false));
+                    let mut index = self.parse_expr(usize::MAX, false);
+                    index.node_type = NodeType::CallingArrayAccessingFunction;
+                    node.push_node("right", index);
                     self.next_token(); // index_expr -> ]
                     node.push_node("rparen", self.construct_node(NodeType::Symbol));
                     left = node;
@@ -735,10 +737,9 @@ impl Parser {
                 );
             }
             "DROP" => self.parse_drop_statement(semicolon),
-            // DEBUG
-            "ASSERT" => self.parse_assert_satement(semicolon),
-            // other
-            "EXPORT" => self.parse_export_statement(semicolon),
+            // DCL
+            "GRANT" => self.parse_grant_statement(semicolon),
+            "REVOKE" => self.parse_revoke_statement(semicolon),
             // script
             "DECLARE" => self.parse_declare_statement(semicolon),
             "SET" => self.parse_set_statement(semicolon),
@@ -752,6 +753,10 @@ impl Parser {
             }
             "RAISE" => self.parse_raise_statement(semicolon),
             "CALL" => self.parse_call_statement(semicolon),
+            // DEBUG
+            "ASSERT" => self.parse_assert_satement(semicolon),
+            // other
+            "EXPORT" => self.parse_export_statement(semicolon),
             _ => panic!(
                 "Calling `parse_statement()` is not allowed here: {:?}",
                 self.get_token(0)
@@ -1959,39 +1964,48 @@ impl Parser {
         }
         drop
     }
-    // ----- other -----
-    fn parse_assert_satement(&mut self, semicolon: bool) -> Node {
-        let mut assert = self.construct_node(NodeType::AssertStatement);
-        self.next_token(); // -> expr
-        assert.push_node("expr", self.parse_expr(usize::MAX, false));
-        if self.get_token(1).is("AS") {
-            self.next_token(); // -> AS
-            assert.push_node("as", self.construct_node(NodeType::Keyword));
-            self.next_token(); // -> description
-            assert.push_node("description", self.parse_expr(usize::MAX, false))
-        }
+    // ----- DCL -----
+    fn parse_grant_statement(&mut self, semicolon: bool) -> Node {
+        let mut grant = self.construct_node(NodeType::GrantStatement);
+        self.next_token(); // -> role
+        grant.push_node_vec("roles", self.parse_exprs(&vec![], false));
+        self.next_token(); // -> ON
+        grant.push_node("on", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> resource_type
+        grant.push_node("resource_type", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> ident
+        grant.push_node("ident", self.parse_identifier());
+        self.next_token(); // -> TO
+        let mut to = self.construct_node(NodeType::KeywordWithExprs);
+        self.next_token(); // -> user
+        to.push_node_vec("users", self.parse_exprs(&vec![], false));
+        grant.push_node("to", to);
         if self.get_token(1).is(";") && semicolon {
-            self.next_token(); // -> ;
-            assert.push_node("semicolon", self.construct_node(NodeType::Symbol));
+            self.next_token(); // ;
+            grant.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
-        assert
+        grant
     }
-    fn parse_export_statement(&mut self, semicolon: bool) -> Node {
-        let mut export = self.construct_node(NodeType::ExportStatement);
-        self.next_token(); // -> DATA
-        export.push_node("data", self.construct_node(NodeType::Keyword));
-        self.next_token(); // -> OPTIONS
-        export.push_node("options", self.parse_keyword_with_grouped_exprs(false));
-        self.next_token(); // -> AS
-        let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
-        self.next_token(); // -> stmt
-        as_.push_node("stmt", self.parse_statement(false));
-        export.push_node("as", as_);
+    fn parse_revoke_statement(&mut self, semicolon: bool) -> Node {
+        let mut revoke = self.construct_node(NodeType::RevokeStatement);
+        self.next_token(); // -> role
+        revoke.push_node_vec("roles", self.parse_exprs(&vec![], false));
+        self.next_token(); // -> ON
+        revoke.push_node("on", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> resource_type
+        revoke.push_node("resource_type", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> ident
+        revoke.push_node("ident", self.parse_identifier());
+        self.next_token(); // -> FROM
+        let mut from = self.construct_node(NodeType::KeywordWithExprs);
+        self.next_token(); // -> user
+        from.push_node_vec("users", self.parse_exprs(&vec![], false));
+        revoke.push_node("from", from);
         if self.get_token(1).is(";") && semicolon {
-            self.next_token(); // -> ;
-            export.push_node("semicolon", self.construct_node(NodeType::Symbol));
+            self.next_token(); // ;
+            revoke.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
-        export
+        revoke
     }
     // ----- script -----
     fn parse_declare_statement(&mut self, semicolon: bool) -> Node {
@@ -2214,5 +2228,40 @@ impl Parser {
             call.push_node("semicolon", self.construct_node(NodeType::Symbol));
         }
         call
+    }
+    // ----- debug -----
+    fn parse_assert_satement(&mut self, semicolon: bool) -> Node {
+        let mut assert = self.construct_node(NodeType::AssertStatement);
+        self.next_token(); // -> expr
+        assert.push_node("expr", self.parse_expr(usize::MAX, false));
+        if self.get_token(1).is("AS") {
+            self.next_token(); // -> AS
+            assert.push_node("as", self.construct_node(NodeType::Keyword));
+            self.next_token(); // -> description
+            assert.push_node("description", self.parse_expr(usize::MAX, false))
+        }
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            assert.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        assert
+    }
+    // ----- other -----
+    fn parse_export_statement(&mut self, semicolon: bool) -> Node {
+        let mut export = self.construct_node(NodeType::ExportStatement);
+        self.next_token(); // -> DATA
+        export.push_node("data", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> OPTIONS
+        export.push_node("options", self.parse_keyword_with_grouped_exprs(false));
+        self.next_token(); // -> AS
+        let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
+        self.next_token(); // -> stmt
+        as_.push_node("stmt", self.parse_statement(false));
+        export.push_node("as", as_);
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            export.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        export
     }
 }

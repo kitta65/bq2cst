@@ -27,6 +27,7 @@ pub enum NodeType {
     BeginStatement,
     BetweenOperator,
     BooleanLiteral,          // TRUE | FALSE
+    CallingArrayAccessingFunction, // OFFSET(1) | SAFE_ORDINAL(3)
     CallingFunction,         // (
     CallingUnnest, // UNNEST([1, 2])
     CallStatement,           // CALL procedure_name (arg);
@@ -50,6 +51,7 @@ pub enum NodeType {
     ExportStatement,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
+    GrantStatement,
     GroupedExpr,             // (1)
     GroupedExprs,            // (1, 2, 3)
     GroupedStatement,        // (SELECT 1)
@@ -79,6 +81,7 @@ pub enum NodeType {
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
+    RevokeStatement,
     SelectStatement,      // SELECT 1;
     SetOperator,          // UNION | INTERSECT | EXCEPT
     SetStatement,         // SET x = 5

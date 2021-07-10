@@ -18,6 +18,7 @@ export type UnknownNode =
   | BeginStatement
   | BetweenOperator
   | BooleanLiteral
+  | CallingArrayAccessingFunction
   | CallingFunction
   | CallingUnnest
   | CallStatement
@@ -41,6 +42,7 @@ export type UnknownNode =
   | ExportStatement
   | ExtractArgument
   | ForSystemTimeAsOfClause
+  | GrantStatement
   | GroupedExpr
   | GroupedExprs
   | GroupedStatement
@@ -71,6 +73,7 @@ export type UnknownNode =
   | PivotConfig
   | SelectStatement
   | RaiseStatement
+  | RevokeStatement
   | SetOperator
   | SetStatement
   | SingleTokenStatement
@@ -298,6 +301,22 @@ export type BetweenOperator = Expr & {
 
 export type BooleanLiteral = Expr & {
   node_type: "BooleanLiteral";
+};
+
+export type CallingArrayAccessingFunction = CallingFunctionGeneral & {
+  node_type: "CallingArrayAccessingFunction";
+  children: {
+    distinct: undefined;
+    ignore_nulls: undefined;
+    orderby: undefined;
+    limit: undefined;
+    over: undefined;
+    as: undefined;
+    alias: undefined;
+    comma: undefined;
+    order: undefined;
+    null_order: undefined;
+  };
 };
 
 export type CallingFunction = CallingFunctionGeneral & {
@@ -542,6 +561,17 @@ export type ForSystemTimeAsOfClause = BaseNode & {
   children: {
     system_time_as_of: NodeVecChild;
     expr: NodeChild;
+  };
+};
+
+export type GrantStatement = XXXStatement & {
+  node_type: "GrantStatement";
+  children: {
+    roles: NodeVecChild;
+    on: NodeChild;
+    resource_type: NodeChild;
+    ident: NodeChild;
+    to: NodeChild;
   };
 };
 
@@ -799,13 +829,23 @@ export type RaiseStatement = XXXStatement & {
   };
 };
 
+export type RevokeStatement = XXXStatement & {
+  node_type: "RevokeStatement";
+  children: {
+    roles: NodeVecChild;
+    on: NodeChild;
+    resource_type: NodeChild;
+    ident: NodeChild;
+    from: NodeChild;
+  };
+};
+
 export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
   children: {
     distinct_or_all: NodeChild;
     left: { Node: SetOperator | SelectStatement };
     right: { Node: SetOperator | SelectStatement };
-
   };
 };
 

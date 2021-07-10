@@ -5,8 +5,10 @@ mod tests_core;
 mod tests_select;
 mod tests_dml;
 mod tests_ddl;
-mod tests_other;
+mod tests_dcl;
 mod tests_script;
+mod tests_debug;
+mod tests_other;
 
 struct TestCase {
     code: String,

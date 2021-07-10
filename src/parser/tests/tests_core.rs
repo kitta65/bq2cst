@@ -531,7 +531,7 @@ exprs:
   left:
     self: arr (Identifier)
   right:
-    self: ( (CallingFunction)
+    self: ( (CallingArrayAccessingFunction)
     args:
     - self: 1 (NumericLiteral)
     func:
