@@ -408,9 +408,16 @@ impl Parser {
                                 let cast_from = self.parse_expr(usize::MAX, false);
                                 self.next_token(); // expr -> AS
                                 let mut as_ = self.construct_node(NodeType::CastArgument);
-                                self.next_token();
-                                as_.push_node("cast_to", self.parse_type(false));
                                 as_.push_node("cast_from", cast_from);
+                                self.next_token(); // -> type
+                                as_.push_node("cast_to", self.parse_type(false));
+                                if self.get_token(1).is("FORMAT") {
+                                    self.next_token(); // -> FORMAT
+                                    let mut format = self.construct_node(NodeType::KeywordWithExpr);
+                                    self.next_token(); // -> string
+                                    format.push_node("expr", self.parse_expr(usize::MAX, false));
+                                    as_.push_node("format", format);
+                                }
                                 node.push_node_vec("args", vec![as_]);
                             }
                             "EXTRACT" => {

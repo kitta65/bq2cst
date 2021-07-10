@@ -372,6 +372,7 @@ export type CastArgument = BaseNode & {
   children: {
     cast_from: NodeChild;
     cast_to: NodeChild;
+    format?: NodeChild;
   };
 };
 

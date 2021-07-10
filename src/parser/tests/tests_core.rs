@@ -750,6 +750,30 @@ exprs:
     self: ) (Symbol)
 ",
         ),
+        TestCase::new(
+            "\
+SELECT CAST('Hello' AS BYTES FORMAT 'ASCII')
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: AS (CastArgument)
+    cast_from:
+      self: 'Hello' (StringLiteral)
+    cast_to:
+      self: BYTES (Type)
+    format:
+      self: FORMAT (KeywordWithExpr)
+      expr:
+        self: 'ASCII' (StringLiteral)
+  func:
+    self: CAST (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
         // EXTRACT
         TestCase::new(
             "\
