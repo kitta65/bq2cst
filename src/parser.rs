@@ -1909,8 +1909,18 @@ impl Parser {
         }
         self.next_token(); // -> ident
         alter.push_node("ident", self.construct_node(NodeType::Identifier));
-        self.next_token(); // -> DROP
-        alter.push_node_vec("drop_not_null", self.parse_n_keywords(3));
+        self.next_token(); // -> SET | DROP
+        match self.get_token(0).literal.to_uppercase().as_str() {
+            "SET" => {
+                alter.push_node("set", self.construct_node(NodeType::Keyword));
+                self.next_token(); // -> OPTIONS
+                alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
+            }
+            "DROP" => {
+                alter.push_node_vec("drop_not_null", self.parse_n_keywords(3));
+            }
+            _ => panic!("Expected `SET` or `DROP` but got : {:?}", self.get_token(0)),
+        }
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol));

@@ -1154,6 +1154,41 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        TestCase::new(
+            "\
+ALTER TABLE t
+ALTER COLUMN c SET OPTIONS(description = 'abc');
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  ident:
+    self: c (Identifier)
+  options:
+    self: OPTIONS (KeywordWithGroupedXXX)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: = (BinaryOperator)
+        left:
+          self: description (Identifier)
+        right:
+          self: 'abc' (StringLiteral)
+      rparen:
+        self: ) (Symbol)
+  set:
+    self: SET (Keyword)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
         // ----- ALTER VIEW statement -----
         TestCase::new(
             "\

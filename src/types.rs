@@ -183,6 +183,10 @@ export type AlterColumnStatement = BaseNode & {
     what: NodeChild;
     if_exists?: NodeVecChild;
     ident: NodeChild;
+    // SET
+    set: NodeChild;
+    options: NodeChild;
+    // DROP
     drop_not_null: NodeVecChild;
   };
 };
