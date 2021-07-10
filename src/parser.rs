@@ -708,7 +708,15 @@ impl Parser {
                 loop {
                     match self.get_token(offset).literal.to_uppercase().as_str() {
                         "SCHEMA" => return self.parse_create_schema_statement(semicolon),
-                        "TABLE" => return self.parse_create_table_statement(semicolon),
+                        "TABLE" => {
+                            if self.get_token(offset + 1).literal.to_uppercase().as_str()
+                                == "FUNCTION"
+                            {
+                                return self.parse_create_function_statement(semicolon);
+                            } else {
+                                return self.parse_create_table_statement(semicolon);
+                            }
+                        }
                         "VIEW" => return self.parse_create_view_statement(semicolon),
                         "FUNCTION" => return self.parse_create_function_statement(semicolon),
                         "PROCEDURE" => return self.parse_create_procedure_statement(semicolon),
@@ -794,6 +802,9 @@ impl Parser {
             _ => {
                 left = self.parse_expr(usize::MAX, false);
             }
+        }
+        if left.node_type == NodeType::CallingFunction {
+            left.node_type = NodeType::CallingTableFunction;
         }
         // alias
         // NOTE PIVOT and UNPIVOT are not reserved keywords
@@ -994,7 +1005,7 @@ impl Parser {
                 }
                 res
             }
-            "STRUCT" => {
+            "STRUCT" | "TABLE" => {
                 let mut res = self.construct_node(NodeType::Type);
                 if self.get_token(1).literal.as_str() == "<" {
                     self.next_token(); // STRUCT -> <
@@ -1694,6 +1705,7 @@ impl Parser {
     }
     fn parse_create_function_statement(&mut self, semicolon: bool) -> Node {
         let mut node = self.construct_node(NodeType::CreateFunctionStatement);
+        let mut is_tvf = false;
         if self.get_token(1).literal.to_uppercase() == "OR" {
             self.next_token(); // -> OR
             node.push_node_vec("or_replace", self.parse_n_keywords(2));
@@ -1701,6 +1713,11 @@ impl Parser {
         if self.get_token(1).in_(&vec!["TEMPORARY", "TEMP"]) {
             self.next_token(); // -> TEMP
             node.push_node("temp", self.construct_node(NodeType::Keyword));
+        }
+        if self.get_token(1).is("TABLE") {
+            self.next_token(); // -> TABLE
+            node.push_node("table", self.construct_node(NodeType::Keyword));
+            is_tvf = true;
         }
         self.next_token(); // -> FUNCTION
         node.push_node("what", self.construct_node(NodeType::Keyword));
@@ -1722,15 +1739,22 @@ impl Parser {
         if self.get_token(1).is("AS") {
             // sql function definition
             self.next_token(); // -> AS
-            let mut as_ = self.construct_node(NodeType::KeywordWithGroupedXXX);
-            self.next_token(); // -> (
-            let mut group = self.construct_node(NodeType::GroupedExpr);
-            self.next_token(); // ( -> expr
-            group.push_node("expr", self.parse_expr(usize::MAX, false));
-            self.next_token(); // expr -> )
-            group.push_node("rparen", self.construct_node(NodeType::Symbol));
-            as_.push_node("group", group);
-            node.push_node("as", as_);
+            if is_tvf {
+                let mut as_ = self.construct_node(NodeType::KeywordWithStatement);
+                self.next_token(); // SELECT
+                as_.push_node("stmt", self.parse_select_statement(false, true));
+                node.push_node("as", as_)
+            } else {
+                let mut as_ = self.construct_node(NodeType::KeywordWithGroupedXXX);
+                self.next_token(); // -> (
+                let mut group = self.construct_node(NodeType::GroupedExpr);
+                self.next_token(); // ( -> expr
+                group.push_node("expr", self.parse_expr(usize::MAX, false));
+                self.next_token(); // expr -> )
+                group.push_node("rparen", self.construct_node(NodeType::Symbol));
+                as_.push_node("group", group);
+                node.push_node("as", as_);
+            }
         } else {
             // javascript function definition
             if self.get_token(1).in_(&vec!["DETERMINISTIC", "NOT"]) {

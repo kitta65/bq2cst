@@ -651,6 +651,25 @@ where:
         self: ) (Symbol)
 ",
         ),
+        // TVF
+        TestCase::new(
+            "\
+SELECT * FROM tvf()
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (CallingTableFunction)
+    func:
+      self: tvf (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+        ),
         // FOR SYSTEM_TIME AS OF
         TestCase::new(
             "\

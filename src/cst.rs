@@ -29,6 +29,7 @@ pub enum NodeType {
     BooleanLiteral,          // TRUE | FALSE
     CallingArrayAccessingFunction, // OFFSET(1) | SAFE_ORDINAL(3)
     CallingFunction,         // (
+    CallingTableFunction,         // (
     CallingUnnest, // UNNEST([1, 2])
     CallStatement,           // CALL procedure_name (arg);
     CaseArm,                 // WHEN a THEN b

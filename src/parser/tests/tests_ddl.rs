@@ -784,6 +784,53 @@ what:
   self: FUNCTION (Keyword)
 ",
         ),
+        // TVF
+        TestCase::new(
+            "\
+CREATE TABLE FUNCTION one(x INT64)
+RETURNS TABLE<one INT64>
+AS SELECT 1 AS one
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+      alias:
+        self: one (Identifier)
+      as:
+        self: AS (Keyword)
+group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: INT64 (Type)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: one (Identifier)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: TABLE (Type)
+    type_declaration:
+      self: < (GroupedTypeDeclarations)
+      declarations:
+      - self: one (TypeDeclaration)
+        type:
+          self: INT64 (Type)
+      rparen:
+        self: > (Symbol)
+table:
+  self: TABLE (Keyword)
+what:
+  self: FUNCTION (Keyword)
+",
+        ),
         // ----- CREATE PROCEDURE statement -----
         TestCase::new(
             "\

@@ -394,6 +394,7 @@ export type CreateFunctionStatement = XXXStatement & {
   children: {
     or_replace?: NodeVecChild;
     temp?: NodeChild;
+    table?: NodeChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
