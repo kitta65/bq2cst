@@ -20,6 +20,7 @@ export type UnknownNode =
   | BooleanLiteral
   | CallingArrayAccessingFunction
   | CallingFunction
+  | CallingTableFunction
   | CallingUnnest
   | CallStatement
   | CaseArm
@@ -327,6 +328,21 @@ export type CallingArrayAccessingFunction = CallingFunctionGeneral & {
 export type CallingFunction = CallingFunctionGeneral & {
   node_type: "CallingFunction";
 };
+
+export type CallingTableFunction = FromItemExpr &
+  CallingFunctionGeneral & {
+    node_type: "CallingUnnest";
+    children: {
+      distinct: undefined;
+      ignore_nulls: undefined;
+      orderby: undefined;
+      limit: undefined;
+      over: undefined;
+      comma: undefined;
+      order: undefined;
+      null_order: undefined;
+    };
+  };
 
 export type CallingUnnest = FromItemExpr &
   CallingFunctionGeneral & {
