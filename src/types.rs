@@ -331,7 +331,7 @@ export type CallingFunction = CallingFunctionGeneral & {
 
 export type CallingTableFunction = FromItemExpr &
   CallingFunctionGeneral & {
-    node_type: "CallingUnnest";
+    node_type: "CallingTableFunction";
     children: {
       distinct: undefined;
       ignore_nulls: undefined;
