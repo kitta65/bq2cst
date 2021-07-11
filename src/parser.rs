@@ -2025,7 +2025,7 @@ impl Parser {
         self.next_token(); // -> TO
         let mut to = self.construct_node(NodeType::KeywordWithExprs);
         self.next_token(); // -> user
-        to.push_node_vec("users", self.parse_exprs(&vec![], false));
+        to.push_node_vec("exprs", self.parse_exprs(&vec![], false));
         grant.push_node("to", to);
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // ;
@@ -2046,7 +2046,7 @@ impl Parser {
         self.next_token(); // -> FROM
         let mut from = self.construct_node(NodeType::KeywordWithExprs);
         self.next_token(); // -> user
-        from.push_node_vec("users", self.parse_exprs(&vec![], false));
+        from.push_node_vec("exprs", self.parse_exprs(&vec![], false));
         revoke.push_node("from", from);
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // ;

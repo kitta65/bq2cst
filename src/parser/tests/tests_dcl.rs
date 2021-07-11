@@ -29,7 +29,7 @@ roles:
 - self: `roles/bigquery.admin` (Identifier)
 to:
   self: TO (KeywordWithExprs)
-  users:
+  exprs:
   - self: 'user:foo@example.com' (StringLiteral)
     comma:
       self: , (Symbol)
@@ -48,7 +48,7 @@ FROM 'user:foo@example.com', 'user:bar@example.com'
 self: REVOKE (RevokeStatement)
 from:
   self: FROM (KeywordWithExprs)
-  users:
+  exprs:
   - self: 'user:foo@example.com' (StringLiteral)
     comma:
       self: , (Symbol)
