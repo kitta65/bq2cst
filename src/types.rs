@@ -82,6 +82,7 @@ export type UnknownNode =
   | Symbol_
   | TableSampleClause
   | TableSampleRatio
+  | TransactionStatement
   | TruncateStatement
   | Type
   | TypeDeclaration
@@ -900,6 +901,13 @@ export type TableSampleRatio = BaseNode & {
     expr: NodeChild;
     percent: NodeChild;
     rparen: NodeChild;
+  };
+};
+
+export type TransactionStatement = XXXStatement & {
+  node_type: "TransactionStatement";
+  children: {
+    transaction?: NodeChild;
   };
 };
 

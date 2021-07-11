@@ -576,6 +576,37 @@ semicolon:
   self: ; (Symbol)
 ",
         ),
+        // ----- transaction statement -----
+        TestCase::new(
+            "\
+BEGIN
+  BEGIN;
+  ROLLBACK TRANSACTION;
+END
+",
+            "\
+self: BEGIN (BeginStatement)
+end:
+  self: END (Keyword)
+stmts:
+- self: BEGIN (TransactionStatement)
+  semicolon:
+    self: ; (Symbol)
+- self: ROLLBACK (TransactionStatement)
+  semicolon:
+    self: ; (Symbol)
+  transaction:
+    self: TRANSACTION (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+BEGIN
+",
+            "\
+self: BEGIN (TransactionStatement)
+",
+        ),
         // ----- RAISE statement -----
         TestCase::new(
             "\

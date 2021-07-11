@@ -760,12 +760,18 @@ impl Parser {
             "SET" => self.parse_set_statement(semicolon),
             "EXECUTE" => self.parse_execute_statement(semicolon),
             "IF" => self.parse_if_statement(semicolon),
-            "BEGIN" => self.parse_begin_statement(semicolon),
+            "BEGIN" => {
+                if self.get_token(1).in_(&vec!["TRANSACTION", ";"]) || self.is_eof(1) {
+                    return self.parse_transaction_statement(semicolon);
+                }
+                self.parse_begin_statement(semicolon)
+            }
             "LOOP" => self.parse_loop_statement(semicolon),
             "WHILE" => self.parse_while_statement(semicolon),
             "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" | "RETURN" => {
                 self.parse_single_token_statement(semicolon)
             }
+            "COMMIT" | "ROLLBACK" => self.parse_transaction_statement(semicolon),
             "RAISE" => self.parse_raise_statement(semicolon),
             "CALL" => self.parse_call_statement(semicolon),
             // DEBUG
@@ -2238,6 +2244,18 @@ impl Parser {
     }
     fn parse_single_token_statement(&mut self, semicolon: bool) -> Node {
         let mut node = self.construct_node(NodeType::SingleTokenStatement);
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // -> ;
+            node.push_node("semicolon", self.construct_node(NodeType::Symbol));
+        }
+        node
+    }
+    fn parse_transaction_statement(&mut self, semicolon: bool) -> Node {
+        let mut node = self.construct_node(NodeType::TransactionStatement);
+        if self.get_token(1).is("TRANSACTION") {
+            self.next_token(); // -> TRANSACTION
+            node.push_node("transaction", self.construct_node(NodeType::Keyword));
+        }
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // -> ;
             node.push_node("semicolon", self.construct_node(NodeType::Symbol));

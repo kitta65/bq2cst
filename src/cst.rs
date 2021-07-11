@@ -26,15 +26,15 @@ pub enum NodeType {
     BinaryOperator, // + | - | = | ...
     BeginStatement,
     BetweenOperator,
-    BooleanLiteral,          // TRUE | FALSE
+    BooleanLiteral,                // TRUE | FALSE
     CallingArrayAccessingFunction, // OFFSET(1) | SAFE_ORDINAL(3)
-    CallingFunction,         // (
-    CallingTableFunction,         // (
-    CallingUnnest, // UNNEST([1, 2])
-    CallStatement,           // CALL procedure_name (arg);
-    CaseArm,                 // WHEN a THEN b
-    CaseExpr,                // CASE WHEN a then b ELSE c END
-    CastArgument,            // x AS INT64
+    CallingFunction,               // (
+    CallingTableFunction,          // (
+    CallingUnnest,                 // UNNEST([1, 2])
+    CallStatement,                 // CALL procedure_name (arg);
+    CaseArm,                       // WHEN a THEN b
+    CaseExpr,                      // CASE WHEN a then b ELSE c END
+    CastArgument,                  // x AS INT64
     CreateFunctionStatement,
     CreateProcedureStatement,
     CreateSchemaStatement,
@@ -59,12 +59,12 @@ pub enum NodeType {
     GroupedType,             // <INT64>
     GroupedTypeDeclarations, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
     Keyword,
-    KeywordWithExpr,         // WHEN expr
-    KeywordWithExprs,        // USING 1, 2
-    KeywordWithType,         // RETURNS INT64
-    KeywordWithGroupedXXX,  // AS (1 + 1)
-    KeywordWithStatement,    // THEN INSERT ROW
-    KeywordWithStatements,   // THEN SELECT 1;
+    KeywordWithExpr,       // WHEN expr
+    KeywordWithExprs,      // USING 1, 2
+    KeywordWithType,       // RETURNS INT64
+    KeywordWithGroupedXXX, // AS (1 + 1)
+    KeywordWithStatement,  // THEN INSERT ROW
+    KeywordWithStatements, // THEN SELECT 1;
     Identifier,
     IfStatement,
     InsertStatement,
@@ -77,8 +77,8 @@ pub enum NodeType {
     MergeStatement,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
-    OverClause, // OVER (PARTITON BY x, y)
-    Parameter, // ? | @param
+    OverClause,  // OVER (PARTITON BY x, y)
+    Parameter,   // ? | @param
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
@@ -89,9 +89,10 @@ pub enum NodeType {
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
-    Symbol,            // ) | ] | * | ...
-    TableSampleClause, // TABLESAMPLE SYSTEM (10 PERCENT)
-    TableSampleRatio,  // (10 PERCENT)
+    Symbol,               // ) | ] | * | ...
+    TableSampleClause,    // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSampleRatio,     // (10 PERCENT)
+    TransactionStatement, // BEGIN | COMMIT | ROLLBACK
     TruncateStatement,
     Type,            // INT64
     TypeDeclaration, // x INT64
