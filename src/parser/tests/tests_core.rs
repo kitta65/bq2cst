@@ -1090,12 +1090,16 @@ exprs:
         // window frame clause
         TestCase::new(
             "\
-SELECT SUM() OVER (ROWS 1 + 1 PRECEDING)
+SELECT
+  SUM() OVER (ROWS 1 + 1 PRECEDING),
+  SUM() OVER (ROWS UNBOUNDED PRECEDING)
 ",
             "\
 self: SELECT (SelectStatement)
 exprs:
 - self: ( (CallingFunction)
+  comma:
+    self: , (Symbol)
   func:
     self: SUM (Identifier)
   over:
@@ -1110,6 +1114,22 @@ exprs:
             self: 1 (NumericLiteral)
           right:
             self: 1 (NumericLiteral)
+        - self: PRECEDING (Keyword)
+      rparen:
+        self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+- self: ( (CallingFunction)
+  func:
+    self: SUM (Identifier)
+  over:
+    self: OVER (OverClause)
+    window:
+      self: ( (WindowSpecification)
+      frame:
+        self: ROWS (WindowFrameClause)
+        start:
+        - self: UNBOUNDED (Keyword)
         - self: PRECEDING (Keyword)
       rparen:
         self: ) (Symbol)

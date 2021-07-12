@@ -1133,7 +1133,7 @@ impl Parser {
                     if !self.get_token(1).is(")") {
                         self.next_token(); // ROWS -> UNBOUNDED, CURRENT
                         let mut frame_start = Vec::new();
-                        if self.get_token(1).in_(&vec!["UNBOUNDED", "CURRENT"]) {
+                        if self.get_token(0).in_(&vec!["UNBOUNDED", "CURRENT"]) {
                             frame_start.push(self.construct_node(NodeType::Keyword));
                         } else {
                             frame_start.push(self.parse_expr(usize::MAX, false));
