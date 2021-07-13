@@ -280,7 +280,7 @@ export type BinaryOperator = Expr & {
   children: {
     not?: NodeChild;
     left: { Node: Expr };
-    right: { Node: EXpr };
+    right: { Node: Expr };
   };
 };
 
