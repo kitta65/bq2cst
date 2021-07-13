@@ -279,8 +279,8 @@ export type BinaryOperator = Expr & {
   node_type: "BinaryOperator";
   children: {
     not?: NodeChild;
-    left: NodeChild;
-    right: NodeChild;
+    left: { Node: Expr };
+    right: { Node: EXpr };
   };
 };
 
