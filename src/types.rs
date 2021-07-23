@@ -29,6 +29,7 @@ export type UnknownNode =
   | Comment
   | CreateFunctionStatement
   | CreateProcedureStatement
+  | CreateReservationStatement
   | CreateSchemaStatement
   | CreateTableStatement
   | CreateViewStatement
@@ -442,8 +443,9 @@ export type CreateReservationStatement = XXXStatement & {
   children: {
     what: NodeChild;
     ident: NodeChild;
-    as_json: NodeVecChild;
+    as: NodeChild;
     json: NodeChild;
+    json_string: NodeChild;
   };
 };
 

@@ -77,9 +77,8 @@ AS JSON '''
 ",
             "\
 self: CREATE (CreateReservationStatement)
-as_json:
-- self: AS (Keyword)
-- self: JSON (Keyword)
+as:
+  self: AS (Keyword)
 ident:
   self: . (DotOperator)
   left:
@@ -91,6 +90,8 @@ ident:
   right:
     self: commitment_id (Identifier)
 json:
+  self: JSON (Keyword)
+json_string:
   self: '''
   'slot_count': 100,
   'plan': 'FLEX'

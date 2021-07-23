@@ -2062,9 +2062,11 @@ impl Parser {
         self.next_token(); // -> ident
         create.push_node("ident", self.parse_identifier());
         self.next_token(); // AS
-        create.push_node_vec("as_json", self.parse_n_keywords(2));
+        create.push_node("as", self.construct_node(NodeType::Keyword));
+        self.next_token(); // JSON
+        create.push_node("json", self.construct_node(NodeType::Keyword));
         self.next_token(); // -> '''{}'''
-        create.push_node("json", self.parse_expr(usize::MAX, false));
+        create.push_node("json_string", self.parse_expr(usize::MAX, false));
         if self.get_token(1).is(";") && semicolon {
             self.next_token(); // ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol))
