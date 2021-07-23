@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn test_parse_code_other() {
     let test_cases = vec![
-    // ----- GRANT statement -----
+        // ----- GRANT statement -----
         TestCase::new(
             "\
 GRANT `roles/bigquery.dataViewer`, `roles/bigquery.admin`
@@ -36,7 +36,7 @@ to:
   - self: 'user:bar@example.com' (StringLiteral)
 ",
         ),
-    // ----- REVOKE statement -----
+        // ----- REVOKE statement -----
         TestCase::new(
             "\
 REVOKE `roles/bigquery.admin`
@@ -63,6 +63,68 @@ roles:
 - self: `roles/bigquery.admin` (Identifier)
 semicolon:
   self: ; (Symbol)
+",
+        ),
+        // ----- Reservations statement -----
+        // CREATE
+        TestCase::new(
+            "\
+CREATE CAPACITY project.region.commitment_id
+AS JSON '''
+  'slot_count': 100,
+  'plan': 'FLEX'
+'''
+",
+            "\
+self: CREATE (CreateReservationStatement)
+as_json:
+- self: AS (Keyword)
+- self: JSON (Keyword)
+ident:
+  self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: project (Identifier)
+    right:
+      self: region (Identifier)
+  right:
+    self: commitment_id (Identifier)
+json:
+  self: '''
+  'slot_count': 100,
+  'plan': 'FLEX'
+''' (StringLiteral)
+what:
+  self: CAPACITY (Keyword)
+",
+        ),
+        // DELETE
+        TestCase::new(
+            "\
+DROP ASSIGNMENT IF EXISTS project.location.reservation.assignment
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: . (DotOperator)
+      left:
+        self: project (Identifier)
+      right:
+        self: location (Identifier)
+    right:
+      self: reservation (Identifier)
+  right:
+    self: assignment (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+what:
+  self: ASSIGNMENT (Keyword)
 ",
         ),
     ];

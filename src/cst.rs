@@ -37,6 +37,7 @@ pub enum NodeType {
     CastArgument,                  // x AS INT64
     CreateFunctionStatement,
     CreateProcedureStatement,
+    CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
     CreateSchemaStatement,
     CreateTableStatement,
     CreateViewStatement,

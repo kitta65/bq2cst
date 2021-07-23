@@ -437,6 +437,16 @@ export type CreateProcedureStatement = XXXStatement & {
   };
 };
 
+export type CreateReservationStatement = XXXStatement & {
+  node_type: "CreateReservationStatement";
+  children: {
+    what: NodeChild;
+    ident: NodeChild;
+    as_json: NodeVecChild;
+    json: NodeChild;
+  };
+};
+
 export type CreateSchemaStatement = XXXStatement & {
   node_type: "CreateSchemaStatement";
   children: {

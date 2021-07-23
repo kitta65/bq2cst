@@ -284,6 +284,7 @@ impl Lexer {
         Some(token)
     }
     fn read_multiline_string(&mut self) -> String {
+        // NOTE '''abc''' is OK. ''''abc'''' should throw an error.
         let first_position = self.position;
         let ch = self.get_char(0);
         self.read_char(); // first ' -> second '

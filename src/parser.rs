@@ -720,6 +720,7 @@ impl Parser {
                         "VIEW" => return self.parse_create_view_statement(semicolon),
                         "FUNCTION" => return self.parse_create_function_statement(semicolon),
                         "PROCEDURE" => return self.parse_create_procedure_statement(semicolon),
+                        "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => return self.parse_create_reservation_statement(semicolon),
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -728,7 +729,7 @@ impl Parser {
                         }
                     }
                 }
-                panic!("Expected `SCHEMA`, `TABLE`, `VIEW`, `FUNCTION` or `PROCEDURE` but not found around here: {:?}", self.get_token(0));
+                panic!("Expected `SCHEMA`, `TABLE`, `VIEW`, `FUNCTION`, `PROCEDURE`, 'CAPACITY', 'RESERVATION' or 'ASSIGNMENT' but not found around here: {:?}", self.get_token(0));
             }
             "ALTER" => {
                 let mut offset = 1;
@@ -2053,6 +2054,22 @@ impl Parser {
             revoke.push_node("semicolon", self.construct_node(NodeType::Symbol))
         }
         revoke
+    }
+    fn parse_create_reservation_statement(&mut self, semicolon: bool) -> Node {
+        let mut create = self.construct_node(NodeType::CreateReservationStatement);
+        self.next_token(); // -> CAPACITY | RESERVATION | ASSIGNMENT
+        create.push_node("what", self.construct_node(NodeType::Keyword));
+        self.next_token(); // -> ident
+        create.push_node("ident", self.parse_identifier());
+        self.next_token(); // AS
+        create.push_node_vec("as_json", self.parse_n_keywords(2));
+        self.next_token(); // -> '''{}'''
+        create.push_node("json", self.parse_expr(usize::MAX, false));
+        if self.get_token(1).is(";") && semicolon {
+            self.next_token(); // ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol))
+        }
+        create
     }
     // ----- script -----
     fn parse_declare_statement(&mut self, semicolon: bool) -> Node {
