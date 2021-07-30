@@ -231,6 +231,26 @@ exprs:
       self: ) (Symbol)
 ",
         ),
+        TestCase::new(
+            "\
+SELECT 1 IN (SELECT 1)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IN (InOperator)
+  left:
+    self: 1 (NumericLiteral)
+  right:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+",
+        ),
         // LIKE
         TestCase::new(
             "\

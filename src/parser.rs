@@ -662,7 +662,16 @@ impl Parser {
         let mut node = self.construct_node(NodeType::InOperator);
         node.push_node("left", left);
         self.next_token(); // IN -> (
-        node.push_node("right", self.parse_grouped_exprs(false));
+        if self.get_token(1).in_(&vec!["SELECT", "WITH"]) {
+            let mut lparen = self.construct_node(NodeType::GroupedStatement);
+            self.next_token(); // -> SELECT | WITH
+            lparen.push_node("stmt", self.parse_select_statement(false, true));
+            self.next_token(); // -> )
+            lparen.push_node("rparen", self.construct_node(NodeType::Symbol));
+            node.push_node("right", lparen);
+        } else {
+            node.push_node("right", self.parse_grouped_exprs(false));
+        }
         node
     }
     fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> Node {
@@ -720,7 +729,9 @@ impl Parser {
                         "VIEW" => return self.parse_create_view_statement(semicolon),
                         "FUNCTION" => return self.parse_create_function_statement(semicolon),
                         "PROCEDURE" => return self.parse_create_procedure_statement(semicolon),
-                        "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => return self.parse_create_reservation_statement(semicolon),
+                        "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => {
+                            return self.parse_create_reservation_statement(semicolon)
+                        }
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -1191,7 +1202,7 @@ impl Parser {
                 operator.push_node("right", self.parse_select_statement(false, false));
                 node = operator;
             }
-            if self.get_token(1).is(";") && root {
+            if self.get_token(1).is(";") && semicolon && root {
                 self.next_token(); // expr -> ;
                 node.push_node("semicolon", self.construct_node(NodeType::Symbol))
             }
