@@ -340,7 +340,13 @@ impl Parser {
                 let right = self.parse_expr(usize::MAX, false);
                 self.next_token(); // expr -> HOUR
                 left.push_node("date_part", self.construct_node(NodeType::Keyword));
-                left.push_node("right", right);
+                if self.get_token(1).is("TO") {
+                    self.next_token(); // -> TO
+                    left.push_node("to", self.construct_node(NodeType::Keyword));
+                    self.next_token(); // -> date_part
+                    left.push_node("to_date_part", self.construct_node(NodeType::Keyword));
+                }
+                left.push_node("expr", right);
             }
             "B" | "R" | "BR" | "RB" => {
                 if self.get_token(1).is_string() {

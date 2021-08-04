@@ -694,8 +694,10 @@ export type InsertStatement = XXXStatement & {
 export type IntervalLiteral = Expr & {
   node_type: "IntervalLiteral";
   children: {
+    expr: NodeChild;
     date_part: NodeChild;
-    right: NodeChild;
+    to?: NodeChild;
+    to_date_part?: NodeChild;
     order: undefined;
     null_order: undefined;
   };

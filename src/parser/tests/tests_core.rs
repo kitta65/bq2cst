@@ -663,6 +663,88 @@ exprs:
         self: > (Symbol)
 ",
         ),
+        // interval literal
+        TestCase::new(
+            "\
+SELECT
+  INTERVAL 1 YEAR,
+  INTERVAL 1 + 1 MONTH,
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: INTERVAL (IntervalLiteral)
+  comma:
+    self: , (Symbol)
+  date_part:
+    self: YEAR (Keyword)
+  expr:
+    self: 1 (NumericLiteral)
+- self: INTERVAL (IntervalLiteral)
+  comma:
+    self: , (Symbol)
+  date_part:
+    self: MONTH (Keyword)
+  expr:
+    self: + (BinaryOperator)
+    left:
+      self: 1 (NumericLiteral)
+    right:
+      self: 1 (NumericLiteral)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT
+  INTERVAL '1' DAY,
+  INTERVAL '1:2:3' HOUR TO SECOND,
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: INTERVAL (IntervalLiteral)
+  comma:
+    self: , (Symbol)
+  date_part:
+    self: DAY (Keyword)
+  expr:
+    self: '1' (StringLiteral)
+- self: INTERVAL (IntervalLiteral)
+  comma:
+    self: , (Symbol)
+  date_part:
+    self: HOUR (Keyword)
+  expr:
+    self: '1:2:3' (StringLiteral)
+  to:
+    self: TO (Keyword)
+  to_date_part:
+    self: SECOND (Keyword)
+",
+        ),
+        TestCase::new(
+            "\
+SELECT DATE_ADD('2000-01-01', INTERVAL 1 DAY)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: '2000-01-01' (StringLiteral)
+    comma:
+      self: , (Symbol)
+  - self: INTERVAL (IntervalLiteral)
+    date_part:
+      self: DAY (Keyword)
+    expr:
+      self: 1 (NumericLiteral)
+  func:
+    self: DATE_ADD (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+        ),
         // ----- case expr -----
         TestCase::new(
             "\
@@ -952,36 +1034,6 @@ exprs:
     self: , (Symbol)
   func:
     self: ST_GEOGFROMTEXT (Identifier)
-  rparen:
-    self: ) (Symbol)
-",
-        ),
-        // INTERVAL x date_part
-        TestCase::new(
-            "\
-SELECT DATE_ADD(dt, INTERVAL 1 + 1 DAY),
-",
-            "\
-self: SELECT (SelectStatement)
-exprs:
-- self: ( (CallingFunction)
-  args:
-  - self: dt (Identifier)
-    comma:
-      self: , (Symbol)
-  - self: INTERVAL (IntervalLiteral)
-    date_part:
-      self: DAY (Keyword)
-    right:
-      self: + (BinaryOperator)
-      left:
-        self: 1 (NumericLiteral)
-      right:
-        self: 1 (NumericLiteral)
-  comma:
-    self: , (Symbol)
-  func:
-    self: DATE_ADD (Identifier)
   rparen:
     self: ) (Symbol)
 ",
