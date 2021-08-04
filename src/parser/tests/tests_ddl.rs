@@ -216,6 +216,41 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // LIKE
+        TestCase::new(
+            "\
+CREATE TABLE new_table LIKE source_table
+",
+            "\
+self: CREATE (CreateTableStatement)
+ident:
+  self: new_table (Identifier)
+like_or_copy:
+  self: LIKE (Keyword)
+source_table:
+  self: source_table (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // COPY
+        TestCase::new(
+            "\
+CREATE TABLE new_table COPY source_table
+",
+            "\
+self: CREATE (CreateTableStatement)
+ident:
+  self: new_table (Identifier)
+like_or_copy:
+  self: COPY (Keyword)
+source_table:
+  self: source_table (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // CLONE
         TestCase::new(
             "\
 CREATE TABLE from_snap CLONE snap
@@ -1147,6 +1182,7 @@ what:
 ",
         ),
         // ----- ALTER COLUMN statement -----
+        // DROP
         TestCase::new(
             "\
 ALTER TABLE t
@@ -1201,6 +1237,7 @@ what:
   self: TABLE (Keyword)
 ",
         ),
+        // SET OPTIONS
         TestCase::new(
             "\
 ALTER TABLE t
@@ -1226,6 +1263,35 @@ alter_column_stmt:
         self: ) (Symbol)
   set:
     self: SET (Keyword)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+        ),
+        // SET DATA TYPE
+        TestCase::new(
+            "\
+ALTER TABLE t ALTER COLUMN int
+SET DATA TYPE NUMERIC;
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  data_type:
+  - self: DATA (Keyword)
+  - self: TYPE (Keyword)
+  ident:
+    self: int (Identifier)
+  set:
+    self: SET (Keyword)
+  type:
+    self: NUMERIC (Type)
   what:
     self: COLUMN (Keyword)
 ident:

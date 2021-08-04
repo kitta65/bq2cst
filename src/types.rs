@@ -189,6 +189,8 @@ export type AlterColumnStatement = BaseNode & {
     // SET
     set: NodeChild;
     options: NodeChild;
+    data_type: NodeVecChild;
+    type: NodeChild;
     // DROP
     drop_not_null: NodeVecChild;
   };
@@ -469,6 +471,8 @@ export type CreateTableStatement = XXXStatement & {
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
+    like_or_copy: NodeChild;
+    source_table: NodeChild;
     column_schema_group?: NodeChild;
     clone?: NodeChild;
     partitionby?: NodeChild;

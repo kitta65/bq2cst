@@ -1621,6 +1621,12 @@ impl Parser {
         }
         self.next_token(); // -> ident
         create.push_node("ident", self.parse_identifier());
+        if self.get_token(1).in_(&vec!["LIKE", "COPY"]) {
+            self.next_token(); // LIKE | COPY
+            create.push_node("like_or_copy", self.construct_node(NodeType::Keyword));
+            self.next_token(); // -> ident
+            create.push_node("source_table", self.parse_identifier());
+        }
         if self.get_token(1).is("(") {
             self.next_token(); // -> (
             create.push_node(
@@ -1961,8 +1967,15 @@ impl Parser {
         match self.get_token(0).literal.to_uppercase().as_str() {
             "SET" => {
                 alter.push_node("set", self.construct_node(NodeType::Keyword));
-                self.next_token(); // -> OPTIONS
-                alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
+                if self.get_token(1).is("OPTIONS") {
+                    self.next_token(); // -> OPTIONS
+                    alter.push_node("options", self.parse_keyword_with_grouped_exprs(false));
+                } else {
+                    self.next_token(); // -> DATA
+                    alter.push_node_vec("data_type", self.parse_n_keywords(2));
+                    self.next_token(); // -> type
+                    alter.push_node("type", self.parse_type(false));
+                }
             }
             "DROP" => {
                 alter.push_node_vec("drop_not_null", self.parse_n_keywords(3));
