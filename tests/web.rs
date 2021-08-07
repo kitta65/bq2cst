@@ -9,4 +9,5 @@ use wasm_bindgen_test::*;
 #[wasm_bindgen_test]
 fn pass() {
     bq2cst::parse("select 1;".to_string());
+    bq2cst::tokenize("select 1;".to_string());
 }

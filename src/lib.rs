@@ -19,3 +19,13 @@ pub fn parse(code: String) -> JsValue {
     }
 }
 
+#[wasm_bindgen(skip_typescript)]
+pub fn tokenize(code: String) -> JsValue {
+    utils::set_panic_hook();
+    let mut l = lexer::Lexer::new(code);
+    let tokens = l.tokenize_code();
+    match JsValue::from_serde(&tokens) {
+        Ok(json) => json,
+        Err(error) => panic!("Probrem converting Vec to json: {:?}", error),
+    }
+}
