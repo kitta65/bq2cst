@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(typescript_custom_section)]
 const NODES: &'static str = r#"
 export function parse(code: string): UnknownNode;
+export function tokenize(code: string): Token[];
 
 export type UnknownNode =
   | AddColumnClause
