@@ -2,8 +2,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
 const NODES: &'static str = r#"
-export function parse(code: string): UnknownNode[];
-export function tokenize(code: string): Token[];
+export function parse(code: string): UnknownNode;
 
 export type UnknownNode =
   | AddColumnClause
@@ -110,7 +109,7 @@ export type Token = {
   literal: string;
 };
 
-export interface BaseNode {
+interface BaseNode {
   token: Token | null;
   node_type: string;
   children: {
@@ -119,15 +118,15 @@ export interface BaseNode {
   };
 }
 
-export type NodeChild = { Node: BaseNode };
-export type NodeVecChild = { NodeVec: BaseNode[] };
+export type NodeChild = { Node: UnknownNode };
+export type NodeVecChild = { NodeVec: UnknownNode[] };
 
 // ----- sub types of BaseNode (abstract) -----
 export type CallingFunctionGeneral = Expr & {
   children: {
     func: { Node: Identifier | DotOperator };
     distinct?: NodeChild;
-    args?: { NodeVec: Expr[] };
+    args?: { NodeVec: Expr[] & UnknownNode[] };
     ignore_nulls?: NodeVecChild;
     orderby?: NodeChild;
     limit?: NodeChild;
@@ -283,8 +282,8 @@ export type BinaryOperator = Expr & {
   node_type: "BinaryOperator";
   children: {
     not?: NodeChild;
-    left: { Node: Expr };
-    right: { Node: Expr };
+    left: { Node: Expr & UnknownNode };
+    right: { Node: Expr & UnknownNode };
   };
 };
 
@@ -1109,7 +1108,7 @@ export type XXXByExprs = BaseNode & {
   node_type: "XXXByExprs";
   children: {
     by: NodeChild;
-    exprs: { NodeVec: Expr[] };
+    exprs: { NodeVec: Expr[] & UnknownNode[] };
   };
 };
 "#;
