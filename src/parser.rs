@@ -667,16 +667,23 @@ impl Parser {
     fn parse_in_operator(&mut self, left: Node) -> Node {
         let mut node = self.construct_node(NodeType::InOperator);
         node.push_node("left", left);
-        self.next_token(); // IN -> (
-        if self.get_token(1).in_(&vec!["SELECT", "WITH"]) {
-            let mut lparen = self.construct_node(NodeType::GroupedStatement);
-            self.next_token(); // -> SELECT | WITH
-            lparen.push_node("stmt", self.parse_select_statement(false, true));
-            self.next_token(); // -> )
-            lparen.push_node("rparen", self.construct_node(NodeType::Symbol));
-            node.push_node("right", lparen);
+        if self.get_token(1).is("UNNEST") {
+            self.next_token(); // IN -> UNNEST
+            let mut unnest = self.parse_expr(usize::MAX, false);
+            unnest.node_type = NodeType::CallingUnnest;
+            node.push_node("right", unnest);
         } else {
-            node.push_node("right", self.parse_grouped_exprs(false));
+            self.next_token(); // IN -> (
+            if self.get_token(1).in_(&vec!["SELECT", "WITH"]) {
+                let mut lparen = self.construct_node(NodeType::GroupedStatement);
+                self.next_token(); // -> SELECT | WITH
+                lparen.push_node("stmt", self.parse_select_statement(false, true));
+                self.next_token(); // -> )
+                lparen.push_node("rparen", self.construct_node(NodeType::Symbol));
+                node.push_node("right", lparen);
+            } else {
+                node.push_node("right", self.parse_grouped_exprs(false));
+            }
         }
         node
     }

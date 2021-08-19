@@ -251,6 +251,33 @@ exprs:
       - self: 1 (NumericLiteral)
 ",
         ),
+        TestCase::new(
+            "\
+SELECT 1 IN UNNEST([1, 2])
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IN (InOperator)
+  left:
+    self: 1 (NumericLiteral)
+  right:
+    self: ( (CallingUnnest)
+    args:
+    - self: [ (ArrayLiteral)
+      exprs:
+      - self: 1 (NumericLiteral)
+        comma:
+          self: , (Symbol)
+      - self: 2 (NumericLiteral)
+      rparen:
+        self: ] (Symbol)
+    func:
+      self: UNNEST (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+        ),
         // LIKE
         TestCase::new(
             "\
