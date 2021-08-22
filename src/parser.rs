@@ -835,7 +835,7 @@ impl Parser {
             }
         }
         if left.node_type == NodeType::CallingFunction {
-            left.node_type = NodeType::CallingTableFunction;
+            left.node_type = NodeType::CallingTableFunction; // Cloud Spanner federated queries are included
         }
         // alias
         // NOTE PIVOT and UNPIVOT are not reserved keywords
@@ -844,7 +844,7 @@ impl Parser {
         {
             left = self.push_trailing_alias(left);
         }
-        // FOR SYSTEM_TiME AS OF
+        // FOR SYSTEM_TIME AS OF
         if self.get_token(1).literal.to_uppercase() == "FOR" {
             self.next_token(); // TABLE -> FOR
             let mut for_ = self.construct_node(NodeType::ForSystemTimeAsOfClause);

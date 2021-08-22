@@ -670,6 +670,36 @@ from:
       self: ) (Symbol)
 ",
         ),
+        // Cloud Spanner federated queries
+        TestCase::new(
+            "\
+SELECT *
+from EXTERNAL_QUERY(
+  'project.us.db',
+  'SELECT t.column_name FROM information_schema.columns AS t'
+);
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: from (KeywordWithExpr)
+  expr:
+    self: ( (CallingTableFunction)
+    args:
+    - self: 'project.us.db' (StringLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 'SELECT t.column_name FROM information_schema.columns AS t' (StringLiteral)
+    func:
+      self: EXTERNAL_QUERY (Identifier)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+",
+        ),
         // FOR SYSTEM_TIME AS OF
         TestCase::new(
             "\
