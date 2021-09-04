@@ -835,7 +835,7 @@ impl Parser {
             }
         }
         if left.node_type == NodeType::CallingFunction {
-            left.node_type = NodeType::CallingTableFunction; // Cloud Spanner federated queries are included
+            left.node_type = NodeType::CallingTableFunction; // EXTERNAL_QUERY() is included
         }
         // alias
         // NOTE PIVOT and UNPIVOT are not reserved keywords
