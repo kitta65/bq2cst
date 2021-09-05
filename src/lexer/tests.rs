@@ -181,6 +181,17 @@ FROM t",
                 Token::from_str(2, 6, "t"),
             ],
         ),
+        TestCase::new(
+            "\
+SELECT *
+FROM `t_*`",
+            vec![
+                Token::from_str(1, 1, "SELECT"),
+                Token::from_str(1, 8, "*"),
+                Token::from_str(2, 1, "FROM"),
+                Token::from_str(2, 6, "`t_*`"),
+            ],
+        ),
         // parameter
         TestCase::new(
             "\
