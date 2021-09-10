@@ -28,7 +28,6 @@ impl Lexer {
     pub fn tokenize_code(&mut self) -> &Vec<Token> {
         let mut token = self.next_token();
         while !token.is_none() {
-            self.next_token();
             token = self.next_token();
         }
         self.tokens.push(Token::eof());
