@@ -1,25 +1,32 @@
 use super::*;
 
-struct TestCase {
+trait TestCase {
+    fn test(&self);
+}
+
+struct SuccessTestCase {
     code: String,
     expected_tokens: Vec<Token>,
     result_tokens: Vec<Token>,
 }
 
-impl TestCase {
-    fn new(code: &str, expected_tokens_without_eof: Vec<Token>) -> TestCase {
+impl SuccessTestCase {
+    fn new(code: &str, expected_tokens_without_eof: Vec<Token>) -> SuccessTestCase {
         let code = code.to_string();
         let mut l = Lexer::new(code.clone());
-        l.tokenize_code();
+        l.tokenize_code().expect("Failed to tokenize code.");
         let result_tokens = l.tokens;
         let mut expected_tokens = expected_tokens_without_eof;
         expected_tokens.push(Token::eof());
-        TestCase {
+        SuccessTestCase {
             code,
             expected_tokens,
             result_tokens,
         }
     }
+}
+
+impl TestCase for SuccessTestCase {
     fn test(&self) {
         println!(
             "========== testing ==========\n{:?}\n=============================",
@@ -32,12 +39,52 @@ impl TestCase {
     }
 }
 
+struct ErrorTestCase {
+    code: String,
+    expected_error_position: [usize; 2],
+    actual_error_position: [usize; 2],
+}
+
+impl ErrorTestCase {
+    fn new(code: &str, expected_error_line: usize, expected_error_column: usize) -> ErrorTestCase {
+        let code = code.to_string();
+        let mut l = Lexer::new(code.clone());
+        let error = match l.tokenize_code() {
+            Ok(_) => panic!("Unexpectedly successed to tokenize code."),
+            Err(error) => error,
+        };
+        ErrorTestCase {
+            code,
+            expected_error_position: [expected_error_line, expected_error_column],
+            actual_error_position: [error.line, error.column],
+        }
+    }
+}
+
+impl TestCase for ErrorTestCase {
+    fn test(&self) {
+        println!(
+            "========== testing ==========\n{:?}\n=============================",
+            self.code
+        );
+        assert_eq!(
+            self.expected_error_position[0],
+            self.actual_error_position[0]
+        );
+        assert_eq!(
+            self.expected_error_position[1],
+            self.actual_error_position[1]
+        );
+    }
+}
+
 #[test]
 fn test_tokenize_code() {
-    let test_cases = vec![
-        TestCase::new(
+    let test_cases: Vec<Box<dyn TestCase>> = vec![
+        // ----- SuccessTestCase -----
+        Box::new(SuccessTestCase::new(
             "\
-SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
+    SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "c1"),
@@ -53,9 +100,9 @@ SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
                 Token::from_str(1, 49, "1"),
                 Token::from_str(1, 50, ";"),
             ],
-        ),
+        )),
         // comment
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 #standardSQL
 SELECT 1 /*
@@ -70,9 +117,9 @@ SELECT 1 /*
                 Token::from_str(5, 1, ";"),
                 Token::from_str(5, 3, "-- comment"),
             ],
-        ),
+        )),
         // string literal
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   'xxx',
@@ -98,11 +145,24 @@ xxx
                 Token::from_str(8, 3, "\"\"\"\nxxx\n  \"\"\""),
                 Token::from_str(10, 6, ","),
             ],
-        ),
-        // numeric literal
-        TestCase::new(
+        )),
+        Box::new(ErrorTestCase::new(
             "\
-SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
+SELECT 'foo",
+            1,
+            12,
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT 'foo
+",
+            2,
+            1,
+        )),
+        // numeric literal
+        Box::new(SuccessTestCase::new(
+            "\
+    SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "1"),
@@ -119,11 +179,11 @@ SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
                 Token::from_str(1, 38, ","),
                 Token::from_str(1, 40, ".1e10"),
             ],
-        ),
+        )),
         // timestamp, date literal
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
-SELECT date '2000-01-01', timestamp '2000-01-01'",
+    SELECT date '2000-01-01', timestamp '2000-01-01'",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "date"),
@@ -132,9 +192,9 @@ SELECT date '2000-01-01', timestamp '2000-01-01'",
                 Token::from_str(1, 27, "timestamp"),
                 Token::from_str(1, 37, "'2000-01-01'"),
             ],
-        ),
+        )),
         // array literal
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   ARRAY<INT64>[1],
@@ -166,9 +226,9 @@ SELECT
                 Token::from_str(3, 34, ")"),
                 Token::from_str(3, 35, "]"),
             ],
-        ),
+        )),
         // identifier
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT _c1, `c-1`
 FROM t",
@@ -180,8 +240,8 @@ FROM t",
                 Token::from_str(2, 1, "FROM"),
                 Token::from_str(2, 6, "t"),
             ],
-        ),
-        TestCase::new(
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM `t_*`",
@@ -191,9 +251,9 @@ FROM `t_*`",
                 Token::from_str(2, 1, "FROM"),
                 Token::from_str(2, 6, "`t_*`"),
             ],
-        ),
+        )),
         // parameter
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ?;
 SELECT @param1, @`param2`;",
@@ -207,9 +267,15 @@ SELECT @param1, @`param2`;",
                 Token::from_str(2, 17, "@`param2`"),
                 Token::from_str(2, 26, ";"),
             ],
-        ),
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT @+param;",
+            1,
+            9,
+        )),
         // operator
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   1-1+2/2*3,
@@ -235,11 +301,11 @@ SELECT
                 Token::from_str(4, 4, ">>"),
                 Token::from_str(4, 6, "1"),
             ],
-        ),
+        )),
         // function
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
-SELECT f(a1, a2)",
+    SELECT f(a1, a2)",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "f"),
@@ -249,9 +315,9 @@ SELECT f(a1, a2)",
                 Token::from_str(1, 14, "a2"),
                 Token::from_str(1, 16, ")"),
             ],
-        ),
+        )),
         // empty
-        TestCase::new("", vec![]),
+        Box::new(SuccessTestCase::new("", vec![])),
     ];
     for t in test_cases {
         t.test();

@@ -24,8 +24,18 @@ pub fn tokenize(code: String) -> JsValue {
     utils::set_panic_hook();
     let mut l = lexer::Lexer::new(code);
     let tokens = l.tokenize_code();
-    match JsValue::from_serde(&tokens) {
-        Ok(json) => json,
-        Err(error) => panic!("Probrem converting Vec to json: {:?}", error),
+    match tokens {
+        Ok(tokens) => {
+            match JsValue::from_serde(&tokens) {
+                Ok(json) => json,
+                Err(error) => panic!("Probrem converting Vec to json: {:?}", error)
+            }
+        },
+        Err(error) => {
+            match JsValue::from_serde(&error) {
+                Ok(json) => json,
+                Err(error) => panic!("Probrem converting Vec to json: {:?}", error)
+            }
+        },
     }
 }

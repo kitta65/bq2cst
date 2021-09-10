@@ -16,7 +16,7 @@ pub struct Parser {
 impl Parser {
     pub fn new(code: String) -> Parser {
         let mut l = Lexer::new(code);
-        l.tokenize_code();
+        l.tokenize_code().expect("Failed to tokenize code.");
         let mut p = Parser {
             position: 0,
             leading_comment_indices: Vec::new(),
