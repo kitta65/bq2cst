@@ -116,13 +116,13 @@ pub enum NodeType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
-    pub token: Option<Token>,
+    pub token: Option<usize>,
     pub node_type: NodeType,
     children: HashMap<String, ContentType>,
 }
 
 impl Node {
-    pub fn new(token: Token, node_type: NodeType) -> Node {
+    pub fn new(token: usize, node_type: NodeType) -> Node {
         Node {
             token: Some(token),
             node_type,
@@ -134,6 +134,85 @@ impl Node {
             token: None,
             node_type,
             children: HashMap::new(),
+        }
+    }
+    pub fn push_node(&mut self, key: &str, node: Node) {
+        self.children
+            .insert(key.to_string(), ContentType::Node(node));
+    }
+    pub fn push_node_vec(&mut self, key: &str, nodes: Vec<Node>) {
+        self.children
+            .insert(key.to_string(), ContentType::NodeVec(nodes));
+    }
+}
+
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+pub enum FinalContentType {
+    Node(FinalNode),
+    NodeVec(Vec<FinalNode>),
+}
+
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+pub struct FinalNode {
+    pub token: Option<Token>,
+    pub node_type: NodeType,
+    children: HashMap<String, FinalContentType>,
+}
+
+impl FinalNode {
+    pub fn new(node: Node, tokens: &mut Vec<Option<Token>>) -> FinalNode {
+        match node.token {
+            Some(i) => {
+                let token = tokens[i].take();
+                match token {
+                    Some(t) => {
+                        let mut final_node = FinalNode {
+                            token: Some(t),
+                            node_type: node.node_type,
+                            children: HashMap::new(),
+                        };
+                        let iterator = node.children.into_iter();
+                        for (k, v) in iterator {
+                            final_node.children.insert(
+                                k,
+                                match v {
+                                    ContentType::Node(n) => {
+                                        FinalContentType::Node(FinalNode::new(n, tokens))
+                                    }
+                                    ContentType::NodeVec(ns) => FinalContentType::NodeVec(
+                                        ns.into_iter().map(|x| FinalNode::new(x, tokens)).collect(),
+                                    ),
+                                },
+                            );
+                        }
+                        final_node
+                    }
+                    None => panic!("The same token is accessed twice."),
+                }
+            }
+            // in the case of EOF
+            None => {
+                let mut final_node = FinalNode {
+                    token: None,
+                    node_type: node.node_type,
+                    children: HashMap::new(),
+                };
+                let iterator = node.children.into_iter();
+                for (k, v) in iterator {
+                    final_node.children.insert(
+                        k,
+                        match v {
+                            ContentType::Node(n) => {
+                                FinalContentType::Node(FinalNode::new(n, tokens))
+                            }
+                            ContentType::NodeVec(ns) => FinalContentType::NodeVec(
+                                ns.into_iter().map(|x| FinalNode::new(x, tokens)).collect(),
+                            ),
+                        },
+                    );
+                }
+                final_node
+            }
         }
     }
     fn format(&self, indent: usize, is_array: bool) -> String {
@@ -156,11 +235,11 @@ impl Node {
         keys.sort();
         for k in keys {
             match self.children.get(k) {
-                Some(ContentType::Node(n)) => {
+                Some(FinalContentType::Node(n)) => {
                     res.push(format!("{}{}:", " ".repeat(indent * 2), k));
                     res.push(n.format(indent + 1, false));
                 }
-                Some(ContentType::NodeVec(ns)) => {
+                Some(FinalContentType::NodeVec(ns)) => {
                     res.push(format!("{}{}:", " ".repeat(indent * 2), k));
                     for n in ns {
                         res.push(n.format(indent + 1, true));
@@ -171,17 +250,9 @@ impl Node {
         }
         res.join("\n")
     }
-    pub fn push_node(&mut self, key: &str, node: Node) {
-        self.children
-            .insert(key.to_string(), ContentType::Node(node));
-    }
-    pub fn push_node_vec(&mut self, key: &str, nodes: Vec<Node>) {
-        self.children
-            .insert(key.to_string(), ContentType::NodeVec(nodes));
-    }
 }
 
-impl fmt::Display for Node {
+impl fmt::Display for FinalNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}\n", self.format(0, false))
     }

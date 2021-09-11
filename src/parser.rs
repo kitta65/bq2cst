@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::cst::Node;
+use crate::cst::{Node, FinalNode};
 use crate::cst::NodeType;
 use crate::lexer::Lexer;
 use crate::token::Token;
@@ -39,7 +39,7 @@ impl Parser {
         }
         p
     }
-    pub fn parse_code(&mut self) -> Vec<Node> {
+    pub fn parse_code(mut self) -> Vec<FinalNode> {
         let mut stmts: Vec<Node> = Vec::new();
         while !self.is_eof(0) {
             let stmt = self.parse_statement(true);
@@ -47,7 +47,8 @@ impl Parser {
             self.next_token();
         }
         stmts.push(self.construct_node(NodeType::EOF));
-        stmts
+        let mut tokens: Vec<Option<Token>> = self.tokens.into_iter().map(|x| Some(x)).collect();
+        stmts.into_iter().map(|x| FinalNode::new(x, &mut tokens)).collect()
     }
     // ----- core -----
     fn construct_node(&self, node_type: NodeType) -> Node {
@@ -55,7 +56,7 @@ impl Parser {
         let mut node = match node_type {
             NodeType::EOF => Node::empty(node_type),
             NodeType::Unknown => {
-                let mut node = Node::new(curr_token.clone(), node_type);
+                let mut node = Node::new(self.position, node_type);
                 if curr_token.is_identifier() {
                     node.node_type = NodeType::Identifier;
                 } else if curr_token.is_numeric() {
@@ -73,12 +74,12 @@ impl Parser {
                 }
                 node
             }
-            _ => Node::new(self.get_token(0).clone(), node_type),
+            _ => Node::new(self.position, node_type),
         };
         // leading_comments
         let mut leading_comment_nodes = Vec::new();
         for idx in &self.leading_comment_indices {
-            leading_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Comment))
+            leading_comment_nodes.push(Node::new(*idx, NodeType::Comment))
         }
         if 0 < leading_comment_nodes.len() {
             node.push_node_vec("leading_comments", leading_comment_nodes);
@@ -86,7 +87,7 @@ impl Parser {
         // trailing comments
         let mut trailing_comment_nodes = Vec::new();
         for idx in &self.trailing_comment_indices {
-            trailing_comment_nodes.push(Node::new(self.tokens[*idx].clone(), NodeType::Comment))
+            trailing_comment_nodes.push(Node::new(*idx, NodeType::Comment))
         }
         if 0 < trailing_comment_nodes.len() {
             node.push_node_vec("trailing_comments", trailing_comment_nodes);

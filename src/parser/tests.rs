@@ -23,7 +23,7 @@ impl TestCase {
         }
     }
     pub fn test(&self, index: usize) {
-        let mut p = Parser::new(self.code.clone());
+        let p = Parser::new(self.code.clone());
         let stmts = p.parse_code();
         println!(
             "\
