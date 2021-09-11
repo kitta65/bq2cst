@@ -51,6 +51,9 @@ impl Parser {
     }
     // ----- core -----
     fn construct_node(&self, node_type: NodeType) -> Node {
+        // NOTE
+        // It is possible to avoid cloning tokens (see #20)
+        // but it does not improve execution time.
         let curr_token = self.get_token(0);
         let mut node = match node_type {
             NodeType::EOF => Node::empty(node_type),
