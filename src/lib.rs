@@ -22,7 +22,7 @@ pub fn parse(code: String) -> JsValue {
 #[wasm_bindgen(skip_typescript)]
 pub fn tokenize(code: String) -> JsValue {
     utils::set_panic_hook();
-    let mut l = lexer::Lexer::new(code);
+    let l = lexer::Lexer::new(code);
     let tokens = l.tokenize_code();
     match tokens {
         Ok(tokens) => {

@@ -15,13 +15,13 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(code: String) -> Parser {
-        let mut l = Lexer::new(code);
-        l.tokenize_code().expect("Failed to tokenize code.");
+        let l = Lexer::new(code);
+        let tokens = l.tokenize_code();
         let mut p = Parser {
             position: 0,
             leading_comment_indices: Vec::new(),
             trailing_comment_indices: Vec::new(),
-            tokens: l.tokens,
+            tokens: tokens.expect("Failed to tokenize code."),
         };
         while p.tokens[p.position].is_comment() {
             p.leading_comment_indices.push(p.position);

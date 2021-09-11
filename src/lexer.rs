@@ -48,13 +48,13 @@ impl Lexer {
             tokens: Vec::new(),
         }
     }
-    pub fn tokenize_code(&mut self) -> LexerResult<&Vec<Token>> {
+    pub fn tokenize_code(mut self) -> LexerResult<Vec<Token>> {
         let mut token = self.next_token()?;
         while !token.is_none() {
             token = self.next_token()?;
         }
         self.tokens.push(Token::eof());
-        Ok(&self.tokens)
+        Ok(self.tokens)
     }
     // ----- core -----
     fn construct_token(&mut self, line: usize, column: usize, literal: String) -> &Token {

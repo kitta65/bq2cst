@@ -13,9 +13,9 @@ struct SuccessTestCase {
 impl SuccessTestCase {
     fn new(code: &str, expected_tokens_without_eof: Vec<Token>) -> SuccessTestCase {
         let code = code.to_string();
-        let mut l = Lexer::new(code.clone());
-        l.tokenize_code().expect("Failed to tokenize code.");
-        let result_tokens = l.tokens;
+        let l = Lexer::new(code.clone());
+        let tokens = l.tokenize_code();
+        let result_tokens = tokens.expect("Failed to tokenize code.");
         let mut expected_tokens = expected_tokens_without_eof;
         expected_tokens.push(Token::eof());
         SuccessTestCase {
@@ -48,7 +48,7 @@ struct ErrorTestCase {
 impl ErrorTestCase {
     fn new(code: &str, expected_error_line: usize, expected_error_column: usize) -> ErrorTestCase {
         let code = code.to_string();
-        let mut l = Lexer::new(code.clone());
+        let l = Lexer::new(code.clone());
         let error = match l.tokenize_code() {
             Ok(_) => panic!("Unexpectedly successed to tokenize code."),
             Err(error) => error,
