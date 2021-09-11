@@ -2,9 +2,9 @@ use super::*;
 
 #[test]
 fn test_parse_code_ddl() {
-    let test_cases = vec![
+    let test_cases: Vec<Box<dyn TestCase>> = vec![
         // ----- CREATE SCHEMA statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE SCHEMA dataset_name;
 ",
@@ -17,8 +17,9 @@ semicolon:
 what:
   self: SCHEMA (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE SCHEMA IF NOT EXISTS project_name.dataset_name OPTIONS();
 ",
@@ -45,9 +46,17 @@ semicolon:
 what:
   self: SCHEMA (Keyword)
 ",
-        ),
+            0,
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+CREATE SCHEEMAA IF NOT EXISTS dataset_name;
+",
+            1,
+            1,
+        )),
         // ----- CREATE TABLE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE example (x int64);
 ",
@@ -68,8 +77,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TEMP TABLE example (x INT64, y STRING(10));
 ",
@@ -103,8 +113,9 @@ temp:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE OR REPLACE TABLE dataset.example(x INT64 OPTIONS(description = 'dummy'))
 PARTITION BY _PARTITIONDATE
@@ -164,8 +175,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE IF NOT EXISTS example (x INT64 NOT NULL)
 CLUSTER BY x
@@ -215,9 +227,10 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // LIKE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE new_table LIKE source_table
 ",
@@ -232,9 +245,10 @@ source_table:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // COPY
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE new_table COPY source_table
 ",
@@ -249,9 +263,10 @@ source_table:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // CLONE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE from_snap CLONE snap
 ",
@@ -266,9 +281,10 @@ ident:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // SNAPSHOT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE SNAPSHOT TABLE snap
 CLONE source_table
@@ -286,8 +302,9 @@ snapshot:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE SNAPSHOT TABLE snap
 CLONE dataset.source_table FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
@@ -328,9 +345,10 @@ snapshot:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // EXTERNAL
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE EXTERNAL TABLE dataset.new_table
 WITH PARTITION COLUMNS
@@ -382,8 +400,9 @@ with_partition_columns:
   - self: PARTITION (Keyword)
   - self: COLUMNS (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE EXTERNAL TABLE dataset.new_table
 WITH PARTITION COLUMNS (
@@ -445,9 +464,10 @@ with_partition_columns:
   - self: PARTITION (Keyword)
   - self: COLUMNS (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- CREATE VIEW statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE VIEW dataset.view_name
 AS
@@ -482,8 +502,9 @@ semicolon:
 what:
   self: VIEW (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE VIEW dataset_name.view_name(uno, dos)
 AS SELECT 1 ONE, 2 TWO
@@ -521,9 +542,10 @@ ident:
 what:
   self: VIEW (Keyword)
 ",
-        ),
+            0,
+        )),
         // MATERIALIZED
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE MATERIALIZED VIEW dataset.view_name
 OPTIONS(dummy = 'dummy')
@@ -579,10 +601,11 @@ semicolon:
 what:
   self: VIEW (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- CREATE FUNCTION statement -----
         // sql function definition
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE OR REPLACE FUNCTION abc() AS (1);
 ",
@@ -610,8 +633,9 @@ semicolon:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TEMP FUNCTION abc(x INT64) AS (x);
 ",
@@ -642,8 +666,9 @@ temp:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE FUNCTION IF NOT EXISTS abc(x ARRAY<INT64>, y ANY TYPE)
 RETURNS INT64
@@ -695,9 +720,10 @@ semicolon:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
+            0,
+        )),
         // javascript function definition
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE FUNCTION abc() RETURNS INT64 LAGUAGE js
 OPTIONS()
@@ -734,8 +760,9 @@ semicolon:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE FUNCTION abc() RETURNS INT64 DETERMINISTIC LANGUAGE js
 OPTIONS(library = ['dummy'])
@@ -784,8 +811,9 @@ semicolon:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE FUNCTION abc() RETURNS INT64 NOT DETERMINISTIC LANGUAGE js
 AS '''return 1''';
@@ -818,9 +846,10 @@ semicolon:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
+            0,
+        )),
         // TVF
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE TABLE FUNCTION one(x INT64)
 RETURNS TABLE<one INT64>
@@ -865,9 +894,10 @@ table:
 what:
   self: FUNCTION (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- CREATE PROCEDURE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
 ",
@@ -898,8 +928,9 @@ stmt:
 what:
   self: PROCEDURE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 CREATE PROCEDURE dataset.procede(x INT64, INOUT y INT64)
 OPTIONS(dummy = 'dummy')
@@ -955,9 +986,10 @@ stmt:
 what:
   self: PROCEDURE (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- ALTER SCHEMA statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER SCHEMA dataset_name SET OPTIONS();
 ",
@@ -978,8 +1010,9 @@ set:
 what:
   self: SCHEMA (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 ALTER SCHEMA IF EXISTS dataset_name SET OPTIONS(dummy = 'dummy');
 ",
@@ -1009,10 +1042,11 @@ set:
 what:
   self: SCHEMA (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- ALTER TABLE statement -----
         // SET
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE example SET OPTIONS(dummy='dummy');
 ",
@@ -1039,9 +1073,10 @@ set:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // ADD COLUMN
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE example
 ADD COLUMN x INT64;
@@ -1063,8 +1098,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE example
 ADD COLUMN IF NOT EXISTS x INT64 OPTIONS(description = 'dummy'),
@@ -1123,9 +1159,10 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // RENAME
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE dataset_name.t
 RENAME TO u;
@@ -1149,9 +1186,10 @@ to:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // DROP
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE example
 DROP COLUMN IF EXISTS x,
@@ -1180,10 +1218,11 @@ ident:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- ALTER COLUMN statement -----
         // DROP
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE t
 ALTER COLUMN c DROP NOT NULL;
@@ -1207,8 +1246,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE IF EXISTS t
 ALTER COLUMN IF EXISTS c DROP NOT NULL
@@ -1236,9 +1276,10 @@ if_exists:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // SET OPTIONS
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE t
 ALTER COLUMN c SET OPTIONS(description = 'abc');
@@ -1272,9 +1313,10 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // SET DATA TYPE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE t ALTER COLUMN int
 SET DATA TYPE NUMERIC;
@@ -1301,9 +1343,10 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- ALTER VIEW statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER VIEW example SET OPTIONS(
   dummy = 'dummy',
@@ -1340,9 +1383,10 @@ set:
 what:
   self: VIEW (Keyword)
 ",
-        ),
+            0,
+        )),
         // MATERIALIZED
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ALTER MATERIALIZED VIEW example SET OPTIONS(dummy = 'dummy');
 ",
@@ -1371,9 +1415,10 @@ set:
 what:
   self: VIEW (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- DROP statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 DROP TABLE example;
 ",
@@ -1386,8 +1431,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DROP EXTERNAL TABLE IF EXISTS example;
 ",
@@ -1405,8 +1451,9 @@ semicolon:
 what:
   self: TABLE (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DROP MATERIALIZED VIEW example;
 ",
@@ -1421,8 +1468,9 @@ semicolon:
 what:
   self: VIEW (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DROP SCHEMA example CASCADE;
 ",
@@ -1437,10 +1485,10 @@ semicolon:
 what:
   self: SCHEMA (Keyword)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }
-

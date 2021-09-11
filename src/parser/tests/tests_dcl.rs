@@ -4,7 +4,7 @@ use super::*;
 fn test_parse_code_other() {
     let test_cases = vec![
         // ----- GRANT statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 GRANT `roles/bigquery.dataViewer`, `roles/bigquery.admin`
 ON SCHEMA project_name.dataset_name
@@ -35,9 +35,10 @@ to:
       self: , (Symbol)
   - self: 'user:bar@example.com' (StringLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- REVOKE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 REVOKE `roles/bigquery.admin`
 ON SCHEMA dataset_name
@@ -64,10 +65,11 @@ roles:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- Reservations statement -----
         // CREATE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CREATE CAPACITY project.region.commitment_id
 AS JSON '''
@@ -99,9 +101,10 @@ json_string:
 what:
   self: CAPACITY (Keyword)
 ",
-        ),
+            0,
+        )),
         // DELETE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 DROP ASSIGNMENT IF EXISTS project.location.reservation.assignment
 ",
@@ -127,9 +130,10 @@ if_exists:
 what:
   self: ASSIGNMENT (Keyword)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }

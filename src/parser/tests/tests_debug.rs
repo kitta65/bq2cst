@@ -4,7 +4,7 @@ use super::*;
 fn test_parse_code_other() {
     // ----- ASSERT statement -----
     let test_cases = vec![
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 ASSERT 1 + 1 = 3
 ",
@@ -21,8 +21,9 @@ expr:
   right:
     self: 3 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 ASSERT FALSE AS 'description'
 ",
@@ -35,9 +36,10 @@ description:
 expr:
   self: FALSE (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }

@@ -2,9 +2,9 @@ use super::*;
 
 #[test]
 fn test_parse_code_dml() {
-    let test_cases = vec![
+    let test_cases: Vec<Box<dyn TestCase>> = vec![
         // ----- INSERT statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 INSERT INTO table_name VALUES(1,2);
 ",
@@ -28,8 +28,9 @@ semicolon:
 target_name:
   self: table_name (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 INSERT table_name (col) VALUES(1),(2);
 ",
@@ -61,8 +62,9 @@ semicolon:
 target_name:
   self: table_name (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 INSERT table_name (col1, col2) SELECT 1, 2;
 ",
@@ -89,9 +91,10 @@ semicolon:
 target_name:
   self: table_name (Identifier)
 ",
-        ),
+            0,
+        )),
         // ----- DELETE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 DELETE table_name WHERE TRUE;
 ",
@@ -106,8 +109,9 @@ where:
   expr:
     self: TRUE (BooleanLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DELETE table_name t WHERE TRUE;
 ",
@@ -124,8 +128,9 @@ where:
   expr:
     self: TRUE (BooleanLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DELETE FROM table_name AS t
 WHERE NOT EXISTS (SELECT * FROM t WHERE TRUE);
@@ -165,9 +170,10 @@ where:
       rparen:
         self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- TRUNCATE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 TRUNCATE TABLE t;
 ",
@@ -180,9 +186,10 @@ table:
 table_name:
   self: t (Identifier)
 ",
-        ),
+            0,
+        )),
         // ----- UPDATE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 UPDATE TABLE t SET
   col1 = 1,
@@ -217,8 +224,9 @@ where:
   expr:
     self: TRUE (BooleanLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 UPDATE table1 AS one SET
   one.value=two.value
@@ -276,8 +284,9 @@ where:
       right:
         self: id (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 UPDATE t1 SET
   t1.flg = true
@@ -345,10 +354,11 @@ where:
       right:
         self: id (Identifier)
 ",
-        ),
+            0,
+        )),
         // ----- MERGE statement -----
         // DELETE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 MERGE t
 USING s ON t.id = s.id
@@ -389,9 +399,10 @@ whens:
     stmt:
       self: DELETE (SingleTokenStatement)
 ",
-        ),
+            0,
+        )),
         // INSERT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 MERGE t1 AS t USING t2 AS s ON t.id = s.id
 WHEN NOT MATCHED THEN INSERT ROW
@@ -475,9 +486,18 @@ whens:
           rparen:
             self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+MERGE t1 AS t USING t2 AS s ON t.id = s.id
+WHEN NOT MATCHED BY TARGET THEN INSEEEEERT (id, value) VALUES (1,2)
+",
+            2,
+            33,
+        )),
         // UPDATE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 MERGE dataset.t t USING dataset.s AS s ON t.id = s.id
 WHEN NOT MATCHED BY SOURCE THEN
@@ -578,10 +598,10 @@ whens:
           right:
             self: 999 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }
-

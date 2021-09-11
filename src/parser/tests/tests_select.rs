@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn test_parse_code_select() {
     let test_cases = vec![
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1;
 ",
@@ -14,9 +14,10 @@ exprs:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // trailing comma
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   1,
@@ -39,9 +40,10 @@ from:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // grouped
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 (SELECT 1);
 ",
@@ -56,9 +58,10 @@ stmt:
   exprs:
   - self: 1 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- set operator -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 UNION ALL SELECT 2;
 ",
@@ -77,8 +80,9 @@ right:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 INTERSECT DISTINCT (SELECT 2);
 ",
@@ -101,8 +105,9 @@ right:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 (SELECT 1) EXCEPT DISTINCT SELECT 2;
 ",
@@ -125,8 +130,9 @@ right:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3;
 ",
@@ -153,8 +159,9 @@ right:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 UNION ALL (SELECT 2 UNION ALL SELECT 3);
 ",
@@ -185,9 +192,10 @@ right:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- WITH clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 WITH a AS (SELECT 1) SELECT 2;
 ",
@@ -212,8 +220,9 @@ with:
         exprs:
         - self: 1 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 WITH
   a AS (SELECT 1),
@@ -260,10 +269,11 @@ with:
           expr:
             self: TRUE (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- SELECT clause -----
         // DISTINCT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT DISTINCT 1;
 ",
@@ -276,9 +286,10 @@ exprs:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ALL
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ALL 1;
 ",
@@ -291,9 +302,10 @@ exprs:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // alias
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 AS one, 2 two
 ",
@@ -311,9 +323,10 @@ exprs:
   alias:
     self: two (Identifier)
 ",
-        ),
+            0,
+        )),
         // * EXCEPT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * EXCEPT (col1)
 ",
@@ -330,8 +343,9 @@ exprs:
       rparen:
         self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT t.* EXCEPT(col1, col2)
 ",
@@ -355,9 +369,10 @@ exprs:
         rparen:
           self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // * REPLACE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * REPLACE (col1 * 2 AS _col1)
 ",
@@ -382,8 +397,9 @@ exprs:
       rparen:
         self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT t.* REPLACE (col2 * 2 AS _col2)
 ",
@@ -412,9 +428,10 @@ exprs:
         rparen:
           self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // AS STRUCT, VALUE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT (SELECT AS STRUCT 1 a, 2 b) ab
 ",
@@ -441,8 +458,9 @@ exprs:
       alias:
         self: b (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT AS VALUE STRUCT(1 AS a, 2 AS b) xyz
 ",
@@ -473,9 +491,10 @@ exprs:
   type:
     self: STRUCT (Type)
 ",
-        ),
+            0,
+        )),
         // sub query
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT (SELECT 1)
 ",
@@ -490,8 +509,9 @@ exprs:
     exprs:
     - self: 1 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT (SELECT 1 EXCEPT DISTINCT SELECT 2);
 ",
@@ -516,10 +536,11 @@ exprs:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- FROM clause -----
         // alias
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1
 FROM t1 AS t
@@ -537,9 +558,10 @@ from:
     as:
       self: AS (Keyword)
 ",
-        ),
+            0,
+        )),
         // sub query
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM (SELECT 1,2)
 ",
@@ -561,8 +583,9 @@ from:
           self: , (Symbol)
       - self: 2 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT sub.* FROM (SELECT 1,2) AS sub;
 ",
@@ -594,8 +617,9 @@ from:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM main m
@@ -650,9 +674,10 @@ where:
       rparen:
         self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // TVF
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM tvf()
 ",
@@ -669,9 +694,10 @@ from:
     rparen:
       self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // Cloud Spanner federated queries
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 from EXTERNAL_QUERY(
@@ -699,9 +725,10 @@ from:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // FOR SYSTEM_TIME AS OF
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM t FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
 ",
@@ -726,8 +753,9 @@ from:
       - self: AS (Keyword)
       - self: OF (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM table_name t FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
 ",
@@ -754,9 +782,10 @@ from:
       - self: AS (Keyword)
       - self: OF (Keyword)
 ",
-        ),
+            0,
+        )),
         // PIVOT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM t PIVOT (COUNT(*) FOR x IN ('v1', 'v2'))
 ",
@@ -798,8 +827,9 @@ from:
         rparen:
           self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM t AS t1 PIVOT (SUM(x) s, COUNT(*) AS c FOR y IN (1 one, 2 AS two)) t2
 ",
@@ -868,9 +898,10 @@ from:
         rparen:
           self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // UNPIVOT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM t UNPIVOT (
@@ -921,8 +952,9 @@ from:
         rparen:
           self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM t UNPIVOT INCLUDE NULLS (
   (c1, c2)
@@ -996,9 +1028,10 @@ from:
       - self: INCLUDE (Keyword)
       - self: NULLS (Keyword)
 ",
-        ),
+            0,
+        )),
         // TABLESAMPLE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM t TABLESAMPLE SYSTEM (20 PERCENT)
@@ -1024,9 +1057,10 @@ from:
       system:
         self: SYSTEM (Keyword)
 ",
-        ),
+            0,
+        )),
         // UNNEST
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM UNNEST([1,2])
 ",
@@ -1052,8 +1086,9 @@ from:
     rparen:
       self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM UNNEST([1]) WITH OFFSET
 ",
@@ -1079,8 +1114,9 @@ from:
     - self: WITH (Keyword)
     - self: OFFSET (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM UNNEST([1]) a WITH OFFSET AS b
 ",
@@ -1112,9 +1148,10 @@ from:
     - self: WITH (Keyword)
     - self: OFFSET (Keyword)
 ",
-        ),
+            0,
+        )),
         // JOIN
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM (SELECT 1 FROM t1) INNER JOIN t2 ON TRUE;
 ",
@@ -1149,8 +1186,9 @@ from:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM t1 AS one JOIN t2 two ON TRUE
 ",
@@ -1177,8 +1215,9 @@ from:
       alias:
         self: two (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM data1 AS one LEFT JOIN data2 two USING(col) LEFT OUTER JOIN data3 ON TRUE
 ",
@@ -1223,8 +1262,9 @@ from:
     right:
       self: data3 (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM data1 AS one , data2 two JOIN (data3 FULL OUTER JOIN data4 ON col1=col2) ON TRUE
 ",
@@ -1275,9 +1315,10 @@ from:
       rparen:
         self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- WHERE clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT x FROM t WHERE true
 ",
@@ -1294,9 +1335,10 @@ where:
   expr:
     self: true (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- GROUP BY clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT x, y FROM t GROUP BY 1, 2
 ",
@@ -1321,9 +1363,10 @@ groupby:
       self: , (Symbol)
   - self: 2 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- HAVING clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT x, COUNT(*) cnt FROM t GROUP BY 1 HAVING cnt < 10
 ",
@@ -1361,9 +1404,10 @@ having:
     right:
       self: 10 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- QUALIFY clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT x
 FROM t
@@ -1413,9 +1457,10 @@ where:
   expr:
     self: TRUE (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- WINDOW clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM t
@@ -1465,8 +1510,9 @@ window:
       rparen:
         self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT *
 FROM t
@@ -1506,9 +1552,10 @@ window:
     window:
       self: a (Identifier)
 ",
-        ),
+            0,
+        )),
         // ----- ORDER BY clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM t ORDER BY c1 ASC, c2
 ",
@@ -1532,8 +1579,9 @@ orderby:
       self: ASC (Keyword)
   - self: c2 (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM t ORDER BY c1 NULLS FIRST, c2 DESC NULLS LAST
 ",
@@ -1563,9 +1611,10 @@ orderby:
     order:
       self: DESC (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- LIMIT clause -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM t LIMIT 100
 ",
@@ -1582,8 +1631,9 @@ limit:
   expr:
     self: 100 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT c1 FROM t LIMIT 100 OFFSET 10
 ",
@@ -1604,10 +1654,10 @@ limit:
     expr:
       self: 10 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }
-

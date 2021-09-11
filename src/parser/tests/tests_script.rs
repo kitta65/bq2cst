@@ -4,7 +4,7 @@ use super::*;
 fn test_parse_code_script() {
     let test_cases = vec![
         // ----- DECLARE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 DECLARE x INT64;
 ",
@@ -17,8 +17,9 @@ semicolon:
 variable_type:
   self: INT64 (Type)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 DECLARE x,y DEFAULT 1;
 ",
@@ -36,9 +37,10 @@ idents:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- SET statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SET x = 5
 ",
@@ -51,8 +53,9 @@ expr:
   right:
     self: 5 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SET (x,y) = (1,2)
 ",
@@ -80,8 +83,9 @@ expr:
     rparen:
       self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SET (x, y) = (SELECT AS STRUCT 1,2)
 ",
@@ -113,9 +117,10 @@ expr:
           self: , (Symbol)
       - self: 2 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- EXECUTE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 EXECUTE IMMEDIATE 'SELECT 1'
 ",
@@ -126,8 +131,9 @@ immediate:
 sql_expr:
   self: 'SELECT 1' (StringLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 EXECUTE IMMEDIATE 'SELECT ?' USING 1;
 ",
@@ -144,8 +150,9 @@ using:
   exprs:
   - self: 1 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 EXECUTE IMMEDIATE 'SELECT ?,?' INTO x, y USING 1, 2;
 ",
@@ -172,8 +179,9 @@ using:
       self: , (Symbol)
   - self: 2 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 EXECUTE IMMEDIATE 'SELECT @x' INTO x USING 1 AS x;
 ",
@@ -198,9 +206,10 @@ using:
     as:
       self: AS (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- BEGIN statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN
   SELECT 1;
@@ -225,8 +234,9 @@ stmts:
   semicolon:
     self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN
   SELECT 1;
@@ -259,8 +269,9 @@ then:
     semicolon:
       self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN EXCEPTiON WHEN ERROR THEN END;
 ",
@@ -277,9 +288,10 @@ semicolon:
 then:
   self: THEN (KeywordWithStatements)
 ",
-        ),
+            0,
+        )),
         // ----- IF statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN END IF;
 ",
@@ -295,8 +307,9 @@ semicolon:
 then:
   self: THEN (KeywordWithStatements)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN
   SELECT 1;
@@ -326,8 +339,9 @@ then:
     semicolon:
       self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN
   SELECT 1;
@@ -358,8 +372,9 @@ then:
     semicolon:
       self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN
 ELSEIF TRUE THEN
@@ -412,8 +427,9 @@ semicolon:
 then:
   self: THEN (KeywordWithStatements)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN
 ELSE SELECT 1;
@@ -439,8 +455,9 @@ semicolon:
 then:
   self: THEN (KeywordWithStatements)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 IF TRUE THEN
 ELSE
@@ -473,9 +490,10 @@ semicolon:
 then:
   self: THEN (KeywordWithStatements)
 ",
-        ),
+            0,
+        )),
         // ----- LOOP statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 LOOP
   SELECT 1;
@@ -495,8 +513,9 @@ stmts:
   semicolon:
     self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 LOOP SELECT 1; BREAK; END LOOP;
 ",
@@ -517,9 +536,10 @@ stmts:
   semicolon:
     self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- WHILE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 WHILE TRUE DO
   SELECT 1;
@@ -543,9 +563,10 @@ end_while:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- WHILE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 WHILE TRUE DO
   ITERATE;
@@ -575,9 +596,10 @@ end_while:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- transaction statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN
   BEGIN;
@@ -598,17 +620,19 @@ stmts:
   transaction:
     self: TRANSACTION (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN
 ",
             "\
 self: BEGIN (TransactionStatement)
 ",
-        ),
+            0,
+        )),
         // ----- RAISE statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 RAISE;
 ",
@@ -617,8 +641,9 @@ self: RAISE (RaiseStatement)
 semicolon:
   self: ; (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 RAISE USING MESSAGE = 'error';
 ",
@@ -635,9 +660,10 @@ using:
     right:
       self: 'error' (StringLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- CALL statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 CALL mydataset.myprocedure(1);
 ",
@@ -658,9 +684,10 @@ procedure:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- system variables (@@xxx) -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 BEGIN
   BEGIN
@@ -725,9 +752,10 @@ then:
     semicolon:
       self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }

@@ -1,14 +1,16 @@
 use super::*;
 #[test]
-fn test_parse_code_no_statement() {
-    let test_cases = vec![
-        TestCase::new(
+fn test_parse_code_core() {
+    let test_cases: Vec<Box<dyn TestCase>> = vec![
+        // ----- no statement -----
+        Box::new(SuccessTestCase::new(
             "",
             "\
 self: None (EOF)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 -- comment
 ",
@@ -17,25 +19,24 @@ self: None (EOF)
 leading_comments:
 - self: -- comment (Comment)
 ",
-        ),
-    ];
-    for t in test_cases {
-        t.test(0);
-    }
-}
-
-#[test]
-fn test_parse_code_eof() {
-    let test_cases = vec![
-        TestCase::new(
+            0,
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+HOGE
+", 1, 1,
+        )),
+        // ----- eof -----
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1;
 ",
             "\
 self: None (EOF)
 ",
-        ),
-        TestCase::new(
+            1,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1;
 -- EOF
@@ -45,18 +46,10 @@ self: None (EOF)
 leading_comments:
 - self: -- EOF (Comment)
 ",
-        ),
-    ];
-    for t in test_cases {
-        t.test(1);
-    }
-}
-
-#[test]
-fn test_parse_code_core() {
-    let test_cases = vec![
+            1,
+        )),
         // ----- comment -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 #standardSQL
 SELECT /* */
@@ -79,9 +72,10 @@ semicolon:
 trailing_comments:
 - self: /* */ (Comment)
 ",
-        ),
+            0,
+        )),
         // ----- unary operator -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   -1,
@@ -127,10 +121,11 @@ exprs:
   right:
     self: TRUE (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- binary operator -----
         // +, -, *, /
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   1 + 2,
@@ -146,9 +141,10 @@ exprs:
   right:
     self: 2 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // BETWEEN
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   1 BETWEEN 0 AND 3,
@@ -182,9 +178,10 @@ exprs:
   right_min:
     self: 0 (NumericLiteral)
 ",
-        ),
+            0,
+        )),
         // IN
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   1 IN (1, 2, 3),
@@ -230,8 +227,9 @@ exprs:
     rparen:
       self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 IN (SELECT 1)
 ",
@@ -250,8 +248,9 @@ exprs:
       exprs:
       - self: 1 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT 1 IN UNNEST([1, 2])
 ",
@@ -277,9 +276,17 @@ exprs:
     rparen:
       self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT 1 NOT;
+",
+            1,
+            13,
+        )),
         // LIKE
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   'x' LIKE '%x%',
@@ -305,9 +312,10 @@ exprs:
   right:
     self: '%x%' (StringLiteral)
 ",
-        ),
+            0,
+        )),
         // IS
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   x IS NULL,
@@ -343,9 +351,10 @@ exprs:
   right:
     self: FALSE (BooleanLiteral)
 ",
-        ),
-        // '.' 
-        TestCase::new(
+            0,
+        )),
+        // '.'
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   t.struct_col.num + 1,
@@ -385,9 +394,10 @@ exprs:
     right:
       self: num (Identifier)
 ",
-        ),
+            0,
+        )),
         // precedence
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT (1+(-2)) * 3 IN (9)
 ",
@@ -422,8 +432,9 @@ exprs:
     rparen:
       self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT (1+2) * 3 NOT BETWEEN 10 + 0 AND 11 + 2 OR TRUE
 ",
@@ -466,9 +477,10 @@ exprs:
   right:
     self: TRUE (BooleanLiteral)
 ",
-        ),
+            0,
+        )),
         // ----- array -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   [1, 2],
@@ -500,9 +512,10 @@ exprs:
   type:
     self: ARRAY (Type)
 ",
-        ),
+            0,
+        )),
         // array with type declaration
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ARRAY<INT64>[1]
 ",
@@ -523,8 +536,9 @@ exprs:
       type:
         self: INT64 (Type)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ARRAY<STRUCT<INT64, INT64>>[(1,2)]
 ",
@@ -565,9 +579,10 @@ exprs:
           rparen:
             self: > (Symbol)
 ",
-        ),
+            0,
+        )),
         // accessing array
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT arr[OFFSET(1)]
 ",
@@ -588,9 +603,10 @@ exprs:
   rparen:
     self: ] (Symbol)
 ",
-        ),
-    // ----- struct -----
-        TestCase::new(
+            0,
+        )),
+        // ----- struct -----
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   (1,2),
@@ -622,9 +638,10 @@ exprs:
   type:
     self: STRUCT (Type)
 ",
-        ),
+            0,
+        )),
         // struct with type declarations
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT STRUCT<INT64>(1)
 ",
@@ -647,8 +664,9 @@ exprs:
       rparen:
         self: > (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT STRUCT<ARRAY<INT64>, x FLOAT64>([1], .1)
 ",
@@ -689,9 +707,10 @@ exprs:
       rparen:
         self: > (Symbol)
 ",
-        ),
+            0,
+        )),
         // interval literal
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   INTERVAL 1 YEAR,
@@ -719,8 +738,9 @@ exprs:
     right:
       self: 1 (NumericLiteral)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   INTERVAL '1' DAY,
@@ -748,8 +768,9 @@ exprs:
   to_date_part:
     self: SECOND (Keyword)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT DATE_ADD('2000-01-01', INTERVAL 1 DAY)
 ",
@@ -771,9 +792,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- case expr -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE NULL END
 ",
@@ -804,8 +826,9 @@ exprs:
   expr:
     self: c1 (Identifier)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT CASE WHEN c1 = 1 THEN 'one' ELSE f() END
 ",
@@ -835,9 +858,10 @@ exprs:
   end:
     self: END (Keyword)
 ",
-        ),
+            0,
+        )),
         // ----- function -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT f(c1, c2)
 ",
@@ -855,9 +879,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // CAST
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT CAST('1' AS INT64),
 ",
@@ -878,8 +903,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT CAST('Hello' AS BYTES FORMAT 'ASCII')
 ",
@@ -902,9 +928,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // EXTRACT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT EXTRACT(DAY FROM ts)
 ",
@@ -923,8 +950,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT EXTRACT(WEEK(SUNDAY) FROM ts)
 ",
@@ -949,8 +977,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT EXTRACT(DAY FROM ts AT TIME ZONE 'UTC')
 ",
@@ -975,9 +1004,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ARRAY_AGG
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY z DESC LIMIT 100)
 ",
@@ -1009,9 +1039,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ARRAY
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ARRAY(SELECT 1 UNION ALL SELECT 2),
 ",
@@ -1038,9 +1069,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ST_GEOGFROMTEXT
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT ST_GEOGFROMTEXT(p, oriented => TRUE),
 ",
@@ -1064,9 +1096,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // ----- window function -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT SUM(x) OVER ()
 ",
@@ -1087,9 +1120,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // PARTITION BY, ORDER BY
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT SUM(x) OVER (PARTITION BY a)
 ",
@@ -1116,8 +1150,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT SUM(x) OVER (ORDER BY a DESC)
 ",
@@ -1146,8 +1181,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT SUM(x) OVER (PARTITION BY a ORDER BY b ASC, c)
 ",
@@ -1185,9 +1221,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // window frame clause
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   SUM() OVER (ROWS 1 + 1 PRECEDING),
@@ -1235,10 +1272,14 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
-SELECT SUM() OVER (PARTITION BY a ORDER BY b, c ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+SELECT SUM() OVER (
+  PARTITION BY a ORDER BY b, c
+  ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+)
 ",
             "\
 self: SELECT (SelectStatement)
@@ -1282,9 +1323,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
         // named window specification
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 SELECT
   SUM() OVER named_window,
@@ -1320,8 +1362,9 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
-        TestCase::new(
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             "\
 SELECT last_value(col3) OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING)
 ",
@@ -1356,9 +1399,10 @@ exprs:
   rparen:
     self: ) (Symbol)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }

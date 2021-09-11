@@ -262,7 +262,11 @@ impl Lexer {
         let first_position = self.position;
         let first_char = self.get_char(0);
         if !is_valid_1st_char_of_ident(&first_char) {
-            return Err(LexerError::new(self.line, self.column, "Invalid character as an identifier."));
+            return Err(LexerError::new(
+                self.line,
+                self.column,
+                "Invalid character as an identifier.",
+            ));
         }
         self.next_char()?;
         while is_valid_char_of_ident(&self.get_char(0)) {

@@ -4,7 +4,7 @@ use super::*;
 fn test_parse_code_other() {
     let test_cases = vec![
         // ----- EXPORT statement -----
-        TestCase::new(
+        Box::new(SuccessTestCase::new(
             "\
 EXPORT DATA OPTIONS(
   uri = 'gs://bucket/folder/*.csv',
@@ -43,9 +43,10 @@ options:
 semicolon:
   self: ; (Symbol)
 ",
-        ),
+            0,
+        )),
     ];
     for t in test_cases {
-        t.test(0);
+        t.test();
     }
 }
