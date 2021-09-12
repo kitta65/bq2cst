@@ -1,30 +1,8 @@
 #[cfg(test)]
 mod tests;
 
+use crate::error::{BQ2CSTError, BQ2CSTResult};
 use crate::token::Token;
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LexerError {
-    line: usize,
-    column: usize,
-    message: String,
-}
-
-impl LexerError {
-    pub fn new(line: usize, column: usize, message: &str) -> LexerError {
-        LexerError {
-            line,
-            column,
-            message: message.to_string(),
-        }
-    }
-    pub fn eof(line: usize, column: usize) -> LexerError {
-        LexerError::new(line, column, "Unexpected EOF.")
-    }
-}
-
-type LexerResult<T> = Result<T, LexerError>;
 
 pub struct Lexer {
     input: Vec<char>,
@@ -48,7 +26,7 @@ impl Lexer {
             tokens: Vec::new(),
         }
     }
-    pub fn tokenize_code(mut self) -> LexerResult<Vec<Token>> {
+    pub fn tokenize_code(mut self) -> BQ2CSTResult<Vec<Token>> {
         let mut token = self.next_token()?;
         while !token.is_none() {
             token = self.next_token()?;
@@ -69,7 +47,7 @@ impl Lexer {
             return None; // EOF
         }
     }
-    fn next_char(&mut self) -> LexerResult<()> {
+    fn next_char(&mut self) -> BQ2CSTResult<()> {
         if self.position < self.input.len() {
             if self.input[self.position] == '\n' {
                 self.column = 1;
@@ -80,12 +58,16 @@ impl Lexer {
             self.position += 1;
             Ok(())
         } else if self.position == self.input.len() {
-            Err(LexerError::eof(self.line, self.column))
+            Err(BQ2CSTError::new(
+                self.line,
+                self.column,
+                "Unexpected EOF.".to_string(),
+            ))
         } else {
             panic!("Something went wrong!")
         }
     }
-    fn next_token(&mut self) -> LexerResult<Option<&Token>> {
+    fn next_token(&mut self) -> BQ2CSTResult<Option<&Token>> {
         self.skip_whitespace()?;
         let ch = match self.get_char(0) {
             Some(ch) => ch,
@@ -246,7 +228,7 @@ impl Lexer {
         Ok(Some(token))
     }
     // ----- read -----
-    fn read_comment(&mut self) -> LexerResult<String> {
+    fn read_comment(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         while !is_end_of_line(&self.get_char(0)) {
             self.next_char()?;
@@ -258,14 +240,14 @@ impl Lexer {
             .to_string();
         Ok(res)
     }
-    fn read_identifier(&mut self) -> LexerResult<String> {
+    fn read_identifier(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         let first_char = self.get_char(0);
         if !is_valid_1st_char_of_ident(&first_char) {
-            return Err(LexerError::new(
+            return Err(BQ2CSTError::new(
                 self.line,
                 self.column,
-                "Invalid character as an identifier.",
+                "Invalid character as an identifier.".to_string(),
             ));
         }
         self.next_char()?;
@@ -277,7 +259,7 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_multiline_comment(&mut self) -> LexerResult<String> {
+    fn read_multiline_comment(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         while !(self.get_char(0) == Some('*') && self.get_char(1) == Some('/')) {
             self.next_char()?;
@@ -289,7 +271,7 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_multiline_string(&mut self) -> LexerResult<String> {
+    fn read_multiline_string(&mut self) -> BQ2CSTResult<String> {
         // NOTE '''abc''' is OK. ''''abc'''' should throw an error.
         let first_position = self.position;
         let ch = self.get_char(0);
@@ -309,7 +291,7 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_number(&mut self) -> LexerResult<String> {
+    fn read_number(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         while is_digit(&self.get_char(0)) {
             self.next_char()?;
@@ -334,7 +316,7 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_parameter(&mut self) -> LexerResult<String> {
+    fn read_parameter(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         while self.get_char(0) == Some('@') {
             self.next_char()?;
@@ -349,7 +331,7 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_quoted(&mut self) -> LexerResult<String> {
+    fn read_quoted(&mut self) -> BQ2CSTResult<String> {
         let quote = self.get_char(0);
         let first_position = self.position;
         self.next_char()?;
@@ -367,7 +349,7 @@ impl Lexer {
         Ok(res)
     }
     // ----- skip -----
-    fn skip_escaped_char(&mut self) -> LexerResult<()> {
+    fn skip_escaped_char(&mut self) -> BQ2CSTResult<()> {
         self.next_char()?; // '\\' ->
         match self.get_char(0) {
             // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#literals
@@ -397,12 +379,18 @@ impl Lexer {
                 }
             }
             Some(_) => (), // \n, \t, ...
-            None => return Err(LexerError::eof(self.line, self.column)),
+            None => {
+                return Err(BQ2CSTError::new(
+                    self.line,
+                    self.column,
+                    "Unexpected EOF.".to_string(),
+                ))
+            }
         }
         self.next_char()?;
         Ok(())
     }
-    fn skip_whitespace(&mut self) -> LexerResult<()> {
+    fn skip_whitespace(&mut self) -> BQ2CSTResult<()> {
         while is_whitespace(&self.get_char(0)) {
             self.next_char()?;
         }

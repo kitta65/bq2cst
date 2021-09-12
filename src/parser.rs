@@ -3,28 +3,8 @@ mod tests;
 
 use crate::cst::Node;
 use crate::cst::NodeType;
-use crate::lexer::Lexer;
+use crate::error::{BQ2CSTError, BQ2CSTResult};
 use crate::token::Token;
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ParserError {
-    line: usize,
-    column: usize,
-    message: String,
-}
-
-impl ParserError {
-    pub fn new(token: &Token, message: String) -> Self {
-        Self {
-            line: token.line,
-            column: token.column,
-            message,
-        }
-    }
-}
-
-type ParserResult<T> = Result<T, ParserError>;
 
 pub struct Parser {
     position: usize,
@@ -34,14 +14,12 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(code: String) -> Parser {
-        let l = Lexer::new(code);
-        let tokens = l.tokenize_code();
+    pub fn new(tokens: Vec<Token>) -> Parser {
         let mut p = Parser {
             position: 0,
             leading_comment_indices: Vec::new(),
             trailing_comment_indices: Vec::new(),
-            tokens: tokens.expect("Failed to tokenize code."),
+            tokens,
         };
         while p.tokens[p.position].is_comment() {
             p.leading_comment_indices.push(p.position);
@@ -59,7 +37,7 @@ impl Parser {
         }
         p
     }
-    pub fn parse_code(&mut self) -> ParserResult<Vec<Node>> {
+    pub fn parse_code(&mut self) -> BQ2CSTResult<Vec<Node>> {
         let mut stmts: Vec<Node> = Vec::new();
         while !self.is_eof(0) {
             let stmt = self.parse_statement(true)?;
@@ -70,7 +48,7 @@ impl Parser {
         Ok(stmts)
     }
     // ----- core -----
-    fn construct_node(&self, node_type: NodeType) -> ParserResult<Node> {
+    fn construct_node(&self, node_type: NodeType) -> BQ2CSTResult<Node> {
         // NOTE
         // It is possible to avoid cloning tokens (see #20)
         // but it does not improve execution time.
@@ -116,7 +94,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn get_precedence(&self, offset: usize) -> ParserResult<usize> {
+    fn get_precedence(&self, offset: usize) -> BQ2CSTResult<usize> {
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
         // 001... DATE, TIMESTAMP, r'', b'' (literal)
         // 101... [], ., ( (calling function. it's not mentioned in documentation)
@@ -145,7 +123,7 @@ impl Parser {
             "NOT" => match self.get_token(offset + 1)?.literal.to_uppercase().as_str() {
                 "IN" | "LIKE" | "BETWEEN" => 109,
                 _ => {
-                    return Err(ParserError::new(
+                    return Err(BQ2CSTError::from_token(
                         self.get_token(offset + 1)?,
                         format!(
                             "Expected `IN`, `LIKE` or `BETWEEN` but got: {:?}",
@@ -161,7 +139,7 @@ impl Parser {
         };
         Ok(precedence)
     }
-    fn get_offset_index(&self, offset: usize) -> ParserResult<usize> {
+    fn get_offset_index(&self, offset: usize) -> BQ2CSTResult<usize> {
         if offset == 0 {
             return Ok(self.position);
         }
@@ -177,7 +155,7 @@ impl Parser {
                 }
                 idx += 1;
             } else {
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     &self.tokens[self.tokens.len() - 1],
                     "Followed by unexpected EOF".to_string(),
                 ));
@@ -185,7 +163,7 @@ impl Parser {
         }
         Ok(idx)
     }
-    fn get_token(&self, offset: usize) -> ParserResult<&Token> {
+    fn get_token(&self, offset: usize) -> BQ2CSTResult<&Token> {
         let idx = self.get_offset_index(offset)?;
         Ok(&self.tokens[idx])
     }
@@ -196,7 +174,7 @@ impl Parser {
         };
         self.tokens.len() - 1 <= idx
     }
-    fn next_token(&mut self) -> ParserResult<()> {
+    fn next_token(&mut self) -> BQ2CSTResult<()> {
         // leading comments
         self.leading_comment_indices = Vec::new();
         let next_token_idx = self.get_offset_index(1)?;
@@ -223,7 +201,7 @@ impl Parser {
         }
         Ok(())
     }
-    fn parse_between_operator(&mut self, left: Node) -> ParserResult<Node> {
+    fn parse_between_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
         let precedence = self.get_precedence(0)?;
         let mut between = self.construct_node(NodeType::BetweenOperator)?;
         between.push_node("left", left);
@@ -237,7 +215,7 @@ impl Parser {
         between.push_node("right_max", self.parse_expr(precedence, false)?);
         Ok(between)
     }
-    fn parse_binary_operator(&mut self, left: Node) -> ParserResult<Node> {
+    fn parse_binary_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
         let precedence = self.get_precedence(0)?;
         let mut node = self.construct_node(NodeType::BinaryOperator)?;
         if self.get_token(0)?.is("IS") && self.get_token(1)?.is("NOT") {
@@ -249,7 +227,7 @@ impl Parser {
         node.push_node("right", self.parse_expr(precedence, false)?);
         Ok(node)
     }
-    fn parse_expr(&mut self, precedence: usize, alias: bool) -> ParserResult<Node> {
+    fn parse_expr(&mut self, precedence: usize, alias: bool) -> BQ2CSTResult<Node> {
         // prefix or literal
         let mut left = self.construct_node(NodeType::Unknown)?;
         match self.get_token(0)?.literal.to_uppercase().as_str() {
@@ -563,7 +541,7 @@ impl Parser {
                         left = self.parse_between_operator(left)?;
                         left.push_node("not", not);
                     } else {
-                        return Err(ParserError::new(
+                        return Err(BQ2CSTError::from_token(
                             self.get_token(1)?,
                             format!(
                                 "Expected `LIKE`, `BETWEEN` or `IN` but got: {:?}",
@@ -573,7 +551,7 @@ impl Parser {
                     }
                 }
                 _ => {
-                    return Err(ParserError::new(
+                    return Err(BQ2CSTError::from_token(
                         self.get_token(0)?,
                         "Something went wrong.".to_string(),
                     ))
@@ -607,7 +585,7 @@ impl Parser {
         }
         Ok(left)
     }
-    fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> ParserResult<Vec<Node>> {
+    fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> BQ2CSTResult<Vec<Node>> {
         let mut exprs: Vec<Node> = Vec::new();
         // first expr
         let mut expr = self.parse_expr(usize::MAX, alias)?;
@@ -633,7 +611,7 @@ impl Parser {
         }
         Ok(exprs)
     }
-    fn parse_grouped_exprs(&mut self, alias: bool) -> ParserResult<Node> {
+    fn parse_grouped_exprs(&mut self, alias: bool) -> BQ2CSTResult<Node> {
         let mut group = self.construct_node(NodeType::GroupedExprs)?;
         if !self.get_token(1)?.is(")") {
             self.next_token()?; // ( -> exprs
@@ -643,7 +621,7 @@ impl Parser {
         group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(group)
     }
-    fn parse_grouped_type_declarations(&mut self, schema: bool) -> ParserResult<Node> {
+    fn parse_grouped_type_declarations(&mut self, schema: bool) -> BQ2CSTResult<Node> {
         let mut group = self.construct_node(NodeType::GroupedTypeDeclarations)?;
         self.next_token()?; // ( -> INOUT | ident | type
         let mut type_declarations = Vec::new();
@@ -684,7 +662,7 @@ impl Parser {
         group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(group)
     }
-    fn parse_identifier(&mut self) -> ParserResult<Node> {
+    fn parse_identifier(&mut self) -> BQ2CSTResult<Node> {
         let mut left = self.construct_node(NodeType::Identifier)?;
         while self.get_token(1)?.is(".") {
             self.next_token()?; // ident -> .
@@ -696,7 +674,7 @@ impl Parser {
         }
         Ok(left)
     }
-    fn parse_in_operator(&mut self, left: Node) -> ParserResult<Node> {
+    fn parse_in_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
         let mut node = self.construct_node(NodeType::InOperator)?;
         node.push_node("left", left);
         if self.get_token(1)?.is("UNNEST") {
@@ -719,13 +697,13 @@ impl Parser {
         }
         Ok(node)
     }
-    fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> ParserResult<Node> {
+    fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> BQ2CSTResult<Node> {
         let mut keyword = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
         self.next_token()?; // keyword -> (
         keyword.push_node("group", self.parse_grouped_exprs(alias)?);
         Ok(keyword)
     }
-    fn parse_keyword_with_statements(&mut self, until: &Vec<&str>) -> ParserResult<Node> {
+    fn parse_keyword_with_statements(&mut self, until: &Vec<&str>) -> BQ2CSTResult<Node> {
         let mut node = self.construct_node(NodeType::KeywordWithStatements)?;
         let mut stmts = Vec::new();
         while !self.get_token(1)?.in_(until) {
@@ -737,7 +715,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn parse_n_keywords(&mut self, n: usize) -> ParserResult<Vec<Node>> {
+    fn parse_n_keywords(&mut self, n: usize) -> BQ2CSTResult<Vec<Node>> {
         let mut nodes = Vec::new();
         nodes.push(self.construct_node(NodeType::Keyword)?);
         for _ in 1..n {
@@ -746,7 +724,7 @@ impl Parser {
         }
         Ok(nodes)
     }
-    fn parse_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let node = match self.get_token(0)?.literal.to_uppercase().as_str() {
             // SELECT
             "WITH" | "SELECT" | "(" => self.parse_select_statement(semicolon, true)?,
@@ -785,7 +763,7 @@ impl Parser {
                         }
                     }
                 }
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
                     format!("Expected `SCHEMA`, `TABLE`, `VIEW`, `FUNCTION`, `PROCEDURE`, 'CAPACITY', 'RESERVATION' or 'ASSIGNMENT' but not found around here: {:?}", self.get_token(0)?)
                 ));
@@ -806,7 +784,7 @@ impl Parser {
                         }
                     }
                 }
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
                     format!(
                         "Expected `SCHEMA`, `TABLE` or `VIEW` but not found around here: {:?}",
@@ -842,7 +820,7 @@ impl Parser {
             // other
             "EXPORT" => self.parse_export_statement(semicolon)?,
             _ => {
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
                     format!(
                         "Calling `parse_statement()` is not allowed here: {:?}",
@@ -853,7 +831,7 @@ impl Parser {
         };
         Ok(node)
     }
-    fn parse_table(&mut self, root: bool) -> ParserResult<Node> {
+    fn parse_table(&mut self, root: bool) -> BQ2CSTResult<Node> {
         let mut left: Node;
         match self.get_token(0)?.literal.to_uppercase().as_str() {
             "(" => {
@@ -1064,7 +1042,7 @@ impl Parser {
         }
         Ok(left)
     }
-    fn parse_type(&mut self, schema: bool) -> ParserResult<Node> {
+    fn parse_type(&mut self, schema: bool) -> BQ2CSTResult<Node> {
         let mut res = match self.get_token(0)?.literal.to_uppercase().as_str() {
             "ARRAY" => {
                 let mut res = self.construct_node(NodeType::Type)?;
@@ -1140,7 +1118,7 @@ impl Parser {
         }
         Ok(res)
     }
-    fn parse_window_expr(&mut self) -> ParserResult<Node> {
+    fn parse_window_expr(&mut self) -> BQ2CSTResult<Node> {
         if self.get_token(0)?.is("(") {
             let mut window = self.construct_node(NodeType::WindowSpecification)?;
             if self.get_token(1)?.is_identifier() {
@@ -1220,7 +1198,7 @@ impl Parser {
             Ok(self.construct_node(NodeType::Identifier)?)
         }
     }
-    fn parse_xxxby_exprs(&mut self) -> ParserResult<Node> {
+    fn parse_xxxby_exprs(&mut self) -> BQ2CSTResult<Node> {
         let mut xxxby = self.construct_node(NodeType::XXXByExprs)?;
         self.next_token()?; // xxx -> BY
         xxxby.push_node("by", self.construct_node(NodeType::Keyword)?);
@@ -1228,7 +1206,7 @@ impl Parser {
         xxxby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
         Ok(xxxby)
     }
-    fn push_trailing_alias(&mut self, mut node: Node) -> ParserResult<Node> {
+    fn push_trailing_alias(&mut self, mut node: Node) -> BQ2CSTResult<Node> {
         if self.get_token(1)?.is("AS") {
             self.next_token()?; // -> AS
             node.push_node("as", self.construct_node(NodeType::Keyword)?);
@@ -1241,7 +1219,7 @@ impl Parser {
         Ok(node)
     }
     // ----- SELECT statement -----
-    fn parse_select_statement(&mut self, semicolon: bool, root: bool) -> ParserResult<Node> {
+    fn parse_select_statement(&mut self, semicolon: bool, root: bool) -> BQ2CSTResult<Node> {
         if self.get_token(0)?.literal.to_uppercase() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement)?;
             self.next_token()?; // ( -> SELECT
@@ -1445,7 +1423,7 @@ impl Parser {
         Ok(node)
     }
     // ----- DML -----
-    fn parse_insert_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_insert_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut insert = self.construct_node(NodeType::InsertStatement)?;
         if self.get_token(1)?.is("INTO") {
             self.next_token()?; // INSERT -> INTO
@@ -1488,7 +1466,7 @@ impl Parser {
         }
         Ok(insert)
     }
-    fn parse_delete_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_delete_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut delete = self.construct_node(NodeType::DeleteStatement)?;
         if self.get_token(1)?.is("FROM") {
             self.next_token()?; // DELETE -> FROM
@@ -1516,7 +1494,7 @@ impl Parser {
         }
         Ok(delete)
     }
-    fn parse_truncate_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_truncate_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut truncate = self.construct_node(NodeType::TruncateStatement)?;
         self.next_token()?; // TRUNCATE -> TABLE
         truncate.push_node("table", self.construct_node(NodeType::Keyword)?);
@@ -1528,7 +1506,7 @@ impl Parser {
         }
         Ok(truncate)
     }
-    fn parse_update_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_update_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut update = self.construct_node(NodeType::UpdateStatement)?;
         if !self.get_token(1)?.is("SET") {
             self.next_token()?; // -> table_name
@@ -1559,7 +1537,7 @@ impl Parser {
         }
         Ok(update)
     }
-    fn parse_merge_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_merge_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut merge = self.construct_node(NodeType::MergeStatement)?;
         if self.get_token(1)?.is("INTO") {
             self.next_token()?; // MERGE -> INTO
@@ -1614,7 +1592,7 @@ impl Parser {
                 "UPDATE" => self.parse_update_statement(false)?,
                 "INSERT" => self.parse_insert_statement(false)?,
                 _ => {
-                    return Err(ParserError::new(
+                    return Err(BQ2CSTError::from_token(
                         self.get_token(0)?,
                         format!(
                             "Expected `DELETE`, `UPDATE` or `INSERT` but got: {:?}",
@@ -1635,7 +1613,7 @@ impl Parser {
         Ok(merge)
     }
     // ----- DDL -----
-    fn parse_create_schema_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_schema_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateSchemaStatement)?;
         self.next_token()?; // -> SCHEMA
         create.push_node("what", self.construct_node(NodeType::Keyword)?);
@@ -1655,7 +1633,7 @@ impl Parser {
         }
         Ok(create)
     }
-    fn parse_create_table_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_table_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateTableStatement)?;
         let mut external = false;
         let mut snapshot = false;
@@ -1748,7 +1726,7 @@ impl Parser {
         }
         Ok(create)
     }
-    fn parse_create_view_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_view_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateViewStatement)?;
         let mut materialized = false;
         // NOTE actually, OR REPLACE is not allowed in CREATE MATERIALIZED VIEW statement
@@ -1799,7 +1777,7 @@ impl Parser {
         }
         Ok(create)
     }
-    fn parse_create_function_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_function_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut node = self.construct_node(NodeType::CreateFunctionStatement)?;
         let mut is_tvf = false;
         if self.get_token(1)?.literal.to_uppercase() == "OR" {
@@ -1882,7 +1860,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn parse_create_procedure_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_procedure_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateProcedureStatement)?;
         if self.get_token(1)?.is("OR") {
             self.next_token()?; // -> OR
@@ -1910,7 +1888,7 @@ impl Parser {
         }
         Ok(create)
     }
-    fn parse_alter_schema_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_alter_schema_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterSchemaStatement)?;
         self.next_token()?; // -> SCHEMA
         alter.push_node("what", self.construct_node(NodeType::Keyword)?);
@@ -1930,7 +1908,7 @@ impl Parser {
         }
         Ok(alter)
     }
-    fn parse_alter_table_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_alter_table_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterTableStatement)?;
         self.next_token()?; // -> TABLE
         alter.push_node("what", self.construct_node(NodeType::Keyword)?);
@@ -2009,7 +1987,7 @@ impl Parser {
                 );
             }
             _ => {
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     self.get_token(1)?,
                     format!(
                         "Expected `SET`, `ADD` `RENAME` or `DROP` but got: {:?}",
@@ -2024,7 +2002,7 @@ impl Parser {
         }
         Ok(alter)
     }
-    fn parse_alter_column_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_alter_column_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterColumnStatement)?;
         self.next_token()?; // -> COLUMN
         alter.push_node("what", self.construct_node(NodeType::Keyword)?);
@@ -2052,7 +2030,7 @@ impl Parser {
                 alter.push_node_vec("drop_not_null", self.parse_n_keywords(3)?);
             }
             _ => {
-                return Err(ParserError::new(
+                return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
                     format!(
                         "Expected `SET` or `DROP` but got : {:?}",
@@ -2067,7 +2045,7 @@ impl Parser {
         }
         Ok(alter)
     }
-    fn parse_alter_view_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_alter_view_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterViewStatement)?;
         if self.get_token(1)?.is("MATERIALIZED") {
             self.next_token()?; // -> MATERIALIZED
@@ -2091,7 +2069,7 @@ impl Parser {
         }
         Ok(alter)
     }
-    fn parse_drop_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_drop_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut drop = self.construct_node(NodeType::DropStatement)?;
         if self.get_token(1)?.is("EXTERNAL") {
             self.next_token()?; // -> EXTERNAL
@@ -2122,7 +2100,7 @@ impl Parser {
         Ok(drop)
     }
     // ----- DCL -----
-    fn parse_grant_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_grant_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut grant = self.construct_node(NodeType::GrantStatement)?;
         self.next_token()?; // -> role
         grant.push_node_vec("roles", self.parse_exprs(&vec![], false)?);
@@ -2143,7 +2121,7 @@ impl Parser {
         }
         Ok(grant)
     }
-    fn parse_revoke_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_revoke_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut revoke = self.construct_node(NodeType::RevokeStatement)?;
         self.next_token()?; // -> role
         revoke.push_node_vec("roles", self.parse_exprs(&vec![], false)?);
@@ -2164,7 +2142,7 @@ impl Parser {
         }
         Ok(revoke)
     }
-    fn parse_create_reservation_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_create_reservation_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateReservationStatement)?;
         self.next_token()?; // -> CAPACITY | RESERVATION | ASSIGNMENT
         create.push_node("what", self.construct_node(NodeType::Keyword)?);
@@ -2183,7 +2161,7 @@ impl Parser {
         Ok(create)
     }
     // ----- script -----
-    fn parse_declare_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_declare_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut declare = self.construct_node(NodeType::DeclareStatement)?;
         let mut idents = Vec::new();
         loop {
@@ -2216,7 +2194,7 @@ impl Parser {
         }
         Ok(declare)
     }
-    fn parse_set_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_set_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut set = self.construct_node(NodeType::SetStatement)?;
         self.next_token()?; // set -> expr
         set.push_node("expr", self.parse_expr(usize::MAX, false)?);
@@ -2226,7 +2204,7 @@ impl Parser {
         }
         Ok(set)
     }
-    fn parse_execute_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_execute_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut execute = self.construct_node(NodeType::ExecuteStatement)?;
         self.next_token()?; // EXECUTE -> IMMEDIATE
         execute.push_node("immediate", self.construct_node(NodeType::Keyword)?);
@@ -2264,7 +2242,7 @@ impl Parser {
         }
         Ok(execute)
     }
-    fn parse_begin_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_begin_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut begin = self.construct_node(NodeType::BeginStatement)?;
         let mut stmts = Vec::new();
         while !self.get_token(1)?.in_(&vec!["END", "EXCEPTION"]) {
@@ -2293,7 +2271,7 @@ impl Parser {
         }
         Ok(begin)
     }
-    fn parse_if_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_if_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut if_ = self.construct_node(NodeType::IfStatement)?;
         self.next_token()?; // -> condition
         if_.push_node("condition", self.parse_expr(usize::MAX, false)?);
@@ -2335,7 +2313,7 @@ impl Parser {
         }
         Ok(if_)
     }
-    fn parse_loop_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_loop_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut loop_ = self.parse_keyword_with_statements(&vec!["END"])?;
         loop_.node_type = NodeType::LoopStatement;
         self.next_token()?; // -> END
@@ -2351,7 +2329,7 @@ impl Parser {
         }
         Ok(loop_)
     }
-    fn parse_while_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_while_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut while_ = self.construct_node(NodeType::WhileStatement)?;
         self.next_token()?; // -> condition
         while_.push_node("condition", self.parse_expr(usize::MAX, false)?);
@@ -2370,7 +2348,7 @@ impl Parser {
         }
         Ok(while_)
     }
-    fn parse_single_token_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_single_token_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut node = self.construct_node(NodeType::SingleTokenStatement)?;
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
@@ -2378,7 +2356,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn parse_transaction_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_transaction_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut node = self.construct_node(NodeType::TransactionStatement)?;
         if self.get_token(1)?.is("TRANSACTION") {
             self.next_token()?; // -> TRANSACTION
@@ -2390,7 +2368,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn parse_raise_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_raise_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut raise = self.construct_node(NodeType::RaiseStatement)?;
         if self.get_token(1)?.is("using") {
             self.next_token()?; // -> USING
@@ -2405,7 +2383,7 @@ impl Parser {
         }
         Ok(raise)
     }
-    fn parse_call_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_call_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut call = self.construct_node(NodeType::CallStatement)?;
         self.next_token()?; // -> procedure_name
         let procedure = self.parse_expr(usize::MAX, false)?;
@@ -2417,7 +2395,7 @@ impl Parser {
         Ok(call)
     }
     // ----- debug -----
-    fn parse_assert_satement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_assert_satement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut assert = self.construct_node(NodeType::AssertStatement)?;
         self.next_token()?; // -> expr
         assert.push_node("expr", self.parse_expr(usize::MAX, false)?);
@@ -2434,7 +2412,7 @@ impl Parser {
         Ok(assert)
     }
     // ----- other -----
-    fn parse_export_statement(&mut self, semicolon: bool) -> ParserResult<Node> {
+    fn parse_export_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut export = self.construct_node(NodeType::ExportStatement)?;
         self.next_token()?; // -> DATA
         export.push_node("data", self.construct_node(NodeType::Keyword)?);

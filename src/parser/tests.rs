@@ -1,4 +1,5 @@
 use super::*;
+use crate::lexer::Lexer;
 use difference::Changeset;
 
 mod tests_core;
@@ -32,7 +33,8 @@ impl SuccessTestCase {
 
 impl TestCase for SuccessTestCase {
     fn test(&self) {
-        let mut p = Parser::new(self.code.clone());
+        let l = Lexer::new(self.code.clone());
+        let mut p = Parser::new(l.tokenize_code().expect("Failed to tokenize code."));
         let stmts = p.parse_code().expect("Failed to parse code.");
         println!(
             "\
@@ -57,7 +59,8 @@ struct ErrorTestCase {
 
 impl ErrorTestCase {
     pub fn new(code: &str, expected_error_line: usize, expected_error_column: usize) -> Self {
-        let mut p = Parser::new(code.to_string());
+        let l = Lexer::new(code.to_string());
+        let mut p = Parser::new(l.tokenize_code().expect("Failed to tokenize code."));
         let error = match p.parse_code() {
             Ok(_) => panic!("Unexpectedly successed to parse code."),
             Err(e) => e,

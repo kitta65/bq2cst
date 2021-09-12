@@ -1,5 +1,6 @@
 mod constants;
 mod cst;
+mod error;
 mod lexer;
 mod parser;
 mod token;
@@ -9,33 +10,36 @@ mod utils;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(skip_typescript)]
-pub fn parse(code: String) -> JsValue {
+pub fn parse(code: String) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
-    let mut p = parser::Parser::new(code);
-    let stmts = p.parse_code();
-    match JsValue::from_serde(&stmts) {
-        Ok(json) => json,
-        Err(error) => panic!("Probrem converting struct to json: {:?}", error),
-    }
+    let l = lexer::Lexer::new(code);
+    let mut p = parser::Parser::new(match l.tokenize_code() {
+        Ok(tokens) => tokens,
+        Err(bq2cst_error) => {
+            return Err(JsValue::from_serde(&bq2cst_error)
+                .expect("Problem converting error struct to json."))
+        }
+    });
+    let stmts = match p.parse_code() {
+        Ok(stmts) => stmts,
+        Err(bq2cst_error) => {
+            return Err(JsValue::from_serde(&bq2cst_error)
+                .expect("Problem converting error struct to json."))
+        }
+    };
+    Ok(JsValue::from_serde(&stmts).expect("Problem converting stmts to json."))
 }
 
 #[wasm_bindgen(skip_typescript)]
-pub fn tokenize(code: String) -> JsValue {
+pub fn tokenize(code: String) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
     let l = lexer::Lexer::new(code);
-    let tokens = l.tokenize_code();
-    match tokens {
-        Ok(tokens) => {
-            match JsValue::from_serde(&tokens) {
-                Ok(json) => json,
-                Err(error) => panic!("Probrem converting Vec to json: {:?}", error)
-            }
-        },
-        Err(error) => {
-            match JsValue::from_serde(&error) {
-                Ok(json) => json,
-                Err(error) => panic!("Probrem converting Vec to json: {:?}", error)
-            }
-        },
-    }
+    let tokens = match l.tokenize_code() {
+        Ok(tokens) => tokens,
+        Err(bq2cst_error) => {
+            return Err(JsValue::from_serde(&bq2cst_error)
+                .expect("Problem converting error struct to json."))
+        }
+    };
+    Ok(JsValue::from_serde(&tokens).expect("Problem converting tokens to json."))
 }
