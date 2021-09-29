@@ -2077,6 +2077,9 @@ impl Parser {
         } else if self.get_token(1)?.is("MATERIALIZED") {
             self.next_token()?; // -> MATERIALIZED
             drop.push_node("materialized", self.construct_node(NodeType::Keyword)?);
+        } else if self.get_token(1)?.is("TABLE") && self.get_token(2)?.is("FUNCTION") {
+            self.next_token()?; // -> TABLE
+            drop.push_node("table", self.construct_node(NodeType::Keyword)?)
         }
         self.next_token()?; // -> SCHEMA, TABLE, VIEW, FUNCTION, PROCEDURE
         drop.push_node("what", self.construct_node(NodeType::Keyword)?);

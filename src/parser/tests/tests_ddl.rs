@@ -1487,6 +1487,23 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+DROP TABLE FUNCTION ident;
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: ident (Identifier)
+semicolon:
+  self: ; (Symbol)
+table:
+  self: TABLE (Keyword)
+what:
+  self: FUNCTION (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

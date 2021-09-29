@@ -541,6 +541,7 @@ export type DropStatement = XXXStatement & {
   children: {
     external?: NodeChild;
     materialized?: NodeChild;
+    table?: NodeChild;
     what: NodeChild;
     if_exists?: NodeVecChild;
     ident: NodeChild;
