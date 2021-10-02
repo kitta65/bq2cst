@@ -408,7 +408,7 @@ impl Parser {
                     node.push_node("func", left);
                     if !self.get_token(0)?.is(")") {
                         match func.as_str() {
-                            "CAST" => {
+                            "CAST" | "SAFE_CAST" => {
                                 let cast_from = self.parse_expr(usize::MAX, false)?;
                                 self.next_token()?; // expr -> AS
                                 let mut as_ = self.construct_node(NodeType::CastArgument)?;
