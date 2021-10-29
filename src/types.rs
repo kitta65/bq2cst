@@ -139,8 +139,8 @@ export type CallingFunctionGeneral = Expr & {
 export type Expr = BaseNode & {
   token: Token;
   children: {
-    as?: NodeChild;
-    alias?: NodeChild;
+    as?: { Node: Identifier };
+    alias?: { Node: Identifier };
     comma?: NodeChild;
     order?: NodeChild;
     null_order?: NodeVecChild;
@@ -1082,7 +1082,7 @@ export type WithClause = BaseNode & {
   token: Token;
   node_type: "WithClause";
   children: {
-    queries: NodeVecChild;
+    queries: { NodeVec: WithQuery[] };
   };
 };
 
@@ -1099,7 +1099,7 @@ export type WithQuery = BaseNode & {
   token: Token;
   node_type: "WithQuery";
   children: {
-    as: NodeChild;
+    as: { Node: Identifier };
     stmt: NodeChild;
     comma: NodeChild;
   };
