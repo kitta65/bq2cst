@@ -850,7 +850,7 @@ export type SelectStatement = XXXStatement & {
   token: Token;
   node_type: "SelectStatement";
   children: {
-    with?: NodeChild;
+    with?: { Node: WithClause };
     as_struct_or_value?: NodeVecChild;
     distinct_or_all?: NodeChild;
     exprs: NodeVecChild;
@@ -886,6 +886,7 @@ export type RevokeStatement = XXXStatement & {
 export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
   children: {
+    with?: { Node: WithClause };
     distinct_or_all: NodeChild;
     left: { Node: SetOperator | SelectStatement };
     right: { Node: SetOperator | SelectStatement };

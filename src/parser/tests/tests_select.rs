@@ -194,6 +194,134 @@ semicolon:
 ",
             0,
         )),
+        // NOTE `WITH` belongs to `UNION ALL`
+        Box::new(SuccessTestCase::new(
+            "\
+WITH tmp AS (SELECT 1)
+SELECT * FROM tmp
+UNION ALL
+SELECT * FROM tmp
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: * (Asterisk)
+  from:
+    self: FROM (KeywordWithExpr)
+    expr:
+      self: tmp (Identifier)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: * (Asterisk)
+  from:
+    self: FROM (KeywordWithExpr)
+    expr:
+      self: tmp (Identifier)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: tmp (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(WITH tmp AS (SELECT 1) SELECT * FROM tmp)
+UNION ALL
+SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: * (Asterisk)
+    from:
+      self: FROM (KeywordWithExpr)
+      expr:
+        self: tmp (Identifier)
+    with:
+      self: WITH (WithClause)
+      queries:
+      - self: tmp (WithQuery)
+        as:
+          self: AS (Keyword)
+        stmt:
+          self: ( (GroupedStatement)
+          rparen:
+            self: ) (Symbol)
+          stmt:
+            self: SELECT (SelectStatement)
+            exprs:
+            - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1
+UNION ALL
+WITH tmp AS (SELECT 2)
+SELECT * FROM tmp
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: * (Asterisk)
+  from:
+    self: FROM (KeywordWithExpr)
+    expr:
+      self: tmp (Identifier)
+  with:
+    self: WITH (WithClause)
+    queries:
+    - self: tmp (WithQuery)
+      as:
+        self: AS (Keyword)
+      stmt:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 2 (NumericLiteral)
+",
+            0,
+        )),
         // ----- WITH clause -----
         Box::new(SuccessTestCase::new(
             "\
