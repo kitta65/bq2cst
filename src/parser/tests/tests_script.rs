@@ -39,6 +39,52 @@ semicolon:
 ",
             0,
         )),
+        // parameterized data types
+        Box::new(SuccessTestCase::new(
+            "\
+DECLARE x NUMERIC(10) DEFAULT 12345
+",
+            "\
+self: DECLARE (DeclareStatement)
+default:
+  self: DEFAULT (KeywordWithExpr)
+  expr:
+    self: 12345 (NumericLiteral)
+idents:
+- self: x (Identifier)
+variable_type:
+  self: NUMERIC (Type)
+  parameter:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: 10 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+DECLARE x BIGNUMERIC(5, 2)
+",
+            "\
+self: DECLARE (DeclareStatement)
+idents:
+- self: x (Identifier)
+variable_type:
+  self: BIGNUMERIC (Type)
+  parameter:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: 5 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- SET statement -----
         Box::new(SuccessTestCase::new(
             "\
