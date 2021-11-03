@@ -123,7 +123,6 @@ SELECT 1 /*
             "\
 SELECT
   'xxx',
-  r'xxx',
   \"xxx\",
   '''
 xxx
@@ -135,15 +134,12 @@ xxx
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(2, 3, "'xxx'"),
                 Token::from_str(2, 8, ","),
-                Token::from_str(3, 3, "r"),
-                Token::from_str(3, 4, "'xxx'"),
-                Token::from_str(3, 9, ","),
-                Token::from_str(4, 3, "\"xxx\""),
-                Token::from_str(4, 8, ","),
-                Token::from_str(5, 3, "'''\nxxx\n  '''"),
-                Token::from_str(7, 6, ","),
-                Token::from_str(8, 3, "\"\"\"\nxxx\n  \"\"\""),
-                Token::from_str(10, 6, ","),
+                Token::from_str(3, 3, "\"xxx\""),
+                Token::from_str(3, 8, ","),
+                Token::from_str(4, 3, "'''\nxxx\n  '''"),
+                Token::from_str(6, 6, ","),
+                Token::from_str(7, 3, "\"\"\"\nxxx\n  \"\"\""),
+                Token::from_str(9, 6, ","),
             ],
         )),
         Box::new(ErrorTestCase::new(
@@ -159,6 +155,28 @@ SELECT 'foo
             2,
             1,
         )),
+        //        // string literal (raw)
+        //        Box::new(SuccessTestCase::new(
+        //            "\
+        //SELECT
+        //  r'xxx',
+        //  r'\\1',",
+        //            vec![
+        //                Token::from_str(1, 1, "SELECT"),
+        //                Token::from_str(2, 3, "r"),
+        //                Token::from_str(2, 4, "'xxx'"),
+        //                Token::from_str(2, 9, ","),
+        //                Token::from_str(3, 3, "r"),
+        //                Token::from_str(3, 4, "'\\1'"),
+        //                Token::from_str(3, 10, ","),
+        //            ],
+        //        )),
+        //        Box::new(ErrorTestCase::new(
+        //            "\
+        //SELECT r'\\'",
+        //            1,
+        //            12, // unclosed raw string literal
+        //        )),
         // numeric literal
         Box::new(SuccessTestCase::new(
             "\

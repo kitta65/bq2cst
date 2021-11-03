@@ -94,20 +94,12 @@ impl Lexer {
             }
             // quotation
             '`' => {
-                let literal = self.read_quoted()?;
+                let literal = self.read_back_quoted()?;
                 self.construct_token(line, column, literal)
             }
-            '"' => {
-                if self.get_char(1) == Some('"') && self.get_char(2) == Some('"') {
-                    let literal = self.read_multiline_string()?;
-                    self.construct_token(line, column, literal)
-                } else {
-                    let literal = self.read_quoted()?;
-                    self.construct_token(line, column, literal)
-                }
-            }
-            '\'' => {
-                if self.get_char(1) == Some('\'') && self.get_char(2) == Some('\'') {
+            '"' | '\'' => {
+                let quote = ch;
+                if self.get_char(1) == Some(quote) && self.get_char(2) == Some(quote) {
                     let literal = self.read_multiline_string()?;
                     self.construct_token(line, column, literal)
                 } else {
@@ -228,6 +220,19 @@ impl Lexer {
         Ok(Some(token))
     }
     // ----- read -----
+    fn read_back_quoted(&mut self) -> BQ2CSTResult<String> {
+        let quote = self.get_char(0);
+        let first_position = self.position;
+        self.next_char()?;
+        while self.get_char(0) != quote {
+            self.next_char()?;
+        }
+        self.next_char()?; // ' -> next_ch
+        let res = self.input[first_position..self.position]
+            .into_iter()
+            .collect();
+        Ok(res)
+    }
     fn read_comment(&mut self) -> BQ2CSTResult<String> {
         let first_position = self.position;
         while !is_end_of_line(&self.get_char(0)) {
@@ -322,7 +327,7 @@ impl Lexer {
             self.next_char()?;
         }
         if self.get_char(0) == Some('`') {
-            self.read_quoted()?;
+            self.read_back_quoted()?;
         } else {
             self.read_identifier()?;
         }
