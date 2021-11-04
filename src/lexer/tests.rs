@@ -50,7 +50,12 @@ impl ErrorTestCase {
         let code = code.to_string();
         let l = Lexer::new(code.clone());
         let error = match l.tokenize_code() {
-            Ok(_) => panic!("Unexpectedly successed to tokenize code."),
+            Ok(tokens) => panic!(
+                "Unexpectedly successed to tokenize code.
+code: {:?}
+tokens: {:?}",
+                code, tokens
+            ),
             Err(error) => error,
         };
         ErrorTestCase {
@@ -84,7 +89,7 @@ fn test_tokenize_code() {
         // ----- SuccessTestCase -----
         Box::new(SuccessTestCase::new(
             "\
-    SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
+SELECT c1 FROM t WHERE true GROUP BY 1 ORDER BY 1;",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "c1"),
@@ -123,23 +128,24 @@ SELECT 1 /*
             "\
 SELECT
   'xxx',
-  \"xxx\",
+  '''xxx''',
   '''
 xxx
   ''',
-  \"\"\"
-xxx
-  \"\"\",",
+  '\\\\',
+  '''\\\\''',",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(2, 3, "'xxx'"),
                 Token::from_str(2, 8, ","),
-                Token::from_str(3, 3, "\"xxx\""),
-                Token::from_str(3, 8, ","),
+                Token::from_str(3, 3, "'''xxx'''"),
+                Token::from_str(3, 12, ","),
                 Token::from_str(4, 3, "'''\nxxx\n  '''"),
                 Token::from_str(6, 6, ","),
-                Token::from_str(7, 3, "\"\"\"\nxxx\n  \"\"\""),
-                Token::from_str(9, 6, ","),
+                Token::from_str(7, 3, "'\\\\'"),
+                Token::from_str(7, 7, ","),
+                Token::from_str(8, 3, "'''\\\\'''"),
+                Token::from_str(8, 11, ","),
             ],
         )),
         Box::new(ErrorTestCase::new(
@@ -155,32 +161,67 @@ SELECT 'foo
             2,
             1,
         )),
-        //        // string literal (raw)
-        //        Box::new(SuccessTestCase::new(
-        //            "\
-        //SELECT
-        //  r'xxx',
-        //  r'\\1',",
-        //            vec![
-        //                Token::from_str(1, 1, "SELECT"),
-        //                Token::from_str(2, 3, "r"),
-        //                Token::from_str(2, 4, "'xxx'"),
-        //                Token::from_str(2, 9, ","),
-        //                Token::from_str(3, 3, "r"),
-        //                Token::from_str(3, 4, "'\\1'"),
-        //                Token::from_str(3, 10, ","),
-        //            ],
-        //        )),
-        //        Box::new(ErrorTestCase::new(
-        //            "\
-        //SELECT r'\\'",
-        //            1,
-        //            12, // unclosed raw string literal
-        //        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT '\\'",
+            1,
+            11, // unclosed raw string literal
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT ''''xxx''''",
+            1,
+            19, // unclosed raw string literal
+        )),
+        // NOTE this is wrong syntax but difficult to ditect
+        // Box::new(ErrorTestCase::new(
+        //     "SELECT '\\1'",
+        //     1,
+        //     11,
+        // )),
+        // string literal (raw)
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  r'xxx',
+  r'\\1'
+  r'''\\1''',
+  r'\\\\',
+  r'''\\\\''',",
+            vec![
+                Token::from_str(1, 1, "SELECT"),
+                Token::from_str(2, 3, "r"),
+                Token::from_str(2, 4, "'xxx'"),
+                Token::from_str(2, 9, ","),
+                Token::from_str(3, 3, "r"),
+                Token::from_str(3, 4, "'\\1'"),
+                Token::from_str(4, 3, "r"),
+                Token::from_str(4, 4, "'''\\1'''"),
+                Token::from_str(4, 12, ","),
+                Token::from_str(5, 3, "r"),
+                Token::from_str(5, 4, "'\\\\'"),
+                Token::from_str(5, 8, ","),
+                Token::from_str(6, 3, "r"),
+                Token::from_str(6, 4, "'''\\\\'''"),
+                Token::from_str(6, 12, ","),
+            ],
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT r'\\'",
+            1,
+            12, // unclosed raw string literal (not intuitive)
+        )),
+        Box::new(ErrorTestCase::new(
+            "\
+SELECT r'''\\'''",
+            1,
+            16, // unclosed raw string literal (not intuitive)
+        )),
         // numeric literal
         Box::new(SuccessTestCase::new(
             "\
-    SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
+SELECT 1, 01, 1.1, .1, 1.1e+1, 1.1E-1, .1e10",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "1"),
@@ -201,7 +242,7 @@ SELECT 'foo
         // timestamp, date literal
         Box::new(SuccessTestCase::new(
             "\
-    SELECT date '2000-01-01', timestamp '2000-01-01'",
+SELECT date '2000-01-01', timestamp '2000-01-01'",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "date"),
@@ -323,7 +364,7 @@ SELECT
         // function
         Box::new(SuccessTestCase::new(
             "\
-    SELECT f(a1, a2)",
+SELECT f(a1, a2)",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(1, 8, "f"),

@@ -79,7 +79,7 @@ impl Token {
         let mut iterator = self.literal.chars();
         match iterator.next() {
             Some('?') | Some('@') => return true,
-            _ => return false
+            _ => return false,
         }
     }
     pub fn is_numeric(&self) -> bool {

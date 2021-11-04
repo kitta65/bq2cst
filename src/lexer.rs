@@ -103,7 +103,7 @@ impl Lexer {
                     let literal = self.read_multiline_string()?;
                     self.construct_token(line, column, literal)
                 } else {
-                    let literal = self.read_quoted()?;
+                    let literal = self.read_string()?;
                     self.construct_token(line, column, literal)
                 }
             }
@@ -219,6 +219,12 @@ impl Lexer {
         };
         Ok(Some(token))
     }
+    fn skip_whitespace(&mut self) -> BQ2CSTResult<()> {
+        while is_whitespace(&self.get_char(0)) {
+            self.next_char()?;
+        }
+        Ok(())
+    }
     // ----- read -----
     fn read_back_quoted(&mut self) -> BQ2CSTResult<String> {
         let quote = self.get_char(0);
@@ -280,17 +286,28 @@ impl Lexer {
         // NOTE '''abc''' is OK. ''''abc'''' should throw an error.
         let first_position = self.position;
         let ch = self.get_char(0);
-        self.next_char()?; // first ' -> second '
-        while !(self.get_char(0) == ch && self.get_char(1) == ch && self.get_char(2) == ch) {
-            if self.get_char(0) == Some('\\') {
-                self.skip_escaped_char()?;
-            } else {
-                self.next_char()?;
+        let mut odd_backslashes = false;
+        self.next_char()?; // 1st ' -> 2nd '
+        self.next_char()?; // 2nd ' -> 3rd '
+        self.next_char()?; // 3rd ' ->
+        loop {
+            if !odd_backslashes
+                && self.get_char(0) == ch
+                && self.get_char(1) == ch
+                && self.get_char(2) == ch
+            {
+                break;
             }
+            if self.get_char(0) == Some('\\') {
+                odd_backslashes = !odd_backslashes;
+            } else {
+                odd_backslashes = false;
+            }
+            self.next_char()?;
         }
-        self.next_char()?; // first ' -> secont '
-        self.next_char()?; // second ' -> third '
-        self.next_char()?; // third ' ->  next_ch
+        self.next_char()?; // 1st ' -> 2nd '
+        self.next_char()?; // 2nd ' -> 3rd '
+        self.next_char()?; // 3rd ' ->  next_ch
         let res = self.input[first_position..self.position]
             .into_iter()
             .collect();
@@ -336,70 +353,27 @@ impl Lexer {
             .collect();
         Ok(res)
     }
-    fn read_quoted(&mut self) -> BQ2CSTResult<String> {
+    fn read_string(&mut self) -> BQ2CSTResult<String> {
         let quote = self.get_char(0);
         let first_position = self.position;
-        self.next_char()?;
-        while self.get_char(0) != quote {
-            if self.get_char(0) == Some('\\') {
-                self.skip_escaped_char()?;
-            } else {
-                self.next_char()?;
+        let mut odd_backslashes = false;
+        self.next_char()?; // " ->
+        loop {
+            if !odd_backslashes && self.get_char(0) == quote {
+                break;
             }
+            if self.get_char(0) == Some('\\') {
+                odd_backslashes = !odd_backslashes;
+            } else {
+                odd_backslashes = false;
+            }
+            self.next_char()?;
         }
-        self.next_char()?; // ' -> next_ch
+        self.next_char()?; // " ->
         let res = self.input[first_position..self.position]
             .into_iter()
             .collect();
         Ok(res)
-    }
-    // ----- skip -----
-    fn skip_escaped_char(&mut self) -> BQ2CSTResult<()> {
-        self.next_char()?; // '\\' ->
-        match self.get_char(0) {
-            // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#literals
-            Some('x') => {
-                for _ in 0..2 {
-                    self.next_char()?;
-                }
-            }
-            Some('u') => {
-                for _ in 0..4 {
-                    self.next_char()?;
-                }
-            }
-            Some('U') => {
-                for _ in 0..8 {
-                    self.next_char()?;
-                }
-            }
-            Some('0') => {
-                for _ in 0..3 {
-                    self.next_char()?;
-                }
-            }
-            Some('1'..='7') => {
-                for _ in 0..3 {
-                    self.next_char()?;
-                }
-            }
-            Some(_) => (), // \n, \t, ...
-            None => {
-                return Err(BQ2CSTError::new(
-                    self.line,
-                    self.column,
-                    "Unexpected EOF.".to_string(),
-                ))
-            }
-        }
-        self.next_char()?;
-        Ok(())
-    }
-    fn skip_whitespace(&mut self) -> BQ2CSTResult<()> {
-        while is_whitespace(&self.get_char(0)) {
-            self.next_char()?;
-        }
-        Ok(())
     }
 }
 
