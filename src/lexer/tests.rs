@@ -165,13 +165,13 @@ SELECT 'foo
             "\
 SELECT '\\'",
             1,
-            11, // unclosed raw string literal
+            11, // unclosed string literal
         )),
         Box::new(ErrorTestCase::new(
             "\
 SELECT ''''xxx''''",
             1,
-            19, // unclosed raw string literal
+            19, // unclosed string literal
         )),
         // NOTE this is wrong syntax but difficult to ditect
         // Box::new(ErrorTestCase::new(
@@ -187,7 +187,8 @@ SELECT
   r'\\1'
   r'''\\1''',
   r'\\\\',
-  r'''\\\\''',",
+  r'''\\\\''',
+  rb'xxx',",
             vec![
                 Token::from_str(1, 1, "SELECT"),
                 Token::from_str(2, 3, "r"),
@@ -204,6 +205,9 @@ SELECT
                 Token::from_str(6, 3, "r"),
                 Token::from_str(6, 4, "'''\\\\'''"),
                 Token::from_str(6, 12, ","),
+                Token::from_str(7, 3, "rb"),
+                Token::from_str(7, 5, "'xxx'"),
+                Token::from_str(7, 10, ","),
             ],
         )),
         Box::new(ErrorTestCase::new(
