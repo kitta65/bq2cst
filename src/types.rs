@@ -1101,7 +1101,7 @@ export type WithQuery = BaseNode & {
   node_type: "WithQuery";
   children: {
     as: { Node: Identifier };
-    stmt: NodeChild;
+    stmt: { Node: GroupedStatement };
     comma: NodeChild;
   };
 };
