@@ -642,6 +642,7 @@ export type GroupedStatement = FromItemExpr &
   XXXStatement & {
     node_type: "GroupedStatement";
     children: {
+      with?: { Node: WithClause };
       stmt: NodeChild;
       rparen: NodeChild;
     };
@@ -888,8 +889,8 @@ export type SetOperator = XXXStatement & {
   children: {
     with?: { Node: WithClause };
     distinct_or_all: NodeChild;
-    left: { Node: SetOperator | SelectStatement };
-    right: { Node: SetOperator | SelectStatement };
+    left: { Node: SetOperator | SelectStatement | GroupedStatement };
+    right: { Node: SetOperator | SelectStatement | GroupedStatement };
   };
 };
 

@@ -1249,7 +1249,9 @@ impl Parser {
         if self.get_token(0)?.literal.to_uppercase() == "WITH" {
             let mut with = self.construct_node(NodeType::WithClause)?;
             let mut queries = Vec::new();
-            while self.get_token(1)?.literal.to_uppercase() != "SELECT" {
+            while self.get_token(1)?.literal.to_uppercase() != "SELECT"
+                && self.get_token(1)?.literal != "("
+            {
                 self.next_token()?; // WITH -> ident, ) -> ident
                 let mut query = self.construct_node(NodeType::WithQuery)?;
                 self.next_token()?; // ident -> AS
@@ -1263,8 +1265,8 @@ impl Parser {
                 queries.push(query);
             }
             with.push_node_vec("queries", queries);
-            self.next_token()?; // ) -> SELECT
-            let mut node = self.parse_select_statement(true, true)?;
+            self.next_token()?; // -> SELECT | '('
+            let mut node = self.parse_select_statement(semicolon, true)?;
             node.push_node("with", with);
             return Ok(node);
         }

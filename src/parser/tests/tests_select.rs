@@ -312,6 +312,37 @@ with:
         )),
         Box::new(SuccessTestCase::new(
             "\
+WITH a AS (SELECT 1) (SELECT 2);
+",
+            "\
+self: ( (GroupedStatement)
+rparen:
+  self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+stmt:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: a (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 WITH
   a AS (SELECT 1),
   b AS (SELECT 2 FROM t WHERE TRUE)
