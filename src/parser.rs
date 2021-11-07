@@ -354,8 +354,8 @@ impl Parser {
                     left.node_type = NodeType::UnaryOperator;
                 }
             }
-            "SELECT" => {
-                // in the case of `ARRAY_AGG(SELECT 1)`
+            "WITH" | "SELECT" => {
+                // in the case of `ARRAY(SELECT 1)`
                 left = self.parse_select_statement(false, true)?;
             }
             "NOT" => {
@@ -835,16 +835,27 @@ impl Parser {
         let mut left: Node;
         match self.get_token(0)?.literal.to_uppercase().as_str() {
             "(" => {
-                let mut group = self.construct_node(NodeType::GroupedStatement)?;
-                self.next_token()?; // ( -> table
-                if self.get_token(0)?.is("SELECT") {
-                    group.push_node("stmt", self.parse_select_statement(false, true)?);
-                } else {
-                    group.node_type = NodeType::GroupedExpr;
-                    group.push_node("expr", self.parse_table(true)?);
+                let mut group;
+                let mut statement_flg = false;
+                let mut offset = 0;
+                loop {
+                    offset += 1;
+                    if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
+                        statement_flg = true;
+                        break;
+                    } else if !self.get_token(offset)?.is("(") {
+                        break;
+                    }
                 }
-                self.next_token()?; // table -> )
-                group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                if statement_flg {
+                    group = self.parse_select_statement(false, true)?;
+                } else {
+                    group = self.construct_node(NodeType::GroupedExpr)?;
+                    self.next_token()?; // ( -> expr
+                    group.push_node("expr", self.parse_table(true)?);
+                    self.next_token()?; // table -> )
+                    group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                }
                 left = group;
             }
             "UNNEST" => {

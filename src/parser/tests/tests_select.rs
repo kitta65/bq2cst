@@ -632,6 +632,28 @@ exprs:
         )),
         Box::new(SuccessTestCase::new(
             "\
+SELECT ((SELECT 1))
+",
+            // NOTE outer () is GroupedExpr
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (GroupedExpr)
+  expr:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 SELECT (SELECT 1 EXCEPT DISTINCT SELECT 2);
 ",
             "\
@@ -654,6 +676,82 @@ exprs:
       - self: 2 (NumericLiteral)
 semicolon:
   self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM (
+  (SELECT 1)
+  UNION ALL SELECT 2
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: UNION (SetOperator)
+      distinct_or_all:
+        self: ALL (Keyword)
+      left:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+      right:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM (
+  ((SELECT 1))
+  UNION ALL SELECT 2
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: UNION (SetOperator)
+      distinct_or_all:
+        self: ALL (Keyword)
+      left:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: ( (GroupedStatement)
+          rparen:
+            self: ) (Symbol)
+          stmt:
+            self: SELECT (SelectStatement)
+            exprs:
+            - self: 1 (NumericLiteral)
+      right:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 2 (NumericLiteral)
 ",
             0,
         )),

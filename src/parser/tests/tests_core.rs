@@ -1046,6 +1046,8 @@ exprs:
             "\
 SELECT ARRAY(SELECT 1 UNION ALL SELECT 2),
 ",
+            // TODO strictly speaking,
+            // SetOperator should not appear in args because it is not a subtype of Expr.
             "\
 self: SELECT (SelectStatement)
 exprs:
