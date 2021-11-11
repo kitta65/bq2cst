@@ -60,6 +60,27 @@ stmt:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+((SELECT 1));
+",
+            "\
+self: ( (GroupedStatement)
+rparen:
+  self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+stmt:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+",
+            0,
+        )),
         // ----- set operator -----
         Box::new(SuccessTestCase::new(
             "\
@@ -634,12 +655,13 @@ exprs:
             "\
 SELECT ((SELECT 1))
 ",
-            // NOTE outer () is GroupedExpr
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: ( (GroupedExpr)
-  expr:
+- self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
     self: ( (GroupedStatement)
     rparen:
       self: ) (Symbol)
@@ -647,8 +669,6 @@ exprs:
       self: SELECT (SelectStatement)
       exprs:
       - self: 1 (NumericLiteral)
-  rparen:
-    self: ) (Symbol)
 ",
             0,
         )),

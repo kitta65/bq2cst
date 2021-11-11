@@ -1073,6 +1073,29 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT ARRAY((SELECT 1))
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  func:
+    self: ARRAY (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+            0,
+        )),
         // ST_GEOGFROMTEXT
         Box::new(SuccessTestCase::new(
             "\

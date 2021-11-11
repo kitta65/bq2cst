@@ -127,7 +127,7 @@ export type CallingFunctionGeneral = Expr & {
   children: {
     func: { Node: Identifier | DotOperator };
     distinct?: NodeChild;
-    args?: { NodeVec: Expr[] & UnknownNode[] };
+    args?: { NodeVec: (Expr & UnknownNode | SelectStatement)[] };
     ignore_nulls?: NodeVecChild;
     orderby?: NodeChild;
     limit?: NodeChild;

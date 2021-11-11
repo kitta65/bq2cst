@@ -255,10 +255,20 @@ impl Parser {
             "(" => {
                 self.next_token()?; // ( -> expr
                 let mut exprs;
-                if self.get_token(0)?.in_(&vec!["WITH", "SELECT"]) {
+                let mut statement_flg = false;
+                let mut offset = 0;
+                loop {
+                    if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
+                        statement_flg = true;
+                        break;
+                    } else if !self.get_token(offset)?.is("(") {
+                        break;
+                    }
+                    offset += 1;
+                }
+                if statement_flg {
                     left.node_type = NodeType::GroupedStatement;
-                    exprs = vec![self.parse_select_statement(false, true)?];
-                    left.push_node("stmt", exprs.pop().unwrap());
+                    left.push_node("stmt", self.parse_select_statement(false, true)?);
                 } else {
                     exprs = self.parse_exprs(&vec![], true)?; // parse alias in the case of struct
                     if exprs.len() == 1 {
