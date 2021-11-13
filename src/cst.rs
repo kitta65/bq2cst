@@ -56,6 +56,7 @@ pub enum NodeType {
     ExportStatement,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
+    ForStatement,
     GrantStatement,
     GroupedExpr,             // (1)
     GroupedExprs,            // (1, 2, 3)

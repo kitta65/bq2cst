@@ -875,7 +875,7 @@ semicolon:
 ",
             0,
         )),
-        // ----- WHILE statement -----
+        // ----- BREAK CONTINUE statement -----
         Box::new(SuccessTestCase::new(
             "\
 WHILE TRUE DO
@@ -905,6 +905,81 @@ end_while:
 - self: WHILE (Keyword)
 semicolon:
   self: ; (Symbol)
+",
+            0,
+        )),
+        // ----- FOR statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+FOR record IN (SELECT 1) DO
+  SELECT record;
+END FOR
+",
+            "\
+self: FOR (ForStatement)
+do:
+  self: DO (KeywordWithStatements)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: record (Identifier)
+    semicolon:
+      self: ; (Symbol)
+end_for:
+- self: END (Keyword)
+- self: FOR (Keyword)
+ident:
+  self: record (Identifier)
+in:
+  self: IN (KeywordWithStatement)
+  table_expression:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+label: FOR record IN (SELECT 1) DO
+  BREAK label;
+END FOR label
+",
+            "\
+self: FOR (ForStatement)
+colon:
+  self: : (Symbol)
+do:
+  self: DO (KeywordWithStatements)
+  stmts:
+  - self: BREAK (BreakContinueStatement)
+    label:
+      self: label (Identifier)
+    semicolon:
+      self: ; (Symbol)
+end_for:
+- self: END (Keyword)
+- self: FOR (Keyword)
+ident:
+  self: record (Identifier)
+in:
+  self: IN (KeywordWithStatement)
+  table_expression:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+leading_label:
+  self: label (Identifier)
+trailing_label:
+  self: label (Identifier)
 ",
             0,
         )),

@@ -45,6 +45,7 @@ export type UnknownNode =
   | ExecuteStatement
   | ExportStatement
   | ExtractArgument
+  | ForStatement
   | ForSystemTimeAsOfClause
   | GrantStatement
   | GroupedExpr
@@ -628,6 +629,16 @@ export type ExtractArgument = BaseNode & {
     extract_from: NodeChild;
     at_time_zone: NodeVecChild;
     time_zone: NodeChild;
+  };
+};
+
+export type ForStatement = LabelableStatement & {
+  node_type: "ForStatement";
+  children: {
+    ident: NodeChild;
+    in: NodeChild;
+    do: NodeChild;
+    end_for: NodeVecChild;
   };
 };
 
