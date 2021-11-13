@@ -27,6 +27,8 @@ export type UnknownNode =
   | CallStatement
   | CaseExpr
   | CaseExprArm
+  | CaseStatement
+  | CaseStatementArm
   | CastArgument
   | Comment
   | CreateFunctionStatement
@@ -418,8 +420,8 @@ export type CaseStatement = XXXStatement & {
   };
 };
 
-export type CaseExprArm = BaseNode & {
-  node_type: "CaseExprArm";
+export type CaseStatementArm = BaseNode & {
+  node_type: "CaseStatementArm";
   children: {
     expr?: NodeChild;
     then?: NodeChild;
