@@ -75,9 +75,10 @@ export type UnknownNode =
   | Parameter
   | PivotOperator
   | PivotConfig
-  | SelectStatement
   | RaiseStatement
+  | RepeatStatement
   | RevokeStatement
+  | SelectStatement
   | SetOperator
   | SetStatement
   | SingleTokenStatement
@@ -881,6 +882,33 @@ export type PivotConfig = BaseNode & {
   };
 };
 
+export type RaiseStatement = XXXStatement & {
+  node_type: "RaiseStatement";
+  children: {
+    using?: NodeChild;
+  };
+};
+
+export type RepeatStatement = LabelableStatement & {
+  node_type: "RepeatStatement";
+  children: {
+    stmts?: NodeVecChild;
+    until: NodeChild;
+    end_repeat: NodeVecChild;
+  };
+};
+
+export type RevokeStatement = XXXStatement & {
+  node_type: "RevokeStatement";
+  children: {
+    roles: NodeVecChild;
+    on: NodeChild;
+    resource_type: NodeChild;
+    ident: NodeChild;
+    from: NodeChild;
+  };
+};
+
 export type SelectStatement = XXXStatement & {
   token: Token;
   node_type: "SelectStatement";
@@ -897,24 +925,6 @@ export type SelectStatement = XXXStatement & {
     window?: NodeChild;
     orderby?: NodeChild;
     limit?: NodeChild;
-  };
-};
-
-export type RaiseStatement = XXXStatement & {
-  node_type: "RaiseStatement";
-  children: {
-    using?: NodeChild;
-  };
-};
-
-export type RevokeStatement = XXXStatement & {
-  node_type: "RevokeStatement";
-  children: {
-    roles: NodeVecChild;
-    on: NodeChild;
-    resource_type: NodeChild;
-    ident: NodeChild;
-    from: NodeChild;
   };
 };
 

@@ -781,6 +781,73 @@ stmts:
 ",
             0,
         )),
+        // ----- LOOP statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+REPEAT
+  SELECT 1;
+UNTIL true
+END REPEAT;
+",
+            "\
+self: REPEAT (RepeatStatement)
+end_repeat:
+- self: END (Keyword)
+- self: REPEAT (Keyword)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+until:
+  self: UNTIL (KeywordWithExpr)
+  expr:
+    self: true (BooleanLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+label: REPEAT
+  SELECT 1;
+  SELECT 2;
+UNTIL true
+END REPEAT label;
+",
+            "\
+self: REPEAT (RepeatStatement)
+colon:
+  self: : (Symbol)
+end_repeat:
+- self: END (Keyword)
+- self: REPEAT (Keyword)
+leading_label:
+  self: label (Identifier)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+trailing_label:
+  self: label (Identifier)
+until:
+  self: UNTIL (KeywordWithExpr)
+  expr:
+    self: true (BooleanLiteral)
+",
+            0,
+        )),
         // ----- WHILE statement -----
         Box::new(SuccessTestCase::new(
             "\

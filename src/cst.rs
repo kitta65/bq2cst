@@ -86,6 +86,7 @@ pub enum NodeType {
     PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
+    RepeatStatement,
     RevokeStatement,
     SelectStatement,      // SELECT 1;
     SetOperator,          // UNION | INTERSECT | EXCEPT

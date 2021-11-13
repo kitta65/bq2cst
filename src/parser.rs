@@ -817,6 +817,7 @@ impl Parser {
             }
             "CASE" => self.parse_case_statement(semicolon)?,
             "LOOP" => self.parse_loop_statement(semicolon)?,
+            "REPEAT" => self.parse_repeat_statement(semicolon)?,
             "WHILE" => self.parse_while_statement(semicolon)?,
             "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" => {
                 self.parse_break_continue_statement(semicolon)?
@@ -2389,6 +2390,22 @@ impl Parser {
             loop_.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }
         Ok(loop_)
+    }
+    fn parse_repeat_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut repeat = self.parse_keyword_with_statements(&vec!["UNTIL"])?;
+        repeat.node_type = NodeType::RepeatStatement;
+        self.next_token()?; // -> UNTIL
+        let mut until = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> expr
+        until.push_node("expr", self.parse_expr(usize::MAX, false)?);
+        repeat.push_node("until", until);
+        self.next_token()?; // -> END
+        repeat.push_node_vec("end_repeat", self.parse_n_keywords(2)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            repeat.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(repeat)
     }
     fn parse_while_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut while_ = self.construct_node(NodeType::WhileStatement)?;
