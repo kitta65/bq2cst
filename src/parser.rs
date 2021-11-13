@@ -815,28 +815,21 @@ impl Parser {
                 }
                 self.parse_begin_statement(semicolon)?
             }
+            "CASE" => self.parse_case_statement(semicolon)?,
             "LOOP" => self.parse_loop_statement(semicolon)?,
             "WHILE" => self.parse_while_statement(semicolon)?,
-            "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" | "RETURN" => {
-                self.parse_single_token_statement(semicolon)?
+            "BREAK" | "LEAVE" | "CONTINUE" | "ITERATE" => {
+                self.parse_break_continue_statement(semicolon)?
             }
             "COMMIT" | "ROLLBACK" => self.parse_transaction_statement(semicolon)?,
             "RAISE" => self.parse_raise_statement(semicolon)?,
-            "CASE" => self.parse_case_statement(semicolon)?,
+            "RETURN" => self.parse_single_token_statement(semicolon)?,
             "CALL" => self.parse_call_statement(semicolon)?,
             // DEBUG
             "ASSERT" => self.parse_assert_satement(semicolon)?,
             // other
             "EXPORT" => self.parse_export_statement(semicolon)?,
-            _ => {
-                return Err(BQ2CSTError::from_token(
-                    self.get_token(0)?,
-                    format!(
-                        "Calling `parse_statement()` is not allowed here: {:?}",
-                        self.get_token(0)?
-                    ),
-                ))
-            }
+            _ => self.parse_labeled_statement(semicolon)?,
         };
         Ok(node)
     }
@@ -2337,6 +2330,49 @@ impl Parser {
             if_.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }
         Ok(if_)
+    }
+    fn parse_labeled_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let label = self.construct_node(NodeType::Identifier)?;
+        self.next_token()?; // -> :
+        let colon = self.construct_node(NodeType::Symbol)?;
+        self.next_token()?; // -> stmt
+        let mut stmt = self.parse_statement(false)?;
+        if stmt
+            .children
+            .keys()
+            .any(|k| k == "leading_label" || k == "colon")
+        {
+            return Err(BQ2CSTError::from_token(
+                self.get_token(0)?,
+                format!(
+                    "The statement is not properly labeled: {:?}",
+                    self.get_token(0)?
+                ),
+            ));
+        };
+        stmt.push_node("leading_label", label);
+        stmt.push_node("colon", colon);
+        if !self.get_token(1)?.is(";") {
+            self.next_token()?; // -> trailing_label
+            stmt.push_node("trailing_label", self.construct_node(NodeType::Identifier)?);
+        }
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            stmt.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(stmt)
+    }
+    fn parse_break_continue_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut node = self.construct_node(NodeType::BreakContinueStatement)?;
+        if !self.get_token(1)?.is(";") {
+            self.next_token()?; // -> label
+            node.push_node("label", self.construct_node(NodeType::Identifier)?);
+        }
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            node.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(node)
     }
     fn parse_loop_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut loop_ = self.parse_keyword_with_statements(&vec!["END"])?;

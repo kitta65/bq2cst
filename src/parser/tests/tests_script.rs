@@ -337,6 +337,31 @@ then:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+label: BEGIN
+  SELECT 1;
+END;
+",
+            "\
+self: BEGIN (BeginStatement)
+colon:
+  self: : (Symbol)
+end:
+  self: END (Keyword)
+leading_label:
+  self: label (Identifier)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+",
+            0,
+        )),
         // ----- CASE statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -718,7 +743,39 @@ stmts:
   - self: 1 (NumericLiteral)
   semicolon:
     self: ; (Symbol)
-- self: BREAK (SingleTokenStatement)
+- self: BREAK (BreakContinueStatement)
+  semicolon:
+    self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+label: loop
+  SELECT 1;
+  BREAK label;
+END loop;
+",
+            "\
+self: loop (LoopStatement)
+colon:
+  self: : (Symbol)
+end_loop:
+- self: END (Keyword)
+- self: loop (Keyword)
+leading_label:
+  self: label (Identifier)
+semicolon:
+  self: ; (Symbol)
+stmts:
+- self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  semicolon:
+    self: ; (Symbol)
+- self: BREAK (BreakContinueStatement)
+  label:
+    self: label (Identifier)
   semicolon:
     self: ; (Symbol)
 ",
@@ -767,13 +824,13 @@ condition:
 do:
   self: DO (KeywordWithStatements)
   stmts:
-  - self: ITERATE (SingleTokenStatement)
+  - self: ITERATE (BreakContinueStatement)
     semicolon:
       self: ; (Symbol)
-  - self: LEAVE (SingleTokenStatement)
+  - self: LEAVE (BreakContinueStatement)
     semicolon:
       self: ; (Symbol)
-  - self: CONTINUE (SingleTokenStatement)
+  - self: CONTINUE (BreakContinueStatement)
     semicolon:
       self: ; (Symbol)
 end_while:

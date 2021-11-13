@@ -19,6 +19,7 @@ export type UnknownNode =
   | BeginStatement
   | BetweenOperator
   | BooleanLiteral
+  | BreakContinueStatement
   | CallingArrayAccessingFunction
   | CallingFunction
   | CallingTableFunction
@@ -151,6 +152,14 @@ export type FromItemExpr = Expr & {
   children: {
     pivot?: NodeChild;
     unpivot?: NodeChild;
+  };
+};
+
+export type LabelableStatement = XXXStatement & {
+  children: {
+    leading_label?: NodeChild;
+    colon?: NodeChild;
+    trailing_label?: NodeChild;
   };
 };
 
@@ -288,7 +297,7 @@ export type BinaryOperator = Expr & {
   };
 };
 
-export type BeginStatement = XXXStatement & {
+export type BeginStatement = LabelableStatement & {
   node_type: "BeginStatement";
   children: {
     stmts?: NodeVecChild;
@@ -311,6 +320,13 @@ export type BetweenOperator = Expr & {
 
 export type BooleanLiteral = Expr & {
   node_type: "BooleanLiteral";
+};
+
+export type BreakContinueStatement = XXXStatement & {
+  node_type: "BreakContinueStatement";
+  children: {
+    label?: NodeChild;
+  };
 };
 
 export type CallingArrayAccessingFunction = CallingFunctionGeneral & {
@@ -805,7 +821,7 @@ export type LimitClause = BaseNode & {
   };
 };
 
-export type LoopStatement = XXXStatement & {
+export type LoopStatement = LabelableStatement & {
   node_type: "LoopStatement";
   children: {
     stmts?: NodeVecChild;
@@ -1048,7 +1064,7 @@ export type WhenClause = BaseNode & {
   };
 };
 
-export type WhileStatement = XXXStatement & {
+export type WhileStatement = LabelableStatement & {
   node_type: "WhileStatement";
   children: {
     condition: NodeChild;

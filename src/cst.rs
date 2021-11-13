@@ -26,7 +26,8 @@ pub enum NodeType {
     BinaryOperator, // + | - | = | ...
     BeginStatement,
     BetweenOperator,
-    BooleanLiteral,                // TRUE | FALSE
+    BooleanLiteral, // TRUE | FALSE
+    BreakContinueStatement,
     CallingArrayAccessingFunction, // OFFSET(1) | SAFE_ORDINAL(3)
     CallingFunction,               // (
     CallingTableFunction,          // (
@@ -120,7 +121,7 @@ pub enum NodeType {
 pub struct Node {
     pub token: Option<Token>,
     pub node_type: NodeType,
-    children: HashMap<String, ContentType>,
+    pub children: HashMap<String, ContentType>,
 }
 
 impl Node {

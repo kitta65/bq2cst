@@ -24,7 +24,9 @@ leading_comments:
         Box::new(ErrorTestCase::new(
             "\
 HOGE
-", 1, 1,
+",
+            usize::MAX,
+            usize::MAX,
         )),
         // ----- eof -----
         Box::new(SuccessTestCase::new(
