@@ -336,6 +336,139 @@ then:
 ",
             0,
         )),
+        // ----- CASE statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+CASE WHEN true THEN SELECT 1; END CASE;
+",
+            "\
+self: CASE (CaseStatement)
+arms:
+- self: WHEN (CaseStatementArm)
+  expr:
+    self: true (BooleanLiteral)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  then:
+    self: THEN (Keyword)
+end_case:
+- self: END (Keyword)
+- self: CASE (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CASE
+  WHEN true THEN
+    SELECT 1;
+    SELECT 2;
+  WHEN true THEN SELECT 3;
+END CASE;
+",
+            "\
+self: CASE (CaseStatement)
+arms:
+- self: WHEN (CaseStatementArm)
+  expr:
+    self: true (BooleanLiteral)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  then:
+    self: THEN (Keyword)
+- self: WHEN (CaseStatementArm)
+  expr:
+    self: true (BooleanLiteral)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 3 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  then:
+    self: THEN (Keyword)
+end_case:
+- self: END (Keyword)
+- self: CASE (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CASE expr
+  WHEN 'x' THEN SELECT 1;
+  ELSE SELECT 2;
+END CASE;
+",
+            "\
+self: CASE (CaseStatement)
+arms:
+- self: WHEN (CaseStatementArm)
+  expr:
+    self: 'x' (StringLiteral)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+  then:
+    self: THEN (Keyword)
+- self: ELSE (CaseStatementArm)
+  stmts:
+  - self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+    semicolon:
+      self: ; (Symbol)
+end_case:
+- self: END (Keyword)
+- self: CASE (Keyword)
+expr:
+  self: expr (Identifier)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CASE WHEN true THEN ELSE END CASE
+",
+            "\
+self: CASE (CaseStatement)
+arms:
+- self: WHEN (CaseStatementArm)
+  expr:
+    self: true (BooleanLiteral)
+  stmts: []
+  then:
+    self: THEN (Keyword)
+- self: ELSE (CaseStatementArm)
+  stmts: []
+end_case:
+- self: END (Keyword)
+- self: CASE (Keyword)
+",
+            0,
+        )),
         // ----- IF statement -----
         Box::new(SuccessTestCase::new(
             "\

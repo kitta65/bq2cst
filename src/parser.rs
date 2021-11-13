@@ -383,7 +383,7 @@ impl Parser {
                 }
                 let mut arms = Vec::new();
                 while !self.get_token(0)?.is("ELSE") {
-                    let mut arm = self.construct_node(NodeType::CaseArm)?;
+                    let mut arm = self.construct_node(NodeType::CaseExprArm)?;
                     self.next_token()?; // WHEN -> expr
                     arm.push_node("expr", self.parse_expr(usize::MAX, false)?);
                     self.next_token()?; // expr ->THEN
@@ -393,7 +393,7 @@ impl Parser {
                     self.next_token()?; // result_expr -> ELSE, result_expr -> WHEN
                     arms.push(arm)
                 }
-                let mut else_ = self.construct_node(NodeType::CaseArm)?;
+                let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
                 self.next_token()?; // ELSE -> result_expr
                 else_.push_node("result", self.parse_expr(usize::MAX, false)?);
                 arms.push(else_);
@@ -824,6 +824,7 @@ impl Parser {
             }
             "COMMIT" | "ROLLBACK" => self.parse_transaction_statement(semicolon)?,
             "RAISE" => self.parse_raise_statement(semicolon)?,
+            "CASE" => self.parse_case_statement(semicolon)?,
             "CALL" => self.parse_call_statement(semicolon)?,
             // DEBUG
             "ASSERT" => self.parse_assert_satement(semicolon)?,
@@ -2408,6 +2409,48 @@ impl Parser {
             raise.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }
         Ok(raise)
+    }
+    fn parse_case_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut case = self.construct_node(NodeType::CaseStatement)?;
+        if !self.get_token(1)?.is("WHEN") {
+            self.next_token()?; // -> expr
+            case.push_node("expr", self.parse_expr(usize::MAX, false)?);
+        }
+        let mut arms = Vec::new();
+        while self.get_token(1)?.is("WHEN") {
+            self.next_token()?; // -> WHEN
+            let mut when = self.construct_node(NodeType::CaseStatementArm)?;
+            self.next_token()?; // -> expr
+            when.push_node("expr", self.parse_expr(usize::MAX, false)?);
+            self.next_token()?; // -> THEN
+            when.push_node("then", self.construct_node(NodeType::Keyword)?);
+            let mut stmts = Vec::new();
+            while !self.get_token(1)?.in_(&vec!["WHEN", "ELSE", "END"]) {
+                self.next_token()?; // -> stmt
+                stmts.push(self.parse_statement(true)?);
+            }
+            when.push_node_vec("stmts", stmts);
+            arms.push(when)
+        }
+        if self.get_token(1)?.is("ELSE") {
+            self.next_token()?; // -> ELSE
+            let mut else_ = self.construct_node(NodeType::CaseStatementArm)?;
+            let mut stmts = Vec::new();
+            while !self.get_token(1)?.is("END") {
+                self.next_token()?; // -> stmt
+                stmts.push(self.parse_statement(true)?);
+            }
+            else_.push_node_vec("stmts", stmts);
+            arms.push(else_);
+        }
+        case.push_node_vec("arms", arms);
+        self.next_token()?; // -> END
+        case.push_node_vec("end_case", self.parse_n_keywords(2)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            case.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(case)
     }
     fn parse_call_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut call = self.construct_node(NodeType::CallStatement)?;

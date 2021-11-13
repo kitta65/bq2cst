@@ -24,8 +24,8 @@ export type UnknownNode =
   | CallingTableFunction
   | CallingUnnest
   | CallStatement
-  | CaseArm
   | CaseExpr
+  | CaseExprArm
   | CastArgument
   | Comment
   | CreateFunctionStatement
@@ -373,8 +373,17 @@ export type CallStatement = XXXStatement & {
   };
 };
 
-export type CaseArm = BaseNode & {
-  node_type: "CaseArm";
+export type CaseExpr = Expr & {
+  node_type: "CaseExpr";
+  children: {
+    expr?: NodeChild;
+    arms: NodeVecChild;
+    end: NodeChild;
+  };
+};
+
+export type CaseExprArm = BaseNode & {
+  node_type: "CaseExprArm";
   children: {
     expr?: NodeChild;
     then?: NodeChild;
@@ -382,12 +391,21 @@ export type CaseArm = BaseNode & {
   };
 };
 
-export type CaseExpr = Expr & {
-  node_type: "CaseExpr";
+export type CaseStatement = XXXStatement & {
+  node_type: "CaseStatement";
   children: {
     expr?: NodeChild;
     arms: NodeVecChild;
-    end: NodeChild;
+    end_case: NodeVecChild;
+  };
+};
+
+export type CaseExprArm = BaseNode & {
+  node_type: "CaseExprArm";
+  children: {
+    expr?: NodeChild;
+    then?: NodeChild;
+    stmts: NodeVecChild;
   };
 };
 

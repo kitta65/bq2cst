@@ -804,21 +804,21 @@ self: SELECT (SelectStatement)
 exprs:
 - self: CASE (CaseExpr)
   arms:
-  - self: WHEN (CaseArm)
+  - self: WHEN (CaseExprArm)
     expr:
       self: 1 (NumericLiteral)
     result:
       self: 'one' (StringLiteral)
     then:
       self: THEN (Keyword)
-  - self: WHEN (CaseArm)
+  - self: WHEN (CaseExprArm)
     expr:
       self: 2 (NumericLiteral)
     result:
       self: 'two' (StringLiteral)
     then:
       self: THEN (Keyword)
-  - self: ELSE (CaseArm)
+  - self: ELSE (CaseExprArm)
     result:
       self: NULL (NullLiteral)
   end:
@@ -837,7 +837,7 @@ self: SELECT (SelectStatement)
 exprs:
 - self: CASE (CaseExpr)
   arms:
-  - self: WHEN (CaseArm)
+  - self: WHEN (CaseExprArm)
     expr:
       self: = (BinaryOperator)
       left:
@@ -848,7 +848,7 @@ exprs:
       self: 'one' (StringLiteral)
     then:
       self: THEN (Keyword)
-  - self: ELSE (CaseArm)
+  - self: ELSE (CaseExprArm)
     result:
       self: ( (CallingFunction)
       func:

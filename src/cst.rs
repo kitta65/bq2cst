@@ -32,9 +32,11 @@ pub enum NodeType {
     CallingTableFunction,          // (
     CallingUnnest,                 // UNNEST([1, 2])
     CallStatement,                 // CALL procedure_name (arg);
-    CaseArm,                       // WHEN a THEN b
     CaseExpr,                      // CASE WHEN a then b ELSE c END
-    CastArgument,                  // x AS INT64
+    CaseExprArm,                   // WHEN a THEN b
+    CaseStatement,
+    CaseStatementArm,
+    CastArgument, // x AS INT64
     CreateFunctionStatement,
     CreateProcedureStatement,
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
@@ -161,7 +163,11 @@ impl Node {
                     res.push(n.format(indent + 1, false));
                 }
                 Some(ContentType::NodeVec(ns)) => {
-                    res.push(format!("{}{}:", " ".repeat(indent * 2), k));
+                    let mut empty_array = " []";
+                    if ns.len() != 0 {
+                        empty_array = ""
+                    };
+                    res.push(format!("{}{}:{}", " ".repeat(indent * 2), k, empty_array));
                     for n in ns {
                         res.push(n.format(indent + 1, true));
                     }
