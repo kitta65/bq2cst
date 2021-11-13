@@ -720,9 +720,7 @@ impl Parser {
             self.next_token()?; // -> stmt
             stmts.push(self.parse_statement(true)?);
         }
-        if 0 < stmts.len() {
-            node.push_node_vec("stmts", stmts);
-        }
+        node.push_node_vec("stmts", stmts);
         Ok(node)
     }
     fn parse_n_keywords(&mut self, n: usize) -> BQ2CSTResult<Vec<Node>> {
@@ -2326,7 +2324,7 @@ impl Parser {
             if_.push_node_vec("elseifs", elseifs);
         }
 
-        if self.get_token(1)?.is("ELSE") && semicolon {
+        if self.get_token(1)?.is("ELSE") {
             self.next_token()?; // -> ELSE
             if_.push_node("else", self.parse_keyword_with_statements(&vec!["END"])?);
         }
@@ -2334,7 +2332,7 @@ impl Parser {
         let end = self.construct_node(NodeType::Keyword)?;
         self.next_token()?; // -> IF
         if_.push_node_vec("end_if", vec![end, self.construct_node(NodeType::Keyword)?]);
-        if self.get_token(1)?.is(";") {
+        if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             if_.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }

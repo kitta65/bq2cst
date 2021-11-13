@@ -333,6 +333,7 @@ semicolon:
   self: ; (Symbol)
 then:
   self: THEN (KeywordWithStatements)
+  stmts: []
 ",
             0,
         )),
@@ -485,6 +486,7 @@ semicolon:
   self: ; (Symbol)
 then:
   self: THEN (KeywordWithStatements)
+  stmts: []
 ",
             0,
         )),
@@ -537,6 +539,7 @@ elseifs:
     self: TRUE (BooleanLiteral)
   then:
     self: THEN (KeywordWithStatements)
+    stmts: []
 end_if:
 - self: END (Keyword)
 - self: IF (Keyword)
@@ -570,6 +573,7 @@ condition:
   self: TRUE (BooleanLiteral)
 else:
   self: ELSE (KeywordWithStatements)
+  stmts: []
 elseifs:
 - self: ELSEIF (ElseIfClause)
   condition:
@@ -605,6 +609,7 @@ semicolon:
   self: ; (Symbol)
 then:
   self: THEN (KeywordWithStatements)
+  stmts: []
 ",
             0,
         )),
@@ -633,6 +638,7 @@ semicolon:
   self: ; (Symbol)
 then:
   self: THEN (KeywordWithStatements)
+  stmts: []
 ",
             0,
         )),
@@ -668,6 +674,7 @@ semicolon:
   self: ; (Symbol)
 then:
   self: THEN (KeywordWithStatements)
+  stmts: []
 ",
             0,
         )),
