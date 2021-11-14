@@ -2440,12 +2440,9 @@ impl Parser {
         self.next_token()?; // -> ident
         for_.push_node("ident", self.construct_node(NodeType::Identifier)?);
         self.next_token()?; // -> IN
-        let mut in_ = self.construct_node(NodeType::KeywordWithStatement)?;
+        let mut in_ = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
         self.next_token()?; // -> (table_expression)
-        in_.push_node(
-            "table_expression",
-            self.parse_select_statement(false, true)?,
-        );
+        in_.push_node("group", self.parse_select_statement(false, true)?);
         for_.push_node("in", in_);
         self.next_token()?; // -> DO
         for_.push_node("do", self.parse_keyword_with_statements(&vec!["END"])?);

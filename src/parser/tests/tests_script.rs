@@ -931,8 +931,8 @@ end_for:
 ident:
   self: record (Identifier)
 in:
-  self: IN (KeywordWithStatement)
-  table_expression:
+  self: IN (KeywordWithGroupedXXX)
+  group:
     self: ( (GroupedStatement)
     rparen:
       self: ) (Symbol)
@@ -967,8 +967,8 @@ end_for:
 ident:
   self: record (Identifier)
 in:
-  self: IN (KeywordWithStatement)
-  table_expression:
+  self: IN (KeywordWithGroupedXXX)
+  group:
     self: ( (GroupedStatement)
     rparen:
       self: ) (Symbol)

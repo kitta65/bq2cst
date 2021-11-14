@@ -905,7 +905,7 @@ export type RaiseStatement = XXXStatement & {
 export type RepeatStatement = LabelableStatement & {
   node_type: "RepeatStatement";
   children: {
-    stmts?: NodeVecChild;
+    stmts: NodeVecChild;
     until: NodeChild;
     end_repeat: NodeVecChild;
   };
