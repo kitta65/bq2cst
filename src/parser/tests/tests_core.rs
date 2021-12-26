@@ -711,7 +711,7 @@ exprs:
 ",
             0,
         )),
-        // interval literal
+        // ----- interval -----
         Box::new(SuccessTestCase::new(
             "\
 SELECT
