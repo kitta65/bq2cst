@@ -41,6 +41,7 @@ pub enum NodeType {
     CreateFunctionStatement,
     CreateProcedureStatement,
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
+    CreateRowAccessPolicyStatement,
     CreateSchemaStatement,
     CreateTableStatement,
     CreateViewStatement,
@@ -50,6 +51,7 @@ pub enum NodeType {
     DotOperator,
     DropColumnClause, // DROP COLUMN x
     DropStatement,
+    DropRowAccessPolicyStatement,
     ElseIfClause, // ELSEIF true SELECT;
     EOF,
     ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'

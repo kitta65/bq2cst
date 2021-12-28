@@ -1031,6 +1031,101 @@ what:
 ",
             0,
         )),
+        // ----- CREATE ROW ACCESS POLICY statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE ROW ACCESS POLICY new_filter
+ON tablename
+FILTER USING (TRUE)
+",
+            "\
+self: CREATE (CreateRowAccessPolicyStatement)
+filter:
+  self: FILTER (Keyword)
+ident:
+  self: new_filter (Identifier)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: ( (GroupedExpr)
+    expr:
+      self: TRUE (BooleanLiteral)
+    rparen:
+      self: ) (Symbol)
+what:
+- self: ROW (Keyword)
+- self: ACCESS (Keyword)
+- self: POLICY (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE OR REPLACE ROW ACCESS POLICY IF NOT EXISTS new_filter
+ON tablename
+GRANT TO ('a.example.com', 'b.example.com')
+FILTER USING (email = SESSION_USER())
+;
+",
+            "\
+self: CREATE (CreateRowAccessPolicyStatement)
+filter:
+  self: FILTER (Keyword)
+grant:
+  self: GRANT (Keyword)
+ident:
+  self: new_filter (Identifier)
+if_not_exists:
+- self: IF (Keyword)
+- self: NOT (Keyword)
+- self: EXISTS (Keyword)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+or_replace:
+- self: OR (Keyword)
+- self: REPLACE (Keyword)
+semicolon:
+  self: ; (Symbol)
+to:
+  self: TO (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: 'a.example.com' (StringLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 'b.example.com' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+using:
+  self: USING (KeywordWithExpr)
+  expr:
+    self: ( (GroupedExpr)
+    expr:
+      self: = (BinaryOperator)
+      left:
+        self: email (Identifier)
+      right:
+        self: ( (CallingFunction)
+        func:
+          self: SESSION_USER (Identifier)
+        rparen:
+          self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+what:
+- self: ROW (Keyword)
+- self: ACCESS (Keyword)
+- self: POLICY (Keyword)
+",
+            0,
+        )),
         // ----- ALTER SCHEMA statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -1461,6 +1556,7 @@ what:
             0,
         )),
         // ----- DROP statement -----
+        // general
         Box::new(SuccessTestCase::new(
             "\
 DROP TABLE example;
@@ -1544,6 +1640,72 @@ table:
   self: TABLE (Keyword)
 what:
   self: FUNCTION (Keyword)
+",
+            0,
+        )),
+        // row access policy
+        Box::new(SuccessTestCase::new(
+            "\
+DROP ROW ACCESS POLICY ident ON tablename;
+",
+            "\
+self: DROP (DropRowAccessPolicyStatement)
+ident:
+  self: ident (Identifier)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+- self: ROW (Keyword)
+- self: ACCESS (Keyword)
+- self: POLICY (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+DROP ROW ACCESS POLICY IF EXISTS ident ON tablename;
+",
+            "\
+self: DROP (DropRowAccessPolicyStatement)
+ident:
+  self: ident (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+- self: ROW (Keyword)
+- self: ACCESS (Keyword)
+- self: POLICY (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+DROP ALL ROW ACCESS POLICIES ON tablename;
+",
+            "\
+self: DROP (DropRowAccessPolicyStatement)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+- self: ALL (Keyword)
+- self: ROW (Keyword)
+- self: ACCESS (Keyword)
+- self: POLICIES (Keyword)
 ",
             0,
         )),

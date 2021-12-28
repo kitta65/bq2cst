@@ -806,6 +806,7 @@ impl Parser {
                         "VIEW" => return self.parse_create_view_statement(semicolon),
                         "FUNCTION" => return self.parse_create_function_statement(semicolon),
                         "PROCEDURE" => return self.parse_create_procedure_statement(semicolon),
+                        "ROW" => return self.parse_create_row_access_policy_statement(semicolon),
                         "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => {
                             return self.parse_create_reservation_statement(semicolon)
                         }
@@ -846,7 +847,13 @@ impl Parser {
                     ),
                 ));
             }
-            "DROP" => self.parse_drop_statement(semicolon)?,
+            "DROP" => {
+                if self.get_token(1)?.in_(&vec!["ALL", "ROW"]) {
+                    self.parse_drop_row_access_policy_statement(semicolon)?
+                } else {
+                    self.parse_drop_statement_general(semicolon)?
+                }
+            }
             // DCL
             "GRANT" => self.parse_grant_statement(semicolon)?,
             "REVOKE" => self.parse_revoke_statement(semicolon)?,
@@ -1954,6 +1961,48 @@ impl Parser {
         }
         Ok(create)
     }
+    fn parse_create_row_access_policy_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut create = self.construct_node(NodeType::CreateRowAccessPolicyStatement)?;
+        if self.get_token(1)?.is("OR") {
+            self.next_token()?; // -> OR
+            create.push_node_vec("or_replace", self.parse_n_keywords(2)?);
+        }
+        self.next_token()?; // -> ROW
+        create.push_node_vec("what", self.parse_n_keywords(3)?);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+        }
+        self.next_token()?; // -> ident
+        create.push_node("ident", self.parse_identifier()?);
+        self.next_token()?; // -> ON
+        let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> tablename
+        on.push_node("expr", self.parse_identifier()?);
+        create.push_node("on", on);
+        if self.get_token(1)?.is("GRANT") {
+            self.next_token()?; // -> GRANT
+            create.push_node("grant", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> TO
+            let mut to = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
+            self.next_token()?; // -> (
+            to.push_node("group", self.parse_grouped_exprs(false)?);
+            create.push_node("to", to);
+        }
+        self.next_token()?; // -> FILTER
+        create.push_node("filter", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> USING
+        let mut using = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> (
+        using.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        create.push_node("using", using);
+
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(create)
+    }
     fn parse_alter_schema_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterSchemaStatement)?;
         self.next_token()?; // -> SCHEMA
@@ -2135,7 +2184,34 @@ impl Parser {
         }
         Ok(alter)
     }
-    fn parse_drop_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+    fn parse_drop_row_access_policy_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut drop = self.construct_node(NodeType::DropRowAccessPolicyStatement)?;
+        self.next_token()?; // -> ROW | ALL
+        if self.get_token(0)?.is("ROW") {
+            drop.push_node_vec("what", self.parse_n_keywords(3)?);
+        } else {
+            drop.push_node_vec("what", self.parse_n_keywords(4)?);
+        }
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            drop.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+        }
+        if !self.get_token(1)?.is("ON") {
+            self.next_token()?; // -> ident
+            drop.push_node("ident", self.parse_identifier()?);
+        }
+        self.next_token()?; // -> ON
+        let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> tablename
+        on.push_node("expr", self.parse_identifier()?);
+        drop.push_node("on", on);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            drop.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(drop)
+    }
+    fn parse_drop_statement_general(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut drop = self.construct_node(NodeType::DropStatement)?;
         if self.get_token(1)?.is("EXTERNAL") {
             self.next_token()?; // -> EXTERNAL

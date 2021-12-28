@@ -34,6 +34,7 @@ export type UnknownNode =
   | CreateFunctionStatement
   | CreateProcedureStatement
   | CreateReservationStatement
+  | CreateRowAccessPolicyStatement
   | CreateSchemaStatement
   | CreateTableStatement
   | CreateViewStatement
@@ -41,6 +42,7 @@ export type UnknownNode =
   | DeleteStatement
   | DotOperator
   | DropColumnClause
+  | DropRowAccessPolicyStatement
   | DropStatement
   | ElseIfClause
   | EOF
@@ -491,6 +493,21 @@ export type CreateReservationStatement = XXXStatement & {
   };
 };
 
+export type CreateRowAccessPolicyStatement = XXXStatement & {
+  node_type: "CreateRowAccessPolicyStatement";
+  children: {
+    or_replace?: NodeVecChild;
+    what: NodeVecChild;
+    if_not_exists?: NodeVecChild;
+    ident: NodeChild;
+    on: NodeChild;
+    grant?: NodeChild;
+    to?: NodeChild;
+    filter: NodeChild;
+    using: NodeChild;
+  };
+};
+
 export type CreateSchemaStatement = XXXStatement & {
   node_type: "CreateSchemaStatement";
   children: {
@@ -572,6 +589,16 @@ export type DropColumnClause = BaseNode & {
     if_exists?: NodeVecChild;
     ident: NodeChild;
     comma?: NodeChild;
+  };
+};
+
+export type DropRowAccessPolicyStatement = XXXStatement & {
+  node_type: "DropRowAccessPolicyStatement";
+  children: {
+    what: NodeVecChild;
+    if_exists?: NodeVecChild;
+    ident?: NodeChild;
+    on: NodeChild;
   };
 };
 
