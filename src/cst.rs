@@ -80,6 +80,7 @@ pub enum NodeType {
     LimitClause,
     LoopStatement,
     MergeStatement,
+    MultiTokenIdentifier,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
     OverClause,  // OVER (PARTITON BY x, y)

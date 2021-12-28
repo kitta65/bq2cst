@@ -776,6 +776,47 @@ from:
             0,
         )),
         // ----- FROM clause -----
+        // dash
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM project-id.region-asia-northeast1.INFORMATION_SCHEMA.JOBS_BY_USER
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: . (DotOperator)
+    left:
+      self: . (DotOperator)
+      left:
+        self: . (DotOperator)
+        left:
+          self: - (MultiTokenIdentifier)
+          left:
+            self: project (Identifier)
+          right:
+            self: id (Identifier)
+        right:
+          self: - (MultiTokenIdentifier)
+          left:
+            self: - (MultiTokenIdentifier)
+            left:
+              self: region (Identifier)
+            right:
+              self: asia (Identifier)
+          right:
+            self: northeast1 (Identifier)
+      right:
+        self: INFORMATION_SCHEMA (Identifier)
+    right:
+      self: JOBS_BY_USER (Identifier)
+",
+            0,
+        )),
         // alias
         Box::new(SuccessTestCase::new(
             "\

@@ -72,6 +72,7 @@ export type UnknownNode =
   | LimitClause
   | LoopStatement
   | MergeStatement
+  | MultiTokenIdentifier
   | NullLiteral
   | NumericLiteral
   | OverClause
@@ -130,7 +131,7 @@ export type NodeVecChild = { NodeVec: UnknownNode[] };
 // ----- sub types of BaseNode (abstract) -----
 export type CallingFunctionGeneral = Expr & {
   children: {
-    func: { Node: Identifier | DotOperator };
+    func: { Node: IdentifierGeneral & UnknownNode };
     distinct?: NodeChild;
     args?: { NodeVec: (Expr & UnknownNode | SelectStatement)[] };
     ignore_nulls?: NodeVecChild;
@@ -144,7 +145,7 @@ export type CallingFunctionGeneral = Expr & {
 export type Expr = BaseNode & {
   token: Token;
   children: {
-    as?: { Node: Identifier };
+    as?: { Node: Keyword };
     alias?: { Node: Identifier };
     comma?: NodeChild;
     order?: NodeChild;
@@ -559,8 +560,8 @@ export type DeleteStatement = XXXStatement & {
 export type DotOperator = IdentifierGeneral & {
   node_type: "DotOperator";
   children: {
-    left: { Node: Identifier | DotOperator };
-    right: { Node: Identifier | DotOperator };
+    left: { Node: IdentifierGeneral & UnknownNode };
+    right: { Node: IdentifierGeneral & UnknownNode };
   };
 };
 
@@ -851,6 +852,14 @@ export type MergeStatement = XXXStatement & {
     using: NodeChild;
     on: NodeChild;
     whens: NodeVecChild;
+  };
+};
+
+export type MultiTokenIdentifier = IdentifierGeneral & {
+  node_type: "MultiTokenIdentifier";
+  children: {
+    left: { Node: IdentifierGeneral & UnknownNode };
+    right: { Node: IdentifierGeneral & UnknownNode };
   };
 };
 
@@ -1158,7 +1167,7 @@ export type WithQuery = BaseNode & {
   token: Token;
   node_type: "WithQuery";
   children: {
-    as: { Node: Identifier };
+    as: { Node: Keyword };
     stmt: { Node: GroupedStatement };
     comma: NodeChild;
   };
