@@ -614,7 +614,8 @@ impl Parser {
             let order = self.construct_node(NodeType::Keyword)?;
             left.push_node("order", order);
         }
-        if self.get_token(1)?.in_(&vec!["NULLS"]) {
+        if self.get_token(1)?.in_(&vec!["NULLS"]) && self.get_token(2)?.in_(&vec!["FIRST", "LAST"])
+        {
             let mut nulls_first = Vec::new();
             self.next_token()?; // ASC -> NULLS
             nulls_first.push(self.construct_node(NodeType::Keyword)?);
