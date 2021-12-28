@@ -702,13 +702,29 @@ impl Parser {
         Ok(group)
     }
     fn parse_identifier(&mut self) -> BQ2CSTResult<Node> {
-        let mut left = self.construct_node(NodeType::Identifier)?;
+        // NOTE
+        // This method is used to parse only identifier.
+        // If you want to parse table function, you have to use parse_expr().
+        fn parse_single_or_multi_token_identifier(parser: &mut Parser) -> BQ2CSTResult<Node> {
+            let mut left = parser.construct_node(NodeType::Identifier)?;
+            while parser.get_token(1)?.is("-") {
+                parser.next_token()?; // ident -> -
+                let mut dash = parser.construct_node(NodeType::MultiTokenIdentifier)?;
+                dash.push_node("left", left);
+                parser.next_token()?; // - -> ient
+                dash.push_node("right", parser.construct_node(NodeType::Identifier)?);
+                left = dash;
+            }
+            Ok(left)
+        }
+
+        let mut left = parse_single_or_multi_token_identifier(self)?;
         while self.get_token(1)?.is(".") {
             self.next_token()?; // ident -> .
             let mut operator = self.construct_node(NodeType::DotOperator)?;
             operator.push_node("left", left);
             self.next_token()?; // . -> ident
-            operator.push_node("right", self.construct_node(NodeType::Identifier)?);
+            operator.push_node("right", parse_single_or_multi_token_identifier(self)?);
             left = operator;
         }
         Ok(left)

@@ -81,6 +81,49 @@ what:
         )),
         Box::new(SuccessTestCase::new(
             "\
+CREATE TABLE this-is-project-name.dataset.example (x int64);
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: int64 (Type)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: - (MultiTokenIdentifier)
+      left:
+        self: - (MultiTokenIdentifier)
+        left:
+          self: - (MultiTokenIdentifier)
+          left:
+            self: this (Identifier)
+          right:
+            self: is (Identifier)
+        right:
+          self: project (Identifier)
+      right:
+        self: name (Identifier)
+    right:
+      self: dataset (Identifier)
+  right:
+    self: example (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 CREATE TEMP TABLE example (x INT64, y STRING(10));
 ",
             "\
