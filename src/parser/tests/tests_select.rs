@@ -818,7 +818,7 @@ from:
         Box::new(SuccessTestCase::new(
             "\
 SELECT *
-FROM project-123.dataset.tablen-123
+FROM project-123.dataset.table-123
 ",
             "\
 self: SELECT (SelectStatement)
@@ -835,7 +835,7 @@ from:
       - self: 123. (Identifier)
       - self: dataset (Identifier)
     right:
-      self: tablen (MultiTokenIdentifier)
+      self: table (MultiTokenIdentifier)
       trailing_idents:
       - self: - (Identifier)
       - self: 123 (Identifier)
