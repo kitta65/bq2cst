@@ -776,7 +776,7 @@ from:
             0,
         )),
         // ----- FROM clause -----
-        // dash
+        // irregular identifier
         Box::new(SuccessTestCase::new(
             "\
 SELECT *
@@ -795,21 +795,17 @@ from:
       left:
         self: . (DotOperator)
         left:
-          self: - (MultiTokenIdentifier)
-          left:
-            self: project (Identifier)
-          right:
-            self: id (Identifier)
+          self: project (MultiTokenIdentifier)
+          trailing_idents:
+          - self: - (Identifier)
+          - self: id (Identifier)
         right:
-          self: - (MultiTokenIdentifier)
-          left:
-            self: - (MultiTokenIdentifier)
-            left:
-              self: region (Identifier)
-            right:
-              self: asia (Identifier)
-          right:
-            self: northeast1 (Identifier)
+          self: region (MultiTokenIdentifier)
+          trailing_idents:
+          - self: - (Identifier)
+          - self: asia (Identifier)
+          - self: - (Identifier)
+          - self: northeast1 (Identifier)
       right:
         self: INFORMATION_SCHEMA (Identifier)
     right:
@@ -817,6 +813,72 @@ from:
 ",
             0,
         )),
+        // NOTE
+        // Dot operator has disappered but it is acceptable.
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM project-123.dataset.tablen-123
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: . (DotOperator)
+    left:
+      self: project (MultiTokenIdentifier)
+      trailing_idents:
+      - self: - (Identifier)
+      - self: 123. (Identifier)
+      - self: dataset (Identifier)
+    right:
+      self: tablen (MultiTokenIdentifier)
+      trailing_idents:
+      - self: - (Identifier)
+      - self: 123 (Identifier)
+",
+            0,
+        )),
+        // NOTE
+        // Dot operator has disappered but it is acceptable.
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM project-123. dataset.tablename
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: . (DotOperator)
+    left:
+      self: project (MultiTokenIdentifier)
+      trailing_idents:
+      - self: - (Identifier)
+      - self: 123. (Identifier)
+      - self: dataset (Identifier)
+    right:
+      self: tablename (Identifier)
+",
+            0,
+        )),
+        // NOTE Currently this SQL is invalid.
+        //        Box::new(SuccessTestCase::new(
+        //            "\
+        //SELECT *
+        //FROM project.123.123
+        //",
+        //            "\
+        //",
+        //            0,
+        //        )),
+
         // alias
         Box::new(SuccessTestCase::new(
             "\

@@ -236,181 +236,187 @@ impl Parser {
         Ok(node)
     }
     fn parse_expr(&mut self, precedence: usize, alias: bool, as_table: bool) -> BQ2CSTResult<Node> {
-        // prefix or literal
         let mut left = self.construct_node(NodeType::Unknown)?;
-        match self.get_token(0)?.literal.to_uppercase().as_str() {
-            "*" => {
-                left.node_type = NodeType::Asterisk;
-                match self.get_token(1)?.literal.to_uppercase().as_str() {
-                    "REPLACE" => {
-                        self.next_token()?; // * -> REPLACE
-                        let mut replace = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
-                        self.next_token()?; // REPLACE -> (
-                        replace.push_node("group", self.parse_grouped_exprs(true)?);
-                        left.push_node("replace", replace);
+        if as_table {
+            left = self.parse_identifier()?;
+        } else {
+            // prefix or literal
+            match self.get_token(0)?.literal.to_uppercase().as_str() {
+                "*" => {
+                    left.node_type = NodeType::Asterisk;
+                    match self.get_token(1)?.literal.to_uppercase().as_str() {
+                        "REPLACE" => {
+                            self.next_token()?; // * -> REPLACE
+                            let mut replace =
+                                self.construct_node(NodeType::KeywordWithGroupedXXX)?;
+                            self.next_token()?; // REPLACE -> (
+                            replace.push_node("group", self.parse_grouped_exprs(true)?);
+                            left.push_node("replace", replace);
+                        }
+                        "EXCEPT" => {
+                            self.next_token()?; // * -> except
+                            let mut except =
+                                self.construct_node(NodeType::KeywordWithGroupedXXX)?;
+                            self.next_token()?; // except -> (
+                            except.push_node("group", self.parse_grouped_exprs(false)?);
+                            left.push_node("except", except);
+                        }
+                        _ => (),
                     }
-                    "EXCEPT" => {
-                        self.next_token()?; // * -> except
-                        let mut except = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
-                        self.next_token()?; // except -> (
-                        except.push_node("group", self.parse_grouped_exprs(false)?);
-                        left.push_node("except", except);
-                    }
-                    _ => (),
                 }
-            }
-            // STRUCT
-            "(" => {
-                self.next_token()?; // ( -> expr
-                let mut exprs;
-                let mut statement_flg = false;
-                let mut offset = 0;
-                loop {
-                    if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
-                        statement_flg = true;
-                        break;
-                    } else if !self.get_token(offset)?.is("(") {
-                        break;
+                // STRUCT
+                "(" => {
+                    self.next_token()?; // ( -> expr
+                    let mut exprs;
+                    let mut statement_flg = false;
+                    let mut offset = 0;
+                    loop {
+                        if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
+                            statement_flg = true;
+                            break;
+                        } else if !self.get_token(offset)?.is("(") {
+                            break;
+                        }
+                        offset += 1;
                     }
-                    offset += 1;
-                }
-                if statement_flg {
-                    left.node_type = NodeType::GroupedStatement;
-                    left.push_node("stmt", self.parse_select_statement(false, true)?);
-                } else {
-                    exprs = self.parse_exprs(&vec![], true)?; // parse alias in the case of struct
-                    if exprs.len() == 1 {
-                        left.node_type = NodeType::GroupedExpr;
-                        left.push_node("expr", exprs.pop().unwrap());
+                    if statement_flg {
+                        left.node_type = NodeType::GroupedStatement;
+                        left.push_node("stmt", self.parse_select_statement(false, true)?);
                     } else {
-                        left.node_type = NodeType::StructLiteral;
-                        left.push_node_vec("exprs", exprs);
+                        exprs = self.parse_exprs(&vec![], true)?; // parse alias in the case of struct
+                        if exprs.len() == 1 {
+                            left.node_type = NodeType::GroupedExpr;
+                            left.push_node("expr", exprs.pop().unwrap());
+                        } else {
+                            left.node_type = NodeType::StructLiteral;
+                            left.push_node_vec("exprs", exprs);
+                        }
                     }
+                    self.next_token()?; // expr -> )
+                    left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                 }
-                self.next_token()?; // expr -> )
-                left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            }
-            "STRUCT" => {
-                let type_ = self.parse_type(false)?;
-                self.next_token()?; // STRUCT -> (, > -> (
-                let mut struct_literal = self.construct_node(NodeType::StructLiteral)?;
-                let mut exprs = vec![];
-                while !self.get_token(1)?.is(")") {
-                    self.next_token()?; // -> expr
-                    let mut expr = self.parse_expr(usize::MAX, true, false)?;
-                    if self.get_token(1)?.is(",") {
-                        self.next_token()?; // -> ,
-                        expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
-                    }
-                    exprs.push(expr)
-                }
-                self.next_token()?; // -> )
-                struct_literal.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-                struct_literal.push_node_vec("exprs", exprs);
-                struct_literal.push_node("type", type_);
-                left = struct_literal;
-            }
-            // ARRAY
-            "[" => {
-                left.node_type = NodeType::ArrayLiteral;
-                self.next_token()?; // [ -> exprs
-                left.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-                self.next_token()?; // exprs -> ]
-                left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            }
-            "ARRAY" => {
-                // when used as literal
-                if !self.get_token(1)?.is("(") {
+                "STRUCT" => {
                     let type_ = self.parse_type(false)?;
-                    self.next_token()?; // > -> [
-                    let mut arr = self.construct_node(NodeType::ArrayLiteral)?;
+                    self.next_token()?; // STRUCT -> (, > -> (
+                    let mut struct_literal = self.construct_node(NodeType::StructLiteral)?;
+                    let mut exprs = vec![];
+                    while !self.get_token(1)?.is(")") {
+                        self.next_token()?; // -> expr
+                        let mut expr = self.parse_expr(usize::MAX, true, false)?;
+                        if self.get_token(1)?.is(",") {
+                            self.next_token()?; // -> ,
+                            expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                        }
+                        exprs.push(expr)
+                    }
+                    self.next_token()?; // -> )
+                    struct_literal.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                    struct_literal.push_node_vec("exprs", exprs);
+                    struct_literal.push_node("type", type_);
+                    left = struct_literal;
+                }
+                // ARRAY
+                "[" => {
+                    left.node_type = NodeType::ArrayLiteral;
                     self.next_token()?; // [ -> exprs
-                    arr.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
+                    left.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
                     self.next_token()?; // exprs -> ]
-                    arr.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-                    arr.push_node("type", type_);
-                    left = arr;
+                    left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                 }
-            }
-            "-" | "+" | "~" => {
-                left.node_type = NodeType::UnaryOperator;
-                self.next_token()?; // - -> expr
-                let right = self.parse_expr(102, false, false)?;
-                left.push_node("right", right);
-            }
-            "DATE" | "TIME" | "DATETIME" | "TIMESTAMP" | "NUMERIC" | "BIGNUMERIC" | "DECIMAL"
-            | "BIGDECIMAL" => {
-                if self.get_token(1)?.is_string()
-                    || self.get_token(1)?.in_(&vec!["b", "r", "br", "rb"])
-                        && self.get_token(2)?.is_string()
-                {
+                "ARRAY" => {
+                    // when used as literal
+                    if !self.get_token(1)?.is("(") {
+                        let type_ = self.parse_type(false)?;
+                        self.next_token()?; // > -> [
+                        let mut arr = self.construct_node(NodeType::ArrayLiteral)?;
+                        self.next_token()?; // [ -> exprs
+                        arr.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
+                        self.next_token()?; // exprs -> ]
+                        arr.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                        arr.push_node("type", type_);
+                        left = arr;
+                    }
+                }
+                "-" | "+" | "~" => {
                     left.node_type = NodeType::UnaryOperator;
-                    self.next_token()?; // -> expr
-                    let right = self.parse_expr(002, false, false)?;
+                    self.next_token()?; // - -> expr
+                    let right = self.parse_expr(102, false, false)?;
                     left.push_node("right", right);
                 }
-            }
-            "INTERVAL" => {
-                left.node_type = NodeType::IntervalLiteral;
-                self.next_token()?; // INTERVAL -> expr
-                let right = self.parse_expr(usize::MAX, false, false)?;
-                self.next_token()?; // expr -> HOUR
-                left.push_node("date_part", self.construct_node(NodeType::Keyword)?);
-                if self.get_token(1)?.is("TO") {
-                    self.next_token()?; // -> TO
-                    left.push_node("to", self.construct_node(NodeType::Keyword)?);
-                    self.next_token()?; // -> date_part
-                    left.push_node("to_date_part", self.construct_node(NodeType::Keyword)?);
+                "DATE" | "TIME" | "DATETIME" | "TIMESTAMP" | "NUMERIC" | "BIGNUMERIC"
+                | "DECIMAL" | "BIGDECIMAL" => {
+                    if self.get_token(1)?.is_string()
+                        || self.get_token(1)?.in_(&vec!["b", "r", "br", "rb"])
+                            && self.get_token(2)?.is_string()
+                    {
+                        left.node_type = NodeType::UnaryOperator;
+                        self.next_token()?; // -> expr
+                        let right = self.parse_expr(002, false, false)?;
+                        left.push_node("right", right);
+                    }
                 }
-                left.push_node("expr", right);
-            }
-            "B" | "R" | "BR" | "RB" => {
-                if self.get_token(1)?.is_string() {
-                    self.next_token()?; // R -> 'string'
-                    let right = self.parse_expr(001, false, false)?;
+                "INTERVAL" => {
+                    left.node_type = NodeType::IntervalLiteral;
+                    self.next_token()?; // INTERVAL -> expr
+                    let right = self.parse_expr(usize::MAX, false, false)?;
+                    self.next_token()?; // expr -> HOUR
+                    left.push_node("date_part", self.construct_node(NodeType::Keyword)?);
+                    if self.get_token(1)?.is("TO") {
+                        self.next_token()?; // -> TO
+                        left.push_node("to", self.construct_node(NodeType::Keyword)?);
+                        self.next_token()?; // -> date_part
+                        left.push_node("to_date_part", self.construct_node(NodeType::Keyword)?);
+                    }
+                    left.push_node("expr", right);
+                }
+                "B" | "R" | "BR" | "RB" => {
+                    if self.get_token(1)?.is_string() {
+                        self.next_token()?; // R -> 'string'
+                        let right = self.parse_expr(001, false, false)?;
+                        left.push_node("right", right);
+                        left.node_type = NodeType::UnaryOperator;
+                    }
+                }
+                "WITH" | "SELECT" => {
+                    // in the case of `ARRAY(SELECT 1)`
+                    left = self.parse_select_statement(false, true)?;
+                }
+                "NOT" => {
+                    self.next_token()?; // NOT -> boolean
+                    let right = self.parse_expr(110, false, false)?;
                     left.push_node("right", right);
                     left.node_type = NodeType::UnaryOperator;
                 }
-            }
-            "WITH" | "SELECT" => {
-                // in the case of `ARRAY(SELECT 1)`
-                left = self.parse_select_statement(false, true)?;
-            }
-            "NOT" => {
-                self.next_token()?; // NOT -> boolean
-                let right = self.parse_expr(110, false, false)?;
-                left.push_node("right", right);
-                left.node_type = NodeType::UnaryOperator;
-            }
-            "CASE" => {
-                left.node_type = NodeType::CaseExpr;
-                self.next_token()?; // CASE -> expr, CASE -> when
-                if !self.get_token(0)?.is("WHEN") {
-                    left.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
-                    self.next_token()?; // expr -> WHEN
+                "CASE" => {
+                    left.node_type = NodeType::CaseExpr;
+                    self.next_token()?; // CASE -> expr, CASE -> when
+                    if !self.get_token(0)?.is("WHEN") {
+                        left.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                        self.next_token()?; // expr -> WHEN
+                    }
+                    let mut arms = Vec::new();
+                    while !self.get_token(0)?.is("ELSE") {
+                        let mut arm = self.construct_node(NodeType::CaseExprArm)?;
+                        self.next_token()?; // WHEN -> expr
+                        arm.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                        self.next_token()?; // expr ->THEN
+                        arm.push_node("then", self.construct_node(NodeType::Keyword)?);
+                        self.next_token()?; // THEN -> result_expr
+                        arm.push_node("result", self.parse_expr(usize::MAX, false, false)?);
+                        self.next_token()?; // result_expr -> ELSE, result_expr -> WHEN
+                        arms.push(arm)
+                    }
+                    let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
+                    self.next_token()?; // ELSE -> result_expr
+                    else_.push_node("result", self.parse_expr(usize::MAX, false, false)?);
+                    arms.push(else_);
+                    left.push_node_vec("arms", arms);
+                    self.next_token()?; // result_expr -> end
+                    left.push_node("end", self.construct_node(NodeType::Keyword)?);
                 }
-                let mut arms = Vec::new();
-                while !self.get_token(0)?.is("ELSE") {
-                    let mut arm = self.construct_node(NodeType::CaseExprArm)?;
-                    self.next_token()?; // WHEN -> expr
-                    arm.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
-                    self.next_token()?; // expr ->THEN
-                    arm.push_node("then", self.construct_node(NodeType::Keyword)?);
-                    self.next_token()?; // THEN -> result_expr
-                    arm.push_node("result", self.parse_expr(usize::MAX, false, false)?);
-                    self.next_token()?; // result_expr -> ELSE, result_expr -> WHEN
-                    arms.push(arm)
-                }
-                let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
-                self.next_token()?; // ELSE -> result_expr
-                else_.push_node("result", self.parse_expr(usize::MAX, false, false)?);
-                arms.push(else_);
-                left.push_node_vec("arms", arms);
-                self.next_token()?; // result_expr -> end
-                left.push_node("end", self.construct_node(NodeType::Keyword)?);
-            }
-            _ => (),
-        };
+                _ => (),
+            };
+        }
         // infix
         while self.get_precedence(1, as_table)? < precedence {
             match self.get_token(1)?.literal.to_uppercase().as_str() {
@@ -539,22 +545,8 @@ impl Parser {
                     }
                     left = dot;
                 }
-                "-" => {
-                    if as_table {
-                        self.next_token()?; // ident -> -
-                        let precedence = self.get_precedence(0, as_table)?;
-                        let mut dash = self.construct_node(NodeType::MultiTokenIdentifier)?;
-                        self.next_token()?; // - -> ident
-                        dash.push_node("left", left);
-                        dash.push_node("right", self.parse_expr(precedence, false, as_table)?);
-                        left = dash
-                    } else {
-                        self.next_token()?; // expr -> BETWEEN
-                        left = self.parse_between_operator(left)?;
-                    }
-                }
-                "*" | "/" | "||" | "+" | "<<" | ">>" | "&" | "^" | "|" | "=" | "<" | ">" | "<="
-                | ">=" | "<>" | "!=" | "LIKE" | "IS" | "AND" | "OR" | "=>" => {
+                "*" | "/" | "||" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" | "=" | "<" | ">"
+                | "<=" | ">=" | "<>" | "!=" | "LIKE" | "IS" | "AND" | "OR" | "=>" => {
                     self.next_token()?; // expr -> binary_operator
                     left = self.parse_binary_operator(left)?;
                 }
@@ -707,16 +699,35 @@ impl Parser {
         // This method is used to parse only identifier.
         // If you want to parse table function, you have to use parse_expr().
         fn parse_single_or_multi_token_identifier(parser: &mut Parser) -> BQ2CSTResult<Node> {
-            let mut left = parser.construct_node(NodeType::Identifier)?;
-            while parser.get_token(1)?.is("-") {
-                parser.next_token()?; // ident -> -
-                let mut dash = parser.construct_node(NodeType::MultiTokenIdentifier)?;
-                dash.push_node("left", left);
-                parser.next_token()?; // - -> ient
-                dash.push_node("right", parser.construct_node(NodeType::Identifier)?);
-                left = dash;
+            let mut root = parser.construct_node(NodeType::Identifier)?;
+            let mut trailing_idents = vec![];
+            loop {
+                let curr_token = parser.get_token(0)?;
+                if curr_token.literal.chars().next().unwrap() == '`' {
+                    break;
+                }
+                let next_token = match parser.get_token(1) {
+                    Ok(n) => n,
+                    Err(_) => break, // in the case of EOF
+                };
+                if next_token.in_(&vec![",", ".", "(", ")", ";"]) {
+                    break;
+                }
+                if !(curr_token.literal.chars().last().unwrap() == '.')
+                    && !(curr_token.line == next_token.line
+                        && curr_token.column + curr_token.literal.chars().count()
+                            == next_token.column)
+                {
+                    break;
+                }
+                parser.next_token()?;
+                trailing_idents.push(parser.construct_node(NodeType::Identifier)?);
             }
-            Ok(left)
+            if trailing_idents.len() > 0 {
+                root.node_type = NodeType::MultiTokenIdentifier;
+                root.push_node_vec("trailing_idents", trailing_idents);
+            }
+            Ok(root)
         }
 
         let mut left = parse_single_or_multi_token_identifier(self)?;

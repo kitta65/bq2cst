@@ -885,8 +885,7 @@ export type MergeStatement = XXXStatement & {
 export type MultiTokenIdentifier = IdentifierGeneral & {
   node_type: "MultiTokenIdentifier";
   children: {
-    left: { Node: IdentifierGeneral & UnknownNode };
-    right: { Node: IdentifierGeneral & UnknownNode };
+    trailing_idents: { NodeVec: (IdentifierGeneral & UnknownNode)[] };
   };
 };
 

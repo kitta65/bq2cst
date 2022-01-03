@@ -79,9 +79,10 @@ what:
 ",
             0,
         )),
+        // NOTE This SQL is currently invalid.
         Box::new(SuccessTestCase::new(
             "\
-CREATE TABLE this-is-project-name.dataset.example (x int64);
+CREATE TABLE this-is-project-name.dataset.table-123 (x int64);
 ",
             "\
 self: CREATE (CreateTableStatement)
@@ -98,23 +99,21 @@ ident:
   left:
     self: . (DotOperator)
     left:
-      self: - (MultiTokenIdentifier)
-      left:
-        self: - (MultiTokenIdentifier)
-        left:
-          self: - (MultiTokenIdentifier)
-          left:
-            self: this (Identifier)
-          right:
-            self: is (Identifier)
-        right:
-          self: project (Identifier)
-      right:
-        self: name (Identifier)
+      self: this (MultiTokenIdentifier)
+      trailing_idents:
+      - self: - (Identifier)
+      - self: is (Identifier)
+      - self: - (Identifier)
+      - self: project (Identifier)
+      - self: - (Identifier)
+      - self: name (Identifier)
     right:
       self: dataset (Identifier)
   right:
-    self: example (Identifier)
+    self: table (MultiTokenIdentifier)
+    trailing_idents:
+    - self: - (Identifier)
+    - self: 123 (Identifier)
 semicolon:
   self: ; (Symbol)
 what:
