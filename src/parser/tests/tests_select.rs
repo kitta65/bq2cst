@@ -1657,6 +1657,65 @@ from:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM
+  data1 AS one
+  JOIN (
+    project-id.dataset.tablename AS data2 JOIN data3 ON true
+  ) ON true
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: JOIN (JoinOperator)
+    left:
+      self: data1 (Identifier)
+      alias:
+        self: one (Identifier)
+      as:
+        self: AS (Keyword)
+    on:
+      self: ON (KeywordWithExpr)
+      expr:
+        self: true (BooleanLiteral)
+    right:
+      self: ( (GroupedExpr)
+      expr:
+        self: JOIN (JoinOperator)
+        left:
+          self: . (DotOperator)
+          alias:
+            self: data2 (Identifier)
+          as:
+            self: AS (Keyword)
+          left:
+            self: . (DotOperator)
+            left:
+              self: project (MultiTokenIdentifier)
+              trailing_idents:
+              - self: - (Identifier)
+              - self: id (Identifier)
+            right:
+              self: dataset (Identifier)
+          right:
+            self: tablename (Identifier)
+        on:
+          self: ON (KeywordWithExpr)
+          expr:
+            self: true (BooleanLiteral)
+        right:
+          self: data3 (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+            0,
+        )),
         // ----- WHERE clause -----
         Box::new(SuccessTestCase::new(
             "\

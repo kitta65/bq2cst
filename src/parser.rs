@@ -931,6 +931,7 @@ impl Parser {
                 left.node_type = NodeType::CallingUnnest;
             }
             _ => {
+                // tvf or identifier
                 left = self.parse_expr(usize::MAX, false, true)?;
             }
         }
