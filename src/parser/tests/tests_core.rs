@@ -591,7 +591,7 @@ SELECT arr[OFFSET(1)]
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: [ (ArrayAccessing)
+- self: [ (AccessOperator)
   left:
     self: arr (Identifier)
   right:
@@ -793,6 +793,40 @@ exprs:
     self: DATE_ADD (Identifier)
   rparen:
     self: ) (Symbol)
+",
+            0,
+        )),
+        // ----- json -----
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  JSON '{\"key\": \"value\"}',
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: JSON (UnaryOperator)
+  comma:
+    self: , (Symbol)
+  right:
+    self: '{\"key\": \"value\"}' (StringLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT json['path']
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (AccessOperator)
+  left:
+    self: json (Identifier)
+  right:
+    self: 'path' (CallingArrayAccessingFunction)
+  rparen:
+    self: ] (Symbol)
 ",
             0,
         )),

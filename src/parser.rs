@@ -344,7 +344,7 @@ impl Parser {
                     left.push_node("right", right);
                 }
                 "DATE" | "TIME" | "DATETIME" | "TIMESTAMP" | "NUMERIC" | "BIGNUMERIC"
-                | "DECIMAL" | "BIGDECIMAL" => {
+                | "DECIMAL" | "BIGDECIMAL" | "JSON" => {
                     if self.get_token(1)?.is_string()
                         || self.get_token(1)?.in_(&vec!["b", "r", "br", "rb"])
                             && self.get_token(2)?.is_string()
@@ -522,13 +522,13 @@ impl Parser {
                 }
                 "[" => {
                     self.next_token()?; // expr -> [
-                    let mut node = self.construct_node(NodeType::ArrayAccessing)?;
+                    let mut node = self.construct_node(NodeType::AccessOperator)?;
                     node.push_node("left", left);
-                    self.next_token()?; // [ -> index_expr
+                    self.next_token()?; // [ -> expr
                     let mut index = self.parse_expr(usize::MAX, false, false)?;
                     index.node_type = NodeType::CallingArrayAccessingFunction;
                     node.push_node("right", index);
-                    self.next_token()?; // index_expr -> ]
+                    self.next_token()?; // expr -> ]
                     node.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                     left = node;
                 }

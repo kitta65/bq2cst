@@ -6,12 +6,12 @@ export function parse(code: string): UnknownNode[];
 export function tokenize(code: string): Token[];
 
 export type UnknownNode =
+  | AccessOperator
   | AddColumnClause
   | AlterColumnStatement
   | AlterSchemaStatement
   | AlterTableStatement
   | AlterViewStatement
-  | ArrayAccessing
   | ArrayLiteral
   | AssertStatement
   | Asterisk
@@ -257,8 +257,8 @@ export type AlterViewStatement = XXXStatement & {
   };
 };
 
-export type ArrayAccessing = Expr & {
-  node_type: "ArrayAccessing";
+export type AccessOperator = Expr & {
+  node_type: "AccessOperator";
   children: {
     not: undefined;
     left: NodeChild;
