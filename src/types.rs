@@ -704,7 +704,7 @@ export type GroupedExprs = BaseNode & {
   token: Token;
   node_type: "GroupedExprs";
   children: {
-    exprs: NodeVecChild;
+    exprs?: NodeVecChild;
     rparen: NodeChild;
     // only in UNPIVOT operator
     as?: NodeChild;
