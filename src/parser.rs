@@ -94,7 +94,7 @@ impl Parser {
         }
         Ok(node)
     }
-    fn get_precedence(&self, offset: usize, as_table: bool) -> BQ2CSTResult<usize> {
+    fn get_precedence(&self, offset: usize) -> BQ2CSTResult<usize> {
         // https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
         // 001... - (identifier e.g. region-us)
         // 002... DATE, TIMESTAMP, r'', b'' (literal)
@@ -115,14 +115,7 @@ impl Parser {
             // return precedence of BINARY operator
             "(" | "." | "[" => 101,
             "*" | "/" | "||" => 103,
-            "-" => {
-                if as_table {
-                    001
-                } else {
-                    104
-                }
-            }
-            "+" => 104,
+            "+" | "-" => 104,
             "<<" | ">>" => 105,
             "&" => 106,
             "^" => 107,
@@ -210,7 +203,7 @@ impl Parser {
         Ok(())
     }
     fn parse_between_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
-        let precedence = self.get_precedence(0, false)?;
+        let precedence = self.get_precedence(0)?;
         let mut between = self.construct_node(NodeType::BetweenOperator)?;
         between.push_node("left", left);
         self.next_token()?; // BETWEEN -> expr1
@@ -224,7 +217,7 @@ impl Parser {
         Ok(between)
     }
     fn parse_binary_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
-        let precedence = self.get_precedence(0, false)?;
+        let precedence = self.get_precedence(0)?;
         let mut node = self.construct_node(NodeType::BinaryOperator)?;
         if self.get_token(0)?.is("IS") && self.get_token(1)?.is("NOT") {
             self.next_token()?; // IS -> NOT
@@ -418,7 +411,7 @@ impl Parser {
             };
         }
         // infix
-        while self.get_precedence(1, as_table)? < precedence {
+        while self.get_precedence(1)? < precedence {
             match self.get_token(1)?.literal.to_uppercase().as_str() {
                 "(" => {
                     let func = self.get_token(0)?.literal.to_uppercase();
@@ -534,7 +527,7 @@ impl Parser {
                 }
                 "." => {
                     self.next_token()?; // -> .
-                    let precedence = self.get_precedence(0, as_table)?;
+                    let precedence = self.get_precedence(0)?;
                     let mut dot = self.construct_node(NodeType::DotOperator)?;
                     self.next_token()?; // -> identifier
                     dot.push_node("left", left);
