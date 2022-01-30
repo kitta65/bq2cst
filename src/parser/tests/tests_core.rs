@@ -595,7 +595,7 @@ exprs:
   left:
     self: arr (Identifier)
   right:
-    self: ( (CallingArrayAccessingFunction)
+    self: ( (CallingFunction)
     args:
     - self: 1 (NumericLiteral)
     func:
@@ -824,7 +824,7 @@ exprs:
   left:
     self: json (Identifier)
   right:
-    self: 'path' (CallingArrayAccessingFunction)
+    self: 'path' (StringLiteral)
   rparen:
     self: ] (Symbol)
 ",

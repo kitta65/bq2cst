@@ -20,7 +20,6 @@ export type UnknownNode =
   | BetweenOperator
   | BooleanLiteral
   | BreakContinueStatement
-  | CallingArrayAccessingFunction
   | CallingFunction
   | CallingTableFunction
   | CallingUnnest
@@ -333,22 +332,6 @@ export type BreakContinueStatement = XXXStatement & {
   node_type: "BreakContinueStatement";
   children: {
     label?: NodeChild;
-  };
-};
-
-export type CallingArrayAccessingFunction = CallingFunctionGeneral & {
-  node_type: "CallingArrayAccessingFunction";
-  children: {
-    distinct: undefined;
-    ignore_nulls: undefined;
-    orderby: undefined;
-    limit: undefined;
-    over: undefined;
-    as: undefined;
-    alias: undefined;
-    comma: undefined;
-    order: undefined;
-    null_order: undefined;
   };
 };
 

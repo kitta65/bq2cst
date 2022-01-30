@@ -28,13 +28,12 @@ pub enum NodeType {
     BetweenOperator,
     BooleanLiteral, // TRUE | FALSE
     BreakContinueStatement,
-    CallingArrayAccessingFunction, // OFFSET(1) | SAFE_ORDINAL(3)
-    CallingFunction,               // (
-    CallingTableFunction,          // (
-    CallingUnnest,                 // UNNEST([1, 2])
-    CallStatement,                 // CALL procedure_name (arg);
-    CaseExpr,                      // CASE WHEN a then b ELSE c END
-    CaseExprArm,                   // WHEN a THEN b
+    CallingFunction,      // (
+    CallingTableFunction, // (
+    CallingUnnest,        // UNNEST([1, 2])
+    CallStatement,        // CALL procedure_name (arg);
+    CaseExpr,             // CASE WHEN a then b ELSE c END
+    CaseExprArm,          // WHEN a THEN b
     CaseStatement,
     CaseStatementArm,
     CastArgument, // x AS INT64

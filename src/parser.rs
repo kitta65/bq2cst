@@ -518,9 +518,7 @@ impl Parser {
                     let mut node = self.construct_node(NodeType::AccessOperator)?;
                     node.push_node("left", left);
                     self.next_token()?; // [ -> expr
-                    let mut index = self.parse_expr(usize::MAX, false, false)?;
-                    index.node_type = NodeType::CallingArrayAccessingFunction;
-                    node.push_node("right", index);
+                    node.push_node("right", self.parse_expr(usize::MAX, false, false)?);
                     self.next_token()?; // expr -> ]
                     node.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                     left = node;
