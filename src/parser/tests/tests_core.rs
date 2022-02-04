@@ -833,6 +833,36 @@ exprs:
         // ----- case expr -----
         Box::new(SuccessTestCase::new(
             "\
+SELECT CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' END
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: CASE (CaseExpr)
+  arms:
+  - self: WHEN (CaseExprArm)
+    expr:
+      self: 1 (NumericLiteral)
+    result:
+      self: 'one' (StringLiteral)
+    then:
+      self: THEN (Keyword)
+  - self: WHEN (CaseExprArm)
+    expr:
+      self: 2 (NumericLiteral)
+    result:
+      self: 'two' (StringLiteral)
+    then:
+      self: THEN (Keyword)
+  end:
+    self: END (Keyword)
+  expr:
+    self: c1 (Identifier)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 SELECT CASE c1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE NULL END
 ",
             "\

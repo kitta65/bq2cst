@@ -388,7 +388,7 @@ impl Parser {
                         self.next_token()?; // expr -> WHEN
                     }
                     let mut arms = Vec::new();
-                    while !self.get_token(0)?.is("ELSE") {
+                    while self.get_token(0)?.is("WHEN") {
                         let mut arm = self.construct_node(NodeType::CaseExprArm)?;
                         self.next_token()?; // WHEN -> expr
                         arm.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
@@ -396,15 +396,17 @@ impl Parser {
                         arm.push_node("then", self.construct_node(NodeType::Keyword)?);
                         self.next_token()?; // THEN -> result_expr
                         arm.push_node("result", self.parse_expr(usize::MAX, false, false)?);
-                        self.next_token()?; // result_expr -> ELSE, result_expr -> WHEN
-                        arms.push(arm)
+                        self.next_token()?; // -> ELSE | WHEN | END
+                        arms.push(arm);
                     }
-                    let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
-                    self.next_token()?; // ELSE -> result_expr
-                    else_.push_node("result", self.parse_expr(usize::MAX, false, false)?);
-                    arms.push(else_);
+                    if self.get_token(0)?.is("ELSE") {
+                        let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
+                        self.next_token()?; // ELSE -> result_expr
+                        else_.push_node("result", self.parse_expr(usize::MAX, false, false)?);
+                        arms.push(else_);
+                        self.next_token()?; // result_expr -> end
+                    }
                     left.push_node_vec("arms", arms);
-                    self.next_token()?; // result_expr -> end
                     left.push_node("end", self.construct_node(NodeType::Keyword)?);
                 }
                 _ => (),
