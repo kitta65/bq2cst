@@ -411,6 +411,70 @@ with:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+WITH RECURSIVE temp AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n + 1 FROM temp WHERE n < 3
+)
+SELECT n FROM temp
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: n (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: temp (Identifier)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: temp (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: UNION (SetOperator)
+        distinct_or_all:
+          self: ALL (Keyword)
+        left:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+            alias:
+              self: n (Identifier)
+            as:
+              self: AS (Keyword)
+        right:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: + (BinaryOperator)
+            left:
+              self: n (Identifier)
+            right:
+              self: 1 (NumericLiteral)
+          from:
+            self: FROM (KeywordWithExpr)
+            expr:
+              self: temp (Identifier)
+          where:
+            self: WHERE (KeywordWithExpr)
+            expr:
+              self: < (BinaryOperator)
+              left:
+                self: n (Identifier)
+              right:
+                self: 3 (NumericLiteral)
+  recursive:
+    self: RECURSIVE (Keyword)
+",
+            0,
+        )),
         // ----- SELECT clause -----
         // DISTINCT
         Box::new(SuccessTestCase::new(

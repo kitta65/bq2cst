@@ -1324,6 +1324,10 @@ impl Parser {
         }
         if self.get_token(0)?.literal.to_uppercase() == "WITH" {
             let mut with = self.construct_node(NodeType::WithClause)?;
+            if self.get_token(1)?.is("RECURSIVE") {
+                self.next_token()?; // -> RECURSIVE
+                with.push_node("recursive", self.construct_node(NodeType::Keyword)?);
+            }
             let mut queries = Vec::new();
             while self.get_token(1)?.literal.to_uppercase() != "SELECT"
                 && self.get_token(1)?.literal != "("

@@ -1160,6 +1160,7 @@ export type WithClause = BaseNode & {
   node_type: "WithClause";
   children: {
     queries: { NodeVec: WithQuery[] };
+    recursive?: NodeChild;
   };
 };
 
