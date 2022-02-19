@@ -450,7 +450,7 @@ export type CreateFunctionStatement = XXXStatement & {
     determinism?: NodeVecChild;
     language?: NodeChild;
     options?: NodeChild;
-    as: NodeChild;
+    as?: NodeChild;
   };
 };
 
