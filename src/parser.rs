@@ -1892,7 +1892,21 @@ impl Parser {
             returns.push_node("type", self.parse_type(false)?);
             node.push_node("returns", returns);
         }
-        if self.get_token(1)?.is("AS") {
+        if self.get_token(1)?.is("REMOTE") {
+            self.next_token()?; // -> REMOTE
+            let mut remote = self.construct_node(NodeType::RemoteWithConnectionClause)?;
+            self.next_token()?; // -> WITH
+            remote.push_node("with", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> CONNECTION
+            remote.push_node("connection", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> ident
+            remote.push_node("ident", self.parse_identifier()?);
+            node.push_node("remote", remote);
+            if self.get_token(1)?.is("OPTIONS") {
+                self.next_token()?; // -> OPTIONS
+                node.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+            }
+        } else if self.get_token(1)?.is("AS") {
             // sql function definition
             self.next_token()?; // -> AS
             if is_tvf {

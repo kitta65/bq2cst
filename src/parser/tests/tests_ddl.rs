@@ -954,6 +954,55 @@ what:
 ",
             0,
         )),
+        // remote function
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE FUNCTION dataset.abc()
+RETURNS INT64
+REMOTE WITH CONNECTION `project.us.connection`
+OPTIONS (endpoint = 'https://region-project.cloudfunctions.net/function')
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (DotOperator)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: abc (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: endpoint (Identifier)
+      right:
+        self: 'https://region-project.cloudfunctions.net/function' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+remote:
+  self: REMOTE (RemoteWithConnectionClause)
+  connection:
+    self: CONNECTION (Keyword)
+  ident:
+    self: `project.us.connection` (Identifier)
+  with:
+    self: WITH (Keyword)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+what:
+  self: FUNCTION (Keyword)
+",
+            0,
+        )),
         // TVF
         Box::new(SuccessTestCase::new(
             "\

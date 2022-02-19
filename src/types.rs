@@ -81,6 +81,7 @@ export type UnknownNode =
   | PivotOperator
   | PivotConfig
   | RaiseStatement
+  | RemoteWithConnectionClause
   | RepeatStatement
   | RevokeStatement
   | SelectStatement
@@ -445,6 +446,7 @@ export type CreateFunctionStatement = XXXStatement & {
     ident: NodeChild;
     group: NodeChild;
     returns?: NodeChild;
+    remote?: { Node: RemoteWithConnectionClause };
     determinism?: NodeVecChild;
     language?: NodeChild;
     options?: NodeChild;
@@ -917,6 +919,15 @@ export type RaiseStatement = XXXStatement & {
   node_type: "RaiseStatement";
   children: {
     using?: NodeChild;
+  };
+};
+
+export type RemoteWithConnectionClause = BaseNode & {
+  node_type: "RemoteWithConnectionClause";
+  children: {
+    with: NodeChild;
+    connection: NodeChild;
+    ident: NodeChild;
   };
 };
 
