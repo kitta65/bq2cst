@@ -389,6 +389,70 @@ what:
 ",
             0,
         )),
+        // CLONE
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE clone
+CLONE source_table
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: source_table (Identifier)
+ident:
+  self: clone (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE dataset.clone
+CLONE dataset.source_table FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP()
+OPTIONS ()
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: . (DotOperator)
+    for_system_time_as_of:
+      self: FOR (ForSystemTimeAsOfClause)
+      expr:
+        self: ( (CallingFunction)
+        func:
+          self: CURRENT_TIMESTAMP (Identifier)
+        rparen:
+          self: ) (Symbol)
+      system_time_as_of:
+      - self: SYSTEM_TIME (Keyword)
+      - self: AS (Keyword)
+      - self: OF (Keyword)
+    left:
+      self: dataset (Identifier)
+    right:
+      self: source_table (Identifier)
+ident:
+  self: . (DotOperator)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: clone (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
         // EXTERNAL
         Box::new(SuccessTestCase::new(
             "\
