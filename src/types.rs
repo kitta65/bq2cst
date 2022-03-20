@@ -108,6 +108,7 @@ export type UnknownNode =
   | WindowFrameClause
   | WindowSpecification
   | WithClause
+  | WithConnectionClause
   | WithPartitionColumnsClause
   | WithQuery
   | XXXByExprs;
@@ -1172,6 +1173,15 @@ export type WithClause = BaseNode & {
   children: {
     queries: { NodeVec: WithQuery[] };
     recursive?: NodeChild;
+  };
+};
+
+export type WithConnectionClause = BaseNode & {
+  token: Token;
+  node_type: "WithConnectionClause";
+  children: {
+    connection: NodeChild;
+    ident: NodeChild;
   };
 };
 

@@ -1770,7 +1770,16 @@ impl Parser {
             self.next_token()?; // -> CLUSTER
             create.push_node("clusterby", self.parse_xxxby_exprs()?);
         }
-        if self.get_token(1)?.is("WITH") && external {
+        if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("CONNECTION") && external {
+            self.next_token()?; // -> WITH
+            let mut with = self.construct_node(NodeType::WithConnectionClause)?;
+            self.next_token()?; // -> CONNECTION
+            with.push_node("connection", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> ident
+            with.push_node("ident", self.parse_identifier()?);
+            create.push_node("with_connection", with);
+        }
+        if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("PARTITION") && external {
             self.next_token()?; // -> WITH
             let mut with = self.construct_node(NodeType::WithPartitionColumnsClause)?;
             self.next_token()?; // -> PARTITION

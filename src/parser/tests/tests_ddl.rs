@@ -572,6 +572,98 @@ with_partition_columns:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE EXTERNAL TABLE dataset.new_table (
+  col STRING
+)
+OPTIONS (
+  format = 'CSV',
+  uris = ['dummy']
+)
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: col (TypeDeclaration)
+    type:
+      self: STRING (Type)
+  rparen:
+    self: ) (Symbol)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: . (DotOperator)
+  left:
+    self: dataset (Identifier)
+  right:
+    self: new_table (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      comma:
+        self: , (Symbol)
+      left:
+        self: format (Identifier)
+      right:
+        self: 'CSV' (StringLiteral)
+    - self: = (BinaryOperator)
+      left:
+        self: uris (Identifier)
+      right:
+        self: [ (ArrayLiteral)
+        exprs:
+        - self: 'dummy' (StringLiteral)
+        rparen:
+          self: ] (Symbol)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            // NOTE not well tested
+            "\
+CREATE EXTERNAL TABLE tablename
+WITH CONNECTION ident
+OPTIONS (dummy = 'dummy')
+",
+            "\
+self: CREATE (CreateTableStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: tablename (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: TABLE (Keyword)
+with_connection:
+  self: WITH (WithConnectionClause)
+  connection:
+    self: CONNECTION (Keyword)
+  ident:
+    self: ident (Identifier)
+",
+            0,
+        )),
         // ----- CREATE VIEW statement -----
         Box::new(SuccessTestCase::new(
             "\
