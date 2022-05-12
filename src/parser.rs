@@ -539,9 +539,19 @@ impl Parser {
                     left = dot;
                 }
                 "*" | "/" | "||" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" | "=" | "<" | ">"
-                | "<=" | ">=" | "<>" | "!=" | "LIKE" | "IS" | "AND" | "OR" | "=>" => {
+                | "<=" | ">=" | "<>" | "!=" | "LIKE" | "AND" | "OR" | "=>" => {
                     self.next_token()?; // expr -> binary_operator
                     left = self.parse_binary_operator(left)?;
+                }
+                "IS" => {
+                    self.next_token()?; // expr -> IS
+                    if self.get_token(1)?.is("DISTINCT")
+                        || (self.get_token(1)?.is("NOT") && self.get_token(2)?.is("DISTINCT"))
+                    {
+                        left = self.parse_is_distinct_from_operator(left)?
+                    } else {
+                        left = self.parse_binary_operator(left)?
+                    }
                 }
                 "BETWEEN" => {
                     self.next_token()?; // expr -> BETWEEN
@@ -755,6 +765,22 @@ impl Parser {
                 node.push_node("right", self.parse_grouped_exprs(false)?);
             }
         }
+        Ok(node)
+    }
+    fn parse_is_distinct_from_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
+        let precedence = self.get_precedence(0)?;
+        let mut node = self.construct_node(NodeType::IsDistinctFromOperator)?;
+        node.push_node("left", left);
+        if self.get_token(1)?.is("NOT") {
+            self.next_token()?; // IS -> NOT
+            node.push_node("not", self.construct_node(NodeType::Keyword)?);
+        }
+        self.next_token()?; // -> DISTINCT
+        node.push_node("distinct", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // DISTINCT -> FROM
+        node.push_node("from", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // FROM -> expr
+        node.push_node("right", self.parse_expr(precedence, false, false)?);
         Ok(node)
     }
     fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> BQ2CSTResult<Node> {

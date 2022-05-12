@@ -61,6 +61,7 @@ export type UnknownNode =
   | InOperator
   | InsertStatement
   | IntervalLiteral
+  | IsDistinctFromOperator
   | JoinOperator
   | Keyword
   | KeywordWithExpr
@@ -300,6 +301,7 @@ export type BinaryOperator = Expr & {
   node_type: "BinaryOperator";
   children: {
     not?: NodeChild;
+    from?: NodeChild;
     left: { Node: Expr & UnknownNode };
     right: { Node: Expr & UnknownNode };
   };
@@ -769,6 +771,17 @@ export type IntervalLiteral = Expr & {
     to_date_part?: NodeChild;
     order: undefined;
     null_order: undefined;
+  };
+};
+
+export type IsDistinctFromOperator = Expr & {
+  node_type: "IsDistinctFromOperator";
+  children: {
+    not?: NodeChild;
+    distinct: NodeChild;
+    from: NodeChild;
+    left: NodeChild;
+    right: NodeChild;
   };
 };
 

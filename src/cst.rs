@@ -76,6 +76,7 @@ pub enum NodeType {
     InsertStatement,
     IntervalLiteral,
     InOperator,
+    IsDistinctFromOperator,
     JoinOperator,      // JOIN | ,
     LanguageSpecifier, // LANGUAGE js
     LimitClause,

@@ -355,6 +355,47 @@ exprs:
 ",
             0,
         )),
+        // DISTINCT FROM
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 IS DISTINCT FROM 2
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IS (IsDistinctFromOperator)
+  distinct:
+    self: DISTINCT (Keyword)
+  from:
+    self: FROM (Keyword)
+  left:
+    self: 1 (NumericLiteral)
+  right:
+    self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 IS NOT DISTINCT FROM 2
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: IS (IsDistinctFromOperator)
+  distinct:
+    self: DISTINCT (Keyword)
+  from:
+    self: FROM (Keyword)
+  left:
+    self: 1 (NumericLiteral)
+  not:
+    self: NOT (Keyword)
+  right:
+    self: 2 (NumericLiteral)
+",
+            0,
+        )),
         // '.'
         Box::new(SuccessTestCase::new(
             "\
