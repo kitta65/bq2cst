@@ -80,6 +80,7 @@ pub enum NodeType {
     JoinOperator,      // JOIN | ,
     LanguageSpecifier, // LANGUAGE js
     LimitClause,
+    LoadStatement,
     LoopStatement,
     MergeStatement,
     MultiTokenIdentifier,

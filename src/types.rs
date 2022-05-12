@@ -72,6 +72,7 @@ export type UnknownNode =
   | KeywordWithType
   | LanguageSpecifier
   | LimitClause
+  | LoadStatement
   | LoopStatement
   | MergeStatement
   | MultiTokenIdentifier
@@ -867,6 +868,25 @@ export type LoopStatement = LabelableStatement & {
   children: {
     stmts?: NodeVecChild;
     end_loop: NodeVecChild;
+  };
+};
+
+export type LoadStatement = XXXStatement & {
+  node_type: "LoadStatement";
+  children: {
+    data: NodeChild;
+    into: NodeChild;
+    ident: NodeChild;
+    column_group?: NodeChild;
+    partitionby?: NodeChild;
+    clusterby?: NodeChild;
+    options?: NodeChild;
+    from: NodeChild;
+    files: NodeChild;
+    from_files: NodeChild;
+    with: NodeChild;
+    connection: NodeChild;
+    connection_name: NodeChild;
   };
 };
 

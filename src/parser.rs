@@ -899,6 +899,7 @@ impl Parser {
                 self.parse_begin_statement(semicolon)?
             }
             "CASE" => self.parse_case_statement(semicolon)?,
+            "LOAD" => self.parse_load_statement(semicolon)?,
             "LOOP" => self.parse_loop_statement(semicolon)?,
             "REPEAT" => self.parse_repeat_statement(semicolon)?,
             "WHILE" => self.parse_while_statement(semicolon)?,
@@ -2751,5 +2752,53 @@ impl Parser {
             export.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }
         Ok(export)
+    }
+    fn parse_load_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut load = self.construct_node(NodeType::LoadStatement)?;
+        self.next_token()?; // -> DATA
+        load.push_node("data", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> INTO
+        load.push_node("into", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> ident
+        load.push_node("ident", self.parse_identifier()?);
+        if self.get_token(1)?.is("(") {
+            self.next_token()?; // -> (
+            load.push_node(
+                "column_schema_group",
+                self.parse_grouped_type_declarations(false)?,
+            );
+        }
+        if self.get_token(1)?.is("PARTITION") {
+            self.next_token()?; // -> PARTITION
+            load.push_node("partitionby", self.parse_xxxby_exprs()?);
+        }
+        if self.get_token(1)?.is("CLUSTER") {
+            self.next_token()?; // -> CLUSTER
+            load.push_node("clusterby", self.parse_xxxby_exprs()?);
+        }
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            load.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
+        self.next_token()?; // -> FROM
+        load.push_node("from", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> FILES
+        load.push_node("files", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> from_files
+        print!("{:?}", self.construct_node(NodeType::Keyword)?);
+        load.push_node("from_files", self.parse_grouped_exprs(false)?);
+        print!("{:?}", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> WITH
+        load.push_node("with", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> CONNECTION
+        load.push_node("connection", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> connection_name
+        load.push_node("connection_name", self.parse_identifier()?);
+
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            load.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(load)
     }
 }
