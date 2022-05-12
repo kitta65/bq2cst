@@ -840,6 +840,7 @@ impl Parser {
                         "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => {
                             return self.parse_create_reservation_statement(semicolon)
                         }
+                        "SEARCH" => return self.parse_create_search_index_statement(semicolon),
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -1742,6 +1743,44 @@ impl Parser {
         }
         Ok(create)
     }
+    fn parse_create_search_index_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut create = self.construct_node(NodeType::CreateSchemaStatement)?;
+        self.next_token()?; // -> SEARCH
+        let mut what = self.construct_node(NodeType::KeywordSequence)?;
+        self.next_token()?; // -> INDEX
+        what.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+        create.push_node("what", what);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+        }
+        self.next_token()?; // -> ident
+        create.push_node("ident", self.parse_identifier()?);
+        self.next_token()?; // -> ON
+        create.push_node("on", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> tablename
+        create.push_node("tablename", self.parse_identifier()?);
+
+        self.next_token()?; // -> (
+        if self.get_token(1)?.is("ALL") {
+            let mut group = self.construct_node(NodeType::GroupedExpr)?;
+            self.next_token()?; // -> ALL
+            let mut all = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> COLLUMNS
+            all.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+            group.push_node("expr", all);
+            self.next_token()?; // -> )
+            group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+            create.push_node("column_group", group);
+        } else {
+            create.push_node("column_group", self.parse_grouped_exprs(false)?);
+        }
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
+        }
+        Ok(create)
+    }
     fn parse_create_table_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateTableStatement)?;
         let mut external = false;
@@ -2282,8 +2321,15 @@ impl Parser {
             self.next_token()?; // -> TABLE
             drop.push_node("table", self.construct_node(NodeType::Keyword)?)
         }
-        self.next_token()?; // -> SCHEMA, TABLE, VIEW, FUNCTION, PROCEDURE
-        drop.push_node("what", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> SCHEMA, TABLE, VIEW, FUNCTION, PROCEDURE, SEARCH
+        if self.get_token(0)?.is("SEARCH") {
+            let mut what = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> INDEX
+            what.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+            drop.push_node("what", what);
+        } else {
+            drop.push_node("what", self.construct_node(NodeType::Keyword)?);
+        }
         if self.get_token(1)?.is("IF") {
             self.next_token()?; // -> IF
             drop.push_node_vec("if_exists", self.parse_n_keywords(2)?);
@@ -2296,6 +2342,13 @@ impl Parser {
                 "cascade_or_restrict",
                 self.construct_node(NodeType::Keyword)?,
             );
+        }
+        if self.get_token(1)?.is("on") {
+            self.next_token()?; // -> ON
+            let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> tablename
+            on.push_node("expr", self.parse_identifier()?);
+            drop.push_node("on", on);
         }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;

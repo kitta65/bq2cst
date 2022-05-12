@@ -55,6 +55,68 @@ CREATE SCHEEMAA IF NOT EXISTS dataset_name;
             1,
             1,
         )),
+        // ----- CREATE SEARCH INDEX statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE SEARCH INDEX new_index ON tablename(ALL COLUMNS);
+",
+            "\
+self: CREATE (CreateSchemaStatement)
+column_group:
+  self: ( (GroupedExpr)
+  expr:
+    self: ALL (KeywordSequence)
+    next_keyword:
+      self: COLUMNS (Keyword)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: new_index (Identifier)
+on:
+  self: ON (Keyword)
+semicolon:
+  self: ; (Symbol)
+tablename:
+  self: tablename (Identifier)
+what:
+  self: SEARCH (KeywordSequence)
+  next_keyword:
+    self: INDEX (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE SEARCH INDEX IF NOT EXISTS new_index ON tablename(a, b)
+",
+            "\
+self: CREATE (CreateSchemaStatement)
+column_group:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: a (Identifier)
+    comma:
+      self: , (Symbol)
+  - self: b (Identifier)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: new_index (Identifier)
+if_not_exists:
+- self: IF (Keyword)
+- self: NOT (Keyword)
+- self: EXISTS (Keyword)
+on:
+  self: ON (Keyword)
+tablename:
+  self: tablename (Identifier)
+what:
+  self: SEARCH (KeywordSequence)
+  next_keyword:
+    self: INDEX (Keyword)
+",
+            0,
+        )),
         // ----- CREATE TABLE statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -1844,6 +1906,25 @@ table:
   self: TABLE (Keyword)
 what:
   self: FUNCTION (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+DROP SEARCH INDEX ident ON tablename
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: ident (Identifier)
+on:
+  self: ON (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+what:
+  self: SEARCH (KeywordSequence)
+  next_keyword:
+    self: INDEX (Keyword)
 ",
             0,
         )),

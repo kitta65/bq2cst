@@ -35,6 +35,7 @@ export type UnknownNode =
   | CreateReservationStatement
   | CreateRowAccessPolicyStatement
   | CreateSchemaStatement
+  | CreateSearchIndexStatement
   | CreateTableStatement
   | CreateViewStatement
   | DeclareStatement
@@ -64,6 +65,7 @@ export type UnknownNode =
   | IsDistinctFromOperator
   | JoinOperator
   | Keyword
+  | KeywordSequence
   | KeywordWithExpr
   | KeywordWithExprs
   | KeywordWithGroupedXXX
@@ -507,6 +509,18 @@ export type CreateSchemaStatement = XXXStatement & {
   };
 };
 
+export type CreateSearchIndexStatement = XXXStatement & {
+  node_type: "CreateSearchIndexStatement";
+  children: {
+    what: NodeChild;
+    if_not_exists?: NodeVecChild;
+    ident: NodeChild;
+    on: NodeChild;
+    tablename: NodeChild;
+    column_group: NodeChild;
+  };
+};
+
 export type CreateTableStatement = XXXStatement & {
   node_type: "CreateTableStatement";
   children: {
@@ -600,6 +614,7 @@ export type DropStatement = XXXStatement & {
     what: NodeChild;
     if_exists?: NodeVecChild;
     ident: NodeChild;
+    on?: NodeChild;
     cascade_or_restrict?: NodeChild;
   };
 };
@@ -804,6 +819,13 @@ export type JoinOperator = FromItemExpr & {
 export type Keyword = BaseNode & {
   token: Token;
   node_type: "Keyword";
+};
+
+export type KeywordSequence = BaseNode & {
+  node_type: "KeywordSequence";
+  children: {
+    next_keyword: NodeChild;
+  };
 };
 
 export type KeywordWithExpr = BaseNode & {

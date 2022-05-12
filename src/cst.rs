@@ -42,6 +42,7 @@ pub enum NodeType {
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
     CreateRowAccessPolicyStatement,
     CreateSchemaStatement,
+    CreateSearchIndexStatement,
     CreateTableStatement,
     CreateViewStatement,
     Comment,
@@ -65,6 +66,7 @@ pub enum NodeType {
     GroupedType,             // <INT64>
     GroupedTypeDeclarations, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
     Keyword,
+    KeywordSequence,
     KeywordWithExpr,       // WHEN expr
     KeywordWithExprs,      // USING 1, 2
     KeywordWithType,       // RETURNS INT64
