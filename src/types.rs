@@ -225,7 +225,8 @@ export type AlterSchemaStatement = XXXStatement & {
     if_exists?: NodeVecChild;
     ident: NodeChild;
     set: NodeChild;
-    options: NodeChild;
+    default_collate?: NodeChild;
+    options?: NodeChild;
   };
 };
 
@@ -238,6 +239,7 @@ export type AlterTableStatement = XXXStatement & {
     // SET
     set?: NodeChild;
     options?: NodeChild;
+    default_collate?: NodeChile;
     // ADD COLUMN
     add_columns?: NodeVecChild;
     // RENAME TO
@@ -505,6 +507,7 @@ export type CreateSchemaStatement = XXXStatement & {
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
+    default_collate: NodeChild;
     options?: NodeChild;
   };
 };
@@ -534,6 +537,7 @@ export type CreateTableStatement = XXXStatement & {
     like_or_copy: NodeChild;
     source_table: NodeChild;
     column_schema_group?: NodeChild;
+    default_collate?: NodeChild;
     clone?: NodeChild;
     partitionby?: NodeChild;
     clusterby?: NodeChild;
@@ -824,7 +828,7 @@ export type Keyword = BaseNode & {
 export type KeywordSequence = BaseNode & {
   node_type: "KeywordSequence";
   children: {
-    next_keyword: NodeChild;
+    next_keyword: { Node: Keyword | KeywordSequence | KeywordWithExpr };
   };
 };
 
@@ -1108,6 +1112,7 @@ export type Type = BaseNode & {
     parameter?: NodeChild;
     not_null?: NodeVecChild;
     options?: NodeChild;
+    collate?: NodeChild
   };
 };
 

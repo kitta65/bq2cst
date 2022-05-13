@@ -55,6 +55,25 @@ CREATE SCHEEMAA IF NOT EXISTS dataset_name;
             1,
             1,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE SCHEMA dataset_name DEFAULT COLLATE 'und:ci'
+",
+            "\
+self: CREATE (CreateSchemaStatement)
+default_collate:
+  self: DEFAULT (KeywordSequence)
+  next_keyword:
+    self: COLLATE (KeywordWithExpr)
+    expr:
+      self: 'und:ci' (StringLiteral)
+ident:
+  self: dataset_name (Identifier)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
         // ----- CREATE SEARCH INDEX statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -328,6 +347,62 @@ if_not_exists:
 - self: EXISTS (Keyword)
 semicolon:
   self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE example (x STRING COLLATE 'und:ci' NOT NULL)
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: STRING (Type)
+      collate:
+        self: COLLATE (KeywordWithExpr)
+        expr:
+          self: 'und:ci' (StringLiteral)
+      not_null:
+      - self: NOT (Keyword)
+      - self: NULL (Keyword)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE example (x STRING)
+DEFAULT COLLATE 'und:ci'
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: STRING (Type)
+  rparen:
+    self: ) (Symbol)
+default_collate:
+  self: DEFAULT (KeywordSequence)
+  next_keyword:
+    self: COLLATE (KeywordWithExpr)
+    expr:
+      self: 'und:ci' (StringLiteral)
+ident:
+  self: example (Identifier)
 what:
   self: TABLE (Keyword)
 ",
@@ -1418,6 +1493,27 @@ what:
         )),
         Box::new(SuccessTestCase::new(
             "\
+ALTER SCHEMA dataset_name SET DEFAULT COLLATE 'und:ci'
+",
+            "\
+self: ALTER (AlterSchemaStatement)
+default_collate:
+  self: DEFAULT (KeywordSequence)
+  next_keyword:
+    self: COLLATE (KeywordWithExpr)
+    expr:
+      self: 'und:ci' (StringLiteral)
+ident:
+  self: dataset_name (Identifier)
+set:
+  self: SET (Keyword)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 ALTER SCHEMA IF EXISTS dataset_name SET OPTIONS(dummy = 'dummy');
 ",
             "\
@@ -1472,6 +1568,27 @@ options:
       self: ) (Symbol)
 semicolon:
   self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE example SET DEFAULT COLLATE 'und:ci'
+",
+            "\
+self: ALTER (AlterTableStatement)
+default_collate:
+  self: DEFAULT (KeywordSequence)
+  next_keyword:
+    self: COLLATE (KeywordWithExpr)
+    expr:
+      self: 'und:ci' (StringLiteral)
+ident:
+  self: example (Identifier)
 set:
   self: SET (Keyword)
 what:
@@ -1560,6 +1677,31 @@ ident:
   self: example (Identifier)
 semicolon:
   self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE ident ADD COLUMN col1 STRING COLLATE 'und:ci'
+",
+            "\
+self: ALTER (AlterTableStatement)
+add_columns:
+- self: ADD (AddColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  type_declaration:
+    self: col1 (TypeDeclaration)
+    type:
+      self: STRING (Type)
+      collate:
+        self: COLLATE (KeywordWithExpr)
+        expr:
+          self: 'und:ci' (StringLiteral)
+ident:
+  self: ident (Identifier)
 what:
   self: TABLE (Keyword)
 ",
@@ -1744,6 +1886,37 @@ ident:
   self: t (Identifier)
 semicolon:
   self: ; (Symbol)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE t ALTER COLUMN s
+SET DATA TYPE STRING COLLATE 'und:ci'
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  data_type:
+  - self: DATA (Keyword)
+  - self: TYPE (Keyword)
+  ident:
+    self: s (Identifier)
+  set:
+    self: SET (Keyword)
+  type:
+    self: STRING (Type)
+    collate:
+      self: COLLATE (KeywordWithExpr)
+      expr:
+        self: 'und:ci' (StringLiteral)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
 what:
   self: TABLE (Keyword)
 ",

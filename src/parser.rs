@@ -1208,6 +1208,18 @@ impl Parser {
                 res
             }
         };
+        if self.get_token(1)?.is("COLLATE") {
+            // run even if schema == false
+            self.next_token()?; // -> COLLATE
+            let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> 'und:ci'
+            collate.push_node(
+                "expr",
+                // parse_expr is not needed here, construct_node is enough
+                self.construct_node(NodeType::StringLiteral)?,
+            );
+            res.push_node("collate", collate);
+        }
         if self.get_token(1)?.is("NOT") && schema {
             self.next_token()?; // -> NOT
             let not_ = self.construct_node(NodeType::Keyword)?;
@@ -1733,6 +1745,20 @@ impl Parser {
         }
         self.next_token()?; // -> ident
         create.push_node("ident", self.parse_identifier()?);
+        if self.get_token(1)?.is("DEFAULT") {
+            self.next_token()?; // DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // COLLATE
+            let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // collate_specification
+            collate.push_node(
+                "expr",
+                // parse_expr is not needed here, construct_node is enough
+                self.parse_expr(usize::MAX, false, false)?,
+            );
+            default.push_node("next_keyword", collate);
+            create.push_node("default_collate", default);
+        }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
@@ -1825,6 +1851,20 @@ impl Parser {
                 "column_schema_group",
                 self.parse_grouped_type_declarations(true)?,
             );
+        }
+        if self.get_token(1)?.is("default") {
+            self.next_token()?; // DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // COLLATE
+            let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // collate_specification
+            collate.push_node(
+                "expr",
+                // parse_expr is not needed here, construct_node is enough
+                self.construct_node(NodeType::StringLiteral)?,
+            );
+            default.push_node("next_keyword", collate);
+            create.push_node("default_collate", default);
         }
         // NOTE actually, PARTITION BY has only one expr
         // but for simplicity use parse_xxxby_exprs() here
@@ -2113,8 +2153,24 @@ impl Parser {
         alter.push_node("ident", self.parse_identifier()?);
         self.next_token()?; // -> SET
         alter.push_node("set", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> OPTIONS
-        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is("DEFAULT") {
+            self.next_token()?; // DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // COLLATE
+            let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // collate_specification
+            collate.push_node(
+                "expr",
+                // parse_expr is not needed here, construct_node is enough
+                self.construct_node(NodeType::StringLiteral)?,
+            );
+            default.push_node("next_keyword", collate);
+            alter.push_node("default_collate", default);
+        }
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
@@ -2135,8 +2191,23 @@ impl Parser {
             "SET" => {
                 self.next_token()?; // -> SET
                 alter.push_node("set", self.construct_node(NodeType::Keyword)?);
-                self.next_token()?; // -> OPTIONS
-                alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+                if self.get_token(1)?.is("OPTIONS") {
+                    self.next_token()?; // -> OPTIONS
+                    alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+                } else if self.get_token(1)?.is("DEFAULT") {
+                    self.next_token()?; // DEFAULT
+                    let mut default = self.construct_node(NodeType::KeywordSequence)?;
+                    self.next_token()?; // COLLATE
+                    let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // collate_specification
+                    collate.push_node(
+                        "expr",
+                        // parse_expr is not needed here, construct_node is enough
+                        self.construct_node(NodeType::StringLiteral)?,
+                    );
+                    default.push_node("next_keyword", collate);
+                    alter.push_node("default_collate", default);
+                }
             }
             "ADD" => {
                 let mut add_columns = Vec::new();
