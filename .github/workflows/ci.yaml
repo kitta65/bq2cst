@@ -23,6 +23,14 @@ jobs:
         wasm-pack build --target nodejs --scope dr666m1 && \
         cp LICENSE* pkg/
 
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.x'
+        registry-url: 'https://registry.npmjs.org'
+
     - name: publish
-      run: wasm-pack publish --access public
+      working-directory: ./pkg
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
