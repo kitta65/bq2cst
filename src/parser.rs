@@ -312,8 +312,12 @@ impl Parser {
                 "[" => {
                     left.node_type = NodeType::ArrayLiteral;
                     self.next_token()?; // [ -> exprs
-                    left.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-                    self.next_token()?; // exprs -> ]
+                    if self.get_token(0)?.is("]") {
+                        left.push_node_vec("exprs", vec![]);
+                    } else {
+                        left.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
+                        self.next_token()?; // exprs -> ]
+                    }
                     left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                 }
                 "ARRAY" => {

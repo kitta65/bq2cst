@@ -526,12 +526,19 @@ exprs:
         Box::new(SuccessTestCase::new(
             "\
 SELECT
+  [],
   [1, 2],
   ARRAY[1,2],
 ",
             "\
 self: SELECT (SelectStatement)
 exprs:
+- self: [ (ArrayLiteral)
+  comma:
+    self: , (Symbol)
+  exprs: []
+  rparen:
+    self: ] (Symbol)
 - self: [ (ArrayLiteral)
   comma:
     self: , (Symbol)
