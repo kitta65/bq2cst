@@ -7,3 +7,22 @@ jobs:
 
     - run: cargo test
 
+  deploy:
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: install wasp-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: build
+      run: |
+        wasm-pack test --node && \
+        wasm-pack build --target nodejs --scope dr666m1 && \
+        cp LICENSE* pkg/
+
+    - name: publish
+      run: wasm-pack publish --access public
+
