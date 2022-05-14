@@ -1774,7 +1774,7 @@ impl Parser {
         Ok(create)
     }
     fn parse_create_search_index_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
-        let mut create = self.construct_node(NodeType::CreateSchemaStatement)?;
+        let mut create = self.construct_node(NodeType::CreateSearchIndexStatement)?;
         self.next_token()?; // -> SEARCH
         let mut what = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> INDEX
@@ -2892,7 +2892,7 @@ impl Parser {
         if self.get_token(1)?.is("(") {
             self.next_token()?; // -> (
             load.push_node(
-                "column_schema_group",
+                "column_group",
                 self.parse_grouped_type_declarations(false)?,
             );
         }

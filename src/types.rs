@@ -239,7 +239,7 @@ export type AlterTableStatement = XXXStatement & {
     // SET
     set?: NodeChild;
     options?: NodeChild;
-    default_collate?: NodeChile;
+    default_collate?: NodeChild;
     // ADD COLUMN
     add_columns?: NodeVecChild;
     // RENAME TO
@@ -306,7 +306,6 @@ export type BinaryOperator = Expr & {
   node_type: "BinaryOperator";
   children: {
     not?: NodeChild;
-    from?: NodeChild;
     left: { Node: Expr & UnknownNode };
     right: { Node: Expr & UnknownNode };
   };
@@ -541,6 +540,7 @@ export type CreateTableStatement = XXXStatement & {
     clone?: NodeChild;
     partitionby?: NodeChild;
     clusterby?: NodeChild;
+    with_connection?: NodeChild;
     with_partition_columns?: NodeChild;
     options?: NodeChild;
     as?: NodeChild;

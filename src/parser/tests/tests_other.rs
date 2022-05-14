@@ -114,7 +114,7 @@ clusterby:
     self: BY (Keyword)
   exprs:
   - self: s (Identifier)
-column_schema_group:
+column_group:
   self: ( (GroupedTypeDeclarations)
   declarations:
   - self: dt (TypeDeclaration)
