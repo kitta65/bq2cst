@@ -1216,13 +1216,13 @@ options:
     rparen:
       self: ) (Symbol)
 remote:
-  self: REMOTE (RemoteWithConnectionClause)
-  connection:
-    self: CONNECTION (Keyword)
-  ident:
-    self: `project.us.connection` (Identifier)
-  with:
-    self: WITH (Keyword)
+  self: REMOTE (KeywordSequence)
+  next_keyword:
+    self: WITH (KeywordSequence)
+    next_keyword:
+      self: CONNECTION (KeywordWithExpr)
+      expr:
+        self: `project.us.connection` (Identifier)
 returns:
   self: RETURNS (KeywordWithType)
   type:

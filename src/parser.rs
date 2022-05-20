@@ -2015,13 +2015,17 @@ impl Parser {
         }
         if self.get_token(1)?.is("REMOTE") {
             self.next_token()?; // -> REMOTE
-            let mut remote = self.construct_node(NodeType::RemoteWithConnectionClause)?;
+            let mut remote = self.construct_node(NodeType::KeywordSequence)?;
             self.next_token()?; // -> WITH
-            remote.push_node("with", self.construct_node(NodeType::Keyword)?);
+            let mut with = self.construct_node(NodeType::KeywordSequence)?;
+            // remote.push_node("next_token", self.construct_node(NodeType::KeywordSequence)?);
             self.next_token()?; // -> CONNECTION
-            remote.push_node("connection", self.construct_node(NodeType::Keyword)?);
+            let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
+            // remote.push_node("connection", self.construct_node(NodeType::KeywordWithExpr)?);
             self.next_token()?; // -> ident
-            remote.push_node("ident", self.parse_identifier()?);
+            connection.push_node("expr", self.parse_identifier()?);
+            with.push_node("next_keyword", connection);
+            remote.push_node("next_keyword", with);
             node.push_node("remote", remote);
             if self.get_token(1)?.is("OPTIONS") {
                 self.next_token()?; // -> OPTIONS
@@ -2893,10 +2897,7 @@ impl Parser {
         load.push_node("ident", self.parse_identifier()?);
         if self.get_token(1)?.is("(") {
             self.next_token()?; // -> (
-            load.push_node(
-                "column_group",
-                self.parse_grouped_type_declarations(false)?,
-            );
+            load.push_node("column_group", self.parse_grouped_type_declarations(false)?);
         }
         if self.get_token(1)?.is("PARTITION") {
             self.next_token()?; // -> PARTITION
