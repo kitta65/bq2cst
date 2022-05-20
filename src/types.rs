@@ -85,7 +85,6 @@ export type UnknownNode =
   | PivotOperator
   | PivotConfig
   | RaiseStatement
-  | RemoteWithConnectionClause
   | RepeatStatement
   | RevokeStatement
   | SelectStatement
