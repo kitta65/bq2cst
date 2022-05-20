@@ -67,6 +67,8 @@ impl Parser {
                     node.node_type = NodeType::BooleanLiteral;
                 } else if curr_token.is_parameter() {
                     node.node_type = NodeType::Parameter;
+                } else if curr_token.is_template() {
+                    node.node_type = NodeType::Template;
                 } else if curr_token.literal.to_uppercase() == "NULL" {
                     node.node_type = NodeType::NullLiteral;
                 } else if let "(" | "." = self.get_token(1)?.literal.as_str() {

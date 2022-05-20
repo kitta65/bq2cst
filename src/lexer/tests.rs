@@ -337,6 +337,16 @@ SELECT @+param;",
             1,
             9,
         )),
+        // template
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT {{variable}};",
+            vec![
+                Token::from_str(1, 1, "SELECT"),
+                Token::from_str(1, 8, "{{variable}}"),
+                Token::from_str(1, 20, ";"),
+            ],
+        )),
         // operator
         Box::new(SuccessTestCase::new(
             "\

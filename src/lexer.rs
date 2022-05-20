@@ -201,6 +201,30 @@ impl Lexer {
                 let literal = self.read_parameter()?;
                 self.construct_token(line, column, literal)
             }
+            // template
+            '{' => {
+                let first_position = self.position;
+                let mut count = 0;
+                while self.get_char(0) == Some('{') {
+                    count += 1;
+                    self.next_char()?; // { ->
+                }
+                let mut end = false;
+                'outer: while !end {
+                    self.next_char()?;
+                    for i in 0..count {
+                        if self.get_char(i) != Some('}') {
+                            continue 'outer;
+                        };
+                    }
+                    end = true
+                }
+                for _ in 0..count {self.next_char()?}; // } ->
+                let res = self.input[first_position..self.position]
+                    .into_iter()
+                    .collect();
+                self.construct_token(line, column, res)
+            }
             // int64 or float64 literal
             '0'..='9' => {
                 let literal = self.read_number()?;

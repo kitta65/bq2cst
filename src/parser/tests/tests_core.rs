@@ -1540,6 +1540,17 @@ exprs:
 ",
             0,
         )),
+        // ----- template -----
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  {{variable}},
+  {variable},
+",
+            "\
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

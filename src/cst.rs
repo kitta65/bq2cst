@@ -105,6 +105,7 @@ pub enum NodeType {
     Symbol,               // ) | ] | * | ...
     TableSampleClause,    // TABLESAMPLE SYSTEM (10 PERCENT)
     TableSampleRatio,     // (10 PERCENT)
+    Template,              // {{variable}}
     TransactionStatement, // BEGIN | COMMIT | ROLLBACK
     TruncateStatement,
     Type,            // INT64
