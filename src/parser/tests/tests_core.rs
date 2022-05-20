@@ -1548,6 +1548,14 @@ SELECT
   {variable},
 ",
             "\
+self: SELECT (SelectStatement)
+exprs:
+- self: {{variable}} (Template)
+  comma:
+    self: , (Symbol)
+- self: {variable} (Template)
+  comma:
+    self: , (Symbol)
 ",
             0,
         )),
