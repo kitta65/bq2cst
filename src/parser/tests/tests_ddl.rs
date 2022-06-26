@@ -1998,7 +1998,7 @@ what:
         Box::new(SuccessTestCase::new(
             "\
 ALTER BI_CAPACITY `project.region-us.default` SET OPTIONS(
-    preferred_tables = ['table1', 'table2']
+  preferred_tables = ['table1', 'table2']
 )
 ",
             "\
