@@ -8,6 +8,7 @@ export function tokenize(code: string): Token[];
 export type UnknownNode =
   | AccessOperator
   | AddColumnClause
+  | AlterBICapacityStatement
   | AlterColumnStatement
   | AlterSchemaStatement
   | AlterTableStatement
