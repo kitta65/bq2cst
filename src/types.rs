@@ -201,6 +201,16 @@ export type AddColumnClause = BaseNode & {
 };
 
 // ----- sub types of BaseNode (concrete) -----
+export type AlterBICapacityStatement = XXXStatement & {
+  node_type: "AlterBICapacityStatement";
+  children: {
+    what: NodeChild;
+    ident: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
+  };
+};
+
 export type AlterColumnStatement = BaseNode & {
   // NOTE this is not XXXStatement!
   node_type: "AlterColumnStatement";

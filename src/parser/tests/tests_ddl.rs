@@ -1994,6 +1994,43 @@ what:
 ",
             0,
         )),
+        // ----- ALTER VIEW statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER BI_CAPACITY `project.region-us.default` SET OPTIONS(
+    preferred_tables = ['table1', 'table2']
+)
+",
+            "\
+self: ALTER (AlterBICapacityStatement)
+ident:
+  self: `project.region-us.default` (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: preferred_tables (Identifier)
+      right:
+        self: [ (ArrayLiteral)
+        exprs:
+        - self: 'table1' (StringLiteral)
+          comma:
+            self: , (Symbol)
+        - self: 'table2' (StringLiteral)
+        rparen:
+          self: ] (Symbol)
+    rparen:
+      self: ) (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: BI_CAPACITY (Keyword)
+",
+            0,
+        )),
         // ----- DROP statement -----
         // general
         Box::new(SuccessTestCase::new(

@@ -16,9 +16,10 @@ pub enum ContentType {
 pub enum NodeType {
     AccessOperator,  // arr[OFFSET(1)] | json['path']
     AddColumnClause, // ADD COLUMN x INT64 OPTIONS()
+    AlterColumnStatement,
+    AlterBICapacityStatement,
     AlterSchemaStatement,
     AlterTableStatement,
-    AlterColumnStatement,
     AlterViewStatement,
     ArrayLiteral, // [1, 2]
     AssertStatement,
