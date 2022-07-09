@@ -303,6 +303,39 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1
+FROM
+  (SELECT 2)
+UNION ALL
+SELECT 3
+",
+            "\
+self: UNION (SetOperator)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  from:
+    self: FROM (KeywordWithExpr)
+    expr:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 2 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 3 (NumericLiteral)
+",
+            0,
+        )),
         // ----- WITH clause -----
         Box::new(SuccessTestCase::new(
             "\

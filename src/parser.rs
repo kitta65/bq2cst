@@ -944,7 +944,7 @@ impl Parser {
                     }
                 }
                 if statement_flg {
-                    group = self.parse_select_statement(false, true)?;
+                    group = self.parse_select_statement(false, false)?;
                 } else {
                     group = self.construct_node(NodeType::GroupedExpr)?;
                     self.next_token()?; // ( -> expr
