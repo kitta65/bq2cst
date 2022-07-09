@@ -1133,6 +1133,29 @@ from:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM APPENDS(TABLE ident)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (CallingTableFunction)
+    args:
+    - self: TABLE (UnaryOperator)
+      right:
+        self: ident (Identifier)
+    func:
+      self: APPENDS (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // Cloud Spanner federated queries
         Box::new(SuccessTestCase::new(
             "\

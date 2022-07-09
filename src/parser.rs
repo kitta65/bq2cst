@@ -368,6 +368,12 @@ impl Parser {
                     }
                     left.push_node("expr", right);
                 }
+                "TABLE" => {
+                    left.node_type = NodeType::UnaryOperator;
+                    self.next_token()?; // TABLE -> ident
+                    let right = self.parse_expr(002, false, true)?;
+                    left.push_node("right", right);
+                }
                 "B" | "R" | "BR" | "RB" => {
                     if self.get_token(1)?.is_string() {
                         self.next_token()?; // R -> 'string'
