@@ -264,15 +264,8 @@ impl Parser {
                     self.next_token()?; // ( -> expr
                     let mut exprs;
                     let mut statement_flg = false;
-                    let mut offset = 0;
-                    loop {
-                        if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
-                            statement_flg = true;
-                            break;
-                        } else if !self.get_token(offset)?.is("(") {
-                            break;
-                        }
-                        offset += 1;
+                    if self.get_token(0)?.in_(&vec!["WITH", "SELECT"]) {
+                        statement_flg = true;
                     }
                     if statement_flg {
                         left.node_type = NodeType::GroupedStatement;

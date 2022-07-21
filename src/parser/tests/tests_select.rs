@@ -755,10 +755,8 @@ SELECT ((SELECT 1))
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: ( (GroupedStatement)
-  rparen:
-    self: ) (Symbol)
-  stmt:
+- self: ( (GroupedExpr)
+  expr:
     self: ( (GroupedStatement)
     rparen:
       self: ) (Symbol)
@@ -766,6 +764,8 @@ exprs:
       self: SELECT (SelectStatement)
       exprs:
       - self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
 ",
             0,
         )),
@@ -869,6 +869,37 @@ from:
         self: SELECT (SelectStatement)
         exprs:
         - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT ((SELECT TRUE) AND (SELECT FALSE))
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (GroupedExpr)
+  expr:
+    self: AND (BinaryOperator)
+    left:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: TRUE (BooleanLiteral)
+    right:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: FALSE (BooleanLiteral)
+  rparen:
+    self: ) (Symbol)
 ",
             0,
         )),
