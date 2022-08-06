@@ -921,9 +921,10 @@ export type LoadStatement = XXXStatement & {
     from: NodeChild;
     files: NodeChild;
     from_files: NodeChild;
-    with: NodeChild;
-    connection: NodeChild;
-    connection_name: NodeChild;
+    with_partition_columns?: NodeChild;
+    with?: NodeChild;
+    connection?: NodeChild;
+    connection_name?: NodeChild;
   };
 };
 

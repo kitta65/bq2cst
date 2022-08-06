@@ -174,6 +174,50 @@ with:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+LOAD DATA OVERWRITE ident
+FROM FILES (dummy = 'dummy')
+WITH PARTITION COLUMNS (x STRING)
+",
+            "\
+self: LOAD (LoadStatement)
+data:
+  self: DATA (Keyword)
+files:
+  self: FILES (Keyword)
+from:
+  self: FROM (Keyword)
+from_files:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    left:
+      self: dummy (Identifier)
+    right:
+      self: 'dummy' (StringLiteral)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: ident (Identifier)
+into:
+  self: OVERWRITE (Keyword)
+with_partition_columns:
+  self: WITH (WithPartitionColumnsClause)
+  column_schema_group:
+    self: ( (GroupedTypeDeclarations)
+    declarations:
+    - self: x (TypeDeclaration)
+      type:
+        self: STRING (Type)
+    rparen:
+      self: ) (Symbol)
+  partition_columns:
+  - self: PARTITION (Keyword)
+  - self: COLUMNS (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

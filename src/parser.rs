@@ -2907,7 +2907,7 @@ impl Parser {
         let mut load = self.construct_node(NodeType::LoadStatement)?;
         self.next_token()?; // -> DATA
         load.push_node("data", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> INTO
+        self.next_token()?; // -> INTO | OVERWRITE
         load.push_node("into", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> ident
         load.push_node("ident", self.parse_identifier()?);
@@ -2935,12 +2935,28 @@ impl Parser {
         print!("{:?}", self.construct_node(NodeType::Keyword)?);
         load.push_node("from_files", self.parse_grouped_exprs(false)?);
         print!("{:?}", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> WITH
-        load.push_node("with", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> CONNECTION
-        load.push_node("connection", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> connection_name
-        load.push_node("connection_name", self.parse_identifier()?);
+        if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("PARTITION") {
+            self.next_token()?; // -> WITH
+            let mut with = self.construct_node(NodeType::WithPartitionColumnsClause)?;
+            self.next_token()?; // -> PARTITION
+            with.push_node_vec("partition_columns", self.parse_n_keywords(2)?);
+            if self.get_token(1)?.is("(") {
+                self.next_token()?; // -> (
+                with.push_node(
+                    "column_schema_group",
+                    self.parse_grouped_type_declarations(false)?,
+                );
+            }
+            load.push_node("with_partition_columns", with);
+        }
+        if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("CONNECTION") {
+            self.next_token()?; // -> WITH
+            load.push_node("with", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> CONNECTION
+            load.push_node("connection", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> connection_name
+            load.push_node("connection_name", self.parse_identifier()?);
+        }
 
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
