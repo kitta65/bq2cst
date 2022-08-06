@@ -1,4 +1,4 @@
-pub const KEYWORDS: [&str; 95] = [
+pub const KEYWORDS: [&str; 96] = [
     "ALL",
     "AND",
     "ANY",
@@ -70,6 +70,7 @@ pub const KEYWORDS: [&str; 95] = [
     "PARTITION",
     "PRECEDING",
     "PROTO",
+    "QUALIFY",
     "RANGE",
     "RECURSIVE",
     "RESPECT",

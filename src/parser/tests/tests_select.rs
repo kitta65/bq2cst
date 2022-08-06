@@ -1961,6 +1961,53 @@ having:
             "\
 SELECT x
 FROM t
+QUALIFY ROW_NUMBER() OVER(PARTITION BY y ORDER BY z) = 1
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: x (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+qualify:
+  self: QUALIFY (KeywordWithExpr)
+  expr:
+    self: = (BinaryOperator)
+    left:
+      self: ( (CallingFunction)
+      func:
+        self: ROW_NUMBER (Identifier)
+      over:
+        self: OVER (OverClause)
+        window:
+          self: ( (WindowSpecification)
+          orderby:
+            self: ORDER (XXXByExprs)
+            by:
+              self: BY (Keyword)
+            exprs:
+            - self: z (Identifier)
+          partitionby:
+            self: PARTITION (XXXByExprs)
+            by:
+              self: BY (Keyword)
+            exprs:
+            - self: y (Identifier)
+          rparen:
+            self: ) (Symbol)
+      rparen:
+        self: ) (Symbol)
+    right:
+      self: 1 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT x
+FROM t
 WHERE TRUE
 QUALIFY ROW_NUMBER() OVER(PARTITION BY y ORDER BY z) = 1
 ",
