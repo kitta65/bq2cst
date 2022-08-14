@@ -1994,7 +1994,101 @@ what:
 ",
             0,
         )),
-        // ----- ALTER VIEW statement -----
+        // ----- ALTER ORGANIZATION statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER ORGANIZATION
+SET OPTIONS (`region-us.default_time_zone` = 'Asia/Tokyo')
+",
+            "\
+self: ALTER (AlterOrganizationStatement)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: `region-us.default_time_zone` (Identifier)
+      right:
+        self: 'Asia/Tokyo' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: ORGANIZATION (Keyword)
+",
+            0,
+        )),
+        // ----- ALTER PROJECT statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER PROJECT
+SET OPTIONS (
+  `region-us.default_time_zone` = 'Asia/Tokyo',
+  `region-us.default_job_query_timeout_ms` = 1800000
+);
+",
+            "\
+self: ALTER (AlterProjectStatement)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      comma:
+        self: , (Symbol)
+      left:
+        self: `region-us.default_time_zone` (Identifier)
+      right:
+        self: 'Asia/Tokyo' (StringLiteral)
+    - self: = (BinaryOperator)
+      left:
+        self: `region-us.default_job_query_timeout_ms` (Identifier)
+      right:
+        self: 1800000 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+semicolon:
+  self: ; (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: PROJECT (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER PROJECT `project-id`
+SET OPTIONS (`region-us.default_time_zone` = 'Asia/Tokyo')
+",
+            "\
+self: ALTER (AlterProjectStatement)
+ident:
+  self: `project-id` (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: `region-us.default_time_zone` (Identifier)
+      right:
+        self: 'Asia/Tokyo' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: PROJECT (Keyword)
+",
+            0,
+        )),
+        // ----- ALTER BI_CAPACITY statement -----
         Box::new(SuccessTestCase::new(
             "\
 ALTER BI_CAPACITY `project.region-us.default` SET OPTIONS(

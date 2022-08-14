@@ -867,6 +867,10 @@ impl Parser {
                         "TABLE" => return self.parse_alter_table_statement(semicolon),
                         "COLUMN" => return self.parse_alter_column_statement(semicolon),
                         "VIEW" => return self.parse_alter_view_statement(semicolon),
+                        "ORGANIZATION" => {
+                            return self.parse_alter_organization_statement(semicolon)
+                        }
+                        "PROJECT" => return self.parse_alter_project_statement(semicolon),
                         "BI_CAPACITY" => return self.parse_alter_bicapacity_statement(semicolon),
                         _ => {
                             offset += 1;
@@ -2353,6 +2357,38 @@ impl Parser {
         }
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);
+        self.next_token()?; // -> SET
+        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> OPTIONS
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(alter)
+    }
+    fn parse_alter_organization_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut alter = self.construct_node(NodeType::AlterOrganizationStatement)?;
+        self.next_token()?; // -> ORGANIZATION
+        alter.push_node("what", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> SET
+        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> OPTIONS
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(alter)
+    }
+    fn parse_alter_project_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut alter = self.construct_node(NodeType::AlterProjectStatement)?;
+        self.next_token()?; // -> PROJECT
+        alter.push_node("what", self.construct_node(NodeType::Keyword)?);
+        if !self.get_token(1)?.is("SET") {
+            self.next_token()?; // -> ident
+            alter.push_node("ident", self.parse_identifier()?);
+        }
         self.next_token()?; // -> SET
         alter.push_node("set", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> OPTIONS

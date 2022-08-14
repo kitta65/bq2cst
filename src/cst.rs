@@ -18,6 +18,8 @@ pub enum NodeType {
     AddColumnClause, // ADD COLUMN x INT64 OPTIONS()
     AlterColumnStatement,
     AlterBICapacityStatement,
+    AlterOrganizationStatement,
+    AlterProjectStatement,
     AlterSchemaStatement,
     AlterTableStatement,
     AlterViewStatement,

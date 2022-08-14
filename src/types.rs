@@ -10,6 +10,8 @@ export type UnknownNode =
   | AddColumnClause
   | AlterBICapacityStatement
   | AlterColumnStatement
+  | AlterOrganizationStatement
+  | AlterProjectStatement
   | AlterSchemaStatement
   | AlterTableStatement
   | AlterViewStatement
@@ -226,6 +228,25 @@ export type AlterColumnStatement = BaseNode & {
     type: NodeChild;
     // DROP
     drop_not_null: NodeVecChild;
+  };
+};
+
+export type AlterOrganizationStatement = XXXStatement & {
+  node_type: "AlterOrganizationStatement";
+  children: {
+    what: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
+  };
+};
+
+export type AlterProjectStatement = XXXStatement & {
+  node_type: "AlterProjectStatement";
+  children: {
+    what: NodeChild;
+    ident?: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
   };
 };
 
