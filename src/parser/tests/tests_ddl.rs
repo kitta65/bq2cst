@@ -1467,6 +1467,42 @@ what:
 ",
             0,
         )),
+        // ----- CREATE RESERVATIONS statement -----
+        // CREATE
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE CAPACITY project.region.commitment_id
+AS JSON '''
+  'slot_count': 100,
+  'plan': 'FLEX'
+'''
+",
+            "\
+self: CREATE (CreateReservationStatement)
+as:
+  self: AS (Keyword)
+ident:
+  self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: project (Identifier)
+    right:
+      self: region (Identifier)
+  right:
+    self: commitment_id (Identifier)
+json:
+  self: JSON (Keyword)
+json_string:
+  self: '''
+  'slot_count': 100,
+  'plan': 'FLEX'
+''' (StringLiteral)
+what:
+  self: CAPACITY (Keyword)
+",
+            0,
+        )),
         // ----- ALTER SCHEMA statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -2295,6 +2331,35 @@ what:
 - self: ROW (Keyword)
 - self: ACCESS (Keyword)
 - self: POLICIES (Keyword)
+",
+            0,
+        )),
+        // ----- DORP RESERVATION statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+DROP ASSIGNMENT IF EXISTS project.location.reservation.assignment
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: . (DotOperator)
+      left:
+        self: project (Identifier)
+      right:
+        self: location (Identifier)
+    right:
+      self: reservation (Identifier)
+  right:
+    self: assignment (Identifier)
+if_exists:
+- self: IF (Keyword)
+- self: EXISTS (Keyword)
+what:
+  self: ASSIGNMENT (Keyword)
 ",
             0,
         )),
