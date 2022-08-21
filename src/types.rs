@@ -88,6 +88,7 @@ export type UnknownNode =
   | PivotOperator
   | PivotConfig
   | RaiseStatement
+  | RenameColumnClause
   | RepeatStatement
   | RevokeStatement
   | SelectStatement
@@ -279,6 +280,8 @@ export type AlterTableStatement = XXXStatement & {
     // RENAME TO
     rename?: NodeChild;
     to?: NodeChild;
+    // RENAME COLUMN
+    rename_columns?: NodeVecChild;
     // DROP COLUMN
     drop_columns?: NodeVecChild;
     // ALTER COLUMN statement
@@ -1014,6 +1017,18 @@ export type RaiseStatement = XXXStatement & {
   node_type: "RaiseStatement";
   children: {
     using?: NodeChild;
+  };
+};
+
+export type RenameColumnClause = BaseNode & {
+  token: Token;
+  node_type: "RenameColumnClause";
+  children: {
+    column: NodeChild;
+    if_exists?: NodeChild;
+    ident: NodeChild;
+    to: NodeChild;
+    comma?: NodeChild;
   };
 };
 

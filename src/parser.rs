@@ -2255,13 +2255,43 @@ impl Parser {
                 alter.push_node_vec("add_columns", add_columns);
             }
             "RENAME" => {
-                self.next_token()?; // -> RENAME
-                alter.push_node("rename", self.construct_node(NodeType::Keyword)?);
-                self.next_token()?; // -> TO
-                let mut to = self.construct_node(NodeType::KeywordWithExpr)?;
-                self.next_token()?; // -> ident
-                to.push_node("expr", self.parse_identifier()?);
-                alter.push_node("to", to);
+                if self.get_token(2)?.is("TO") {
+                    self.next_token()?; // -> RENAME
+                    alter.push_node("rename", self.construct_node(NodeType::Keyword)?);
+                    self.next_token()?; // -> TO
+                    let mut to = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // -> ident
+                    to.push_node("expr", self.parse_identifier()?);
+                    alter.push_node("to", to);
+                } else {
+                    let mut rename_columns = vec![];
+                    while self.get_token(1)?.is("RENAME") {
+                        self.next_token()?; // -> RENAME
+                        let mut rename = self.construct_node(NodeType::RenameColumnClause)?;
+                        self.next_token()?; // -> COLUMN
+                        rename.push_node("column", self.construct_node(NodeType::Keyword)?);
+                        if self.get_token(1)?.is("IF") {
+                            self.next_token()?; // -> IF
+                            let mut if_ = self.construct_node(NodeType::KeywordSequence)?;
+                            self.next_token()?; // -> EXISTS
+                            if_.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+                            rename.push_node("if_exists", if_);
+                        }
+                        self.next_token()?; // -> ident (original)
+                        rename.push_node("ident", self.parse_identifier()?);
+                        self.next_token()?; // -> TO
+                        let mut to = self.construct_node(NodeType::KeywordWithExpr)?;
+                        self.next_token()?; // -> ident (new)
+                        to.push_node("expr", self.parse_identifier()?);
+                        if self.get_token(1)?.is(",") {
+                            self.next_token()?; // -> ;
+                            rename.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                        }
+                        rename.push_node("to", to);
+                        rename_columns.push(rename);
+                    }
+                    alter.push_node_vec("rename_columns", rename_columns);
+                }
             }
             "DROP" => {
                 let mut drop_columns = Vec::new();

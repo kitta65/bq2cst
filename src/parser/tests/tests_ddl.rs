@@ -1768,7 +1768,7 @@ what:
 ",
             0,
         )),
-        // RENAME
+        // RENAME TO
         Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE dataset_name.t
@@ -1790,6 +1790,74 @@ to:
   self: TO (KeywordWithExpr)
   expr:
     self: u (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        // RENAME COLUMN
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE t
+RENAME COLUMN u TO v
+",
+            "\
+self: ALTER (AlterTableStatement)
+ident:
+  self: t (Identifier)
+rename_columns:
+- self: RENAME (RenameColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  ident:
+    self: u (Identifier)
+  to:
+    self: TO (KeywordWithExpr)
+    expr:
+      self: v (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE t
+RENAME COLUMN u TO v,
+RENAME COLUMN IF EXISTS w TO x
+;
+",
+            "\
+self: ALTER (AlterTableStatement)
+ident:
+  self: t (Identifier)
+rename_columns:
+- self: RENAME (RenameColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  comma:
+    self: , (Symbol)
+  ident:
+    self: u (Identifier)
+  to:
+    self: TO (KeywordWithExpr)
+    expr:
+      self: v (Identifier)
+- self: RENAME (RenameColumnClause)
+  column:
+    self: COLUMN (Keyword)
+  ident:
+    self: w (Identifier)
+  if_exists:
+    self: IF (KeywordSequence)
+    next_keyword:
+      self: EXISTS (Keyword)
+  to:
+    self: TO (KeywordWithExpr)
+    expr:
+      self: x (Identifier)
+semicolon:
+  self: ; (Symbol)
 what:
   self: TABLE (Keyword)
 ",
