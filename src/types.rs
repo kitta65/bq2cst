@@ -223,11 +223,13 @@ export type AlterColumnStatement = BaseNode & {
     ident: NodeChild;
     // SET
     set: NodeChild;
-    options: NodeChild;
-    data_type: NodeVecChild;
-    type: NodeChild;
+    options?: NodeChild;
+    data_type?: NodeVecChild;
+    type?: NodeChild;
+    default?: NodeChild;
     // DROP
-    drop_not_null: NodeVecChild;
+    drop_not_null?: NodeVecChild;
+    drop_default?: NodeVecChild;
   };
 };
 

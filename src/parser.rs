@@ -2324,15 +2324,25 @@ impl Parser {
                 if self.get_token(1)?.is("OPTIONS") {
                     self.next_token()?; // -> OPTIONS
                     alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
-                } else {
+                } else if self.get_token(1)?.is("DATA") {
                     self.next_token()?; // -> DATA
                     alter.push_node_vec("data_type", self.parse_n_keywords(2)?);
                     self.next_token()?; // -> type
                     alter.push_node("type", self.parse_type(false)?);
+                } else {
+                    self.next_token()?; // -> DEFAULT
+                    let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // -> expr
+                    default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                    alter.push_node("default", default);
                 }
             }
             "DROP" => {
-                alter.push_node_vec("drop_not_null", self.parse_n_keywords(3)?);
+                if self.get_token(1)?.is("DEFAULT") {
+                    alter.push_node_vec("drop_default", self.parse_n_keywords(2)?);
+                } else {
+                    alter.push_node_vec("drop_not_null", self.parse_n_keywords(3)?);
+                }
             }
             _ => {
                 return Err(BQ2CSTError::from_token(

@@ -1828,7 +1828,7 @@ what:
             0,
         )),
         // ----- ALTER COLUMN statement -----
-        // DROP
+        // DROP NOT NULL
         Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE t
@@ -1880,6 +1880,30 @@ ident:
 if_exists:
 - self: IF (Keyword)
 - self: EXISTS (Keyword)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        // DROP DEFAULT
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE t
+ALTER COLUMN c DROP DEFAULT
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  drop_default:
+  - self: DROP (Keyword)
+  - self: DEFAULT (Keyword)
+  ident:
+    self: c (Identifier)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
 what:
   self: TABLE (Keyword)
 ",
@@ -1974,6 +1998,37 @@ alter_column_stmt:
       self: COLLATE (KeywordWithExpr)
       expr:
         self: 'und:ci' (StringLiteral)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: t (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        // SET DEFAULT
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE t ALTER COLUMN s
+SET DEFAULT CURRENT_TIMESTAMP()
+",
+            "\
+self: ALTER (AlterTableStatement)
+alter_column_stmt:
+  self: ALTER (AlterColumnStatement)
+  default:
+    self: DEFAULT (KeywordWithExpr)
+    expr:
+      self: ( (CallingFunction)
+      func:
+        self: CURRENT_TIMESTAMP (Identifier)
+      rparen:
+        self: ) (Symbol)
+  ident:
+    self: s (Identifier)
+  set:
+    self: SET (Keyword)
   what:
     self: COLUMN (Keyword)
 ident:
