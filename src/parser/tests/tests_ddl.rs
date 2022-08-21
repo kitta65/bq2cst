@@ -408,6 +408,31 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE example (x STRING DEFAULT 'hello')
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarations)
+  declarations:
+  - self: x (TypeDeclaration)
+    type:
+      self: STRING (Type)
+      default:
+        self: DEFAULT (KeywordWithExpr)
+        expr:
+          self: 'hello' (StringLiteral)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
         // LIKE
         Box::new(SuccessTestCase::new(
             "\

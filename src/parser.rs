@@ -1237,6 +1237,13 @@ impl Parser {
             let null = self.construct_node(NodeType::Keyword)?;
             res.push_node_vec("not_null", vec![not_, null]);
         }
+        if self.get_token(1)?.is("DEFAULT") && schema {
+            self.next_token()?; // -> DEFAULT
+            let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> expr
+            default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            res.push_node("default", default);
+        }
         if self.get_token(1)?.is("OPTIONS") && schema {
             self.next_token()?; // -> OPTIONS
             let options = self.parse_keyword_with_grouped_exprs(false)?;

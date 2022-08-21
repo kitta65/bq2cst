@@ -1139,6 +1139,7 @@ export type Type = BaseNode & {
     type_declaration?: NodeChild;
     parameter?: NodeChild;
     not_null?: NodeVecChild;
+    default?: NodeChild;
     options?: NodeChild;
     collate?: NodeChild
   };
