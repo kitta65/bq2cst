@@ -1373,6 +1373,31 @@ impl Parser {
                 operator.push_node("right", self.parse_select_statement(false, false)?);
                 node = operator;
             }
+            // ORDER BY
+            if self.get_token(1)?.is("ORDER") {
+                self.next_token()?; // -> ORDER
+                let mut order = self.construct_node(NodeType::XXXByExprs)?;
+                self.next_token()?; // -> BY
+                order.push_node("by", self.construct_node(NodeType::Keyword)?);
+                self.next_token()?; // BY -> expr
+                order.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
+                node.push_node("orderby", order);
+            }
+            // LIMIT
+            if self.get_token(1)?.is("LIMIT") {
+                self.next_token()?; // -> LIMIT
+                let mut limit = self.construct_node(NodeType::LimitClause)?;
+                self.next_token()?; // -> expr
+                limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                if self.get_token(1)?.literal.to_uppercase() == "OFFSET" {
+                    self.next_token()?; // expr -> OFFSET
+                    let mut offset = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // OFFSET -> expr
+                    offset.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                    limit.push_node("offset", offset);
+                }
+                node.push_node("limit", limit);
+            }
             if self.get_token(1)?.is(";") && semicolon && root {
                 self.next_token()?; // expr -> ;
                 node.push_node("semicolon", self.construct_node(NodeType::Symbol)?)

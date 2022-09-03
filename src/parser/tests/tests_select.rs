@@ -2210,6 +2210,40 @@ orderby:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+(SELECT col FROM tablename ORDER BY 1)
+ORDER BY 1 DESC
+",
+            "\
+self: ( (GroupedStatement)
+orderby:
+  self: ORDER (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: 1 (NumericLiteral)
+    order:
+      self: DESC (Keyword)
+rparen:
+  self: ) (Symbol)
+stmt:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: col (Identifier)
+  from:
+    self: FROM (KeywordWithExpr)
+    expr:
+      self: tablename (Identifier)
+  orderby:
+    self: ORDER (XXXByExprs)
+    by:
+      self: BY (Keyword)
+    exprs:
+    - self: 1 (NumericLiteral)
+",
+            0,
+        )),
         // ----- LIMIT clause -----
         Box::new(SuccessTestCase::new(
             "\
@@ -2250,6 +2284,29 @@ limit:
     self: OFFSET (KeywordWithExpr)
     expr:
       self: 10 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(SELECT 1 LIMIT 2) LIMIT 3
+",
+            "\
+self: ( (GroupedStatement)
+limit:
+  self: LIMIT (LimitClause)
+  expr:
+    self: 3 (NumericLiteral)
+rparen:
+  self: ) (Symbol)
+stmt:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+  limit:
+    self: LIMIT (LimitClause)
+    expr:
+      self: 2 (NumericLiteral)
 ",
             0,
         )),

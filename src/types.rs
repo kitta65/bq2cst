@@ -766,6 +766,8 @@ export type GroupedStatement = FromItemExpr &
       with?: { Node: WithClause };
       stmt: NodeChild;
       rparen: NodeChild;
+      orderby: NodeChild;
+      limit: NodeChild;
     };
   };
 
