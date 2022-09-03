@@ -1915,6 +1915,43 @@ groupby:
 ",
             0,
         )),
+        // NOTE ROLLUP is not a function but it is OK
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT x, SUM(y) FROM t GROUP BY ROLLUP(x)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: x (Identifier)
+  comma:
+    self: , (Symbol)
+- self: ( (CallingFunction)
+  args:
+  - self: y (Identifier)
+  func:
+    self: SUM (Identifier)
+  rparen:
+    self: ) (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+groupby:
+  self: GROUP (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: ( (CallingFunction)
+    args:
+    - self: x (Identifier)
+    func:
+      self: ROLLUP (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- HAVING clause -----
         Box::new(SuccessTestCase::new(
             "\
