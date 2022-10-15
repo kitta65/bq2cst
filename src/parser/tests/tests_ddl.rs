@@ -1102,8 +1102,8 @@ group:
 ident:
   self: abc (Identifier)
 language:
-  self: LAGUAGE (LanguageSpecifier)
-  language:
+  self: LAGUAGE (KeywordWithExpr)
+  expr:
     self: js (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedXXX)
@@ -1143,8 +1143,8 @@ group:
 ident:
   self: abc (Identifier)
 language:
-  self: LANGUAGE (LanguageSpecifier)
-  language:
+  self: LANGUAGE (KeywordWithExpr)
+  expr:
     self: js (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedXXX)
@@ -1194,8 +1194,8 @@ group:
 ident:
   self: abc (Identifier)
 language:
-  self: LANGUAGE (LanguageSpecifier)
-  language:
+  self: LANGUAGE (KeywordWithExpr)
+  expr:
     self: js (Identifier)
 returns:
   self: RETURNS (KeywordWithType)
@@ -1394,6 +1394,84 @@ stmt:
       self: ; (Symbol)
 what:
   self: PROCEDURE (Keyword)
+",
+            0,
+        )),
+        // ----- Apache Spark
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE PROCEDURE procedure_ident()
+WITH CONNECTION connection_ident
+OPTIONS (dummy = 'dummy')
+LANGUAGE python
+",
+            "\
+self: CREATE (CreateProcedureStatement)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: procedure_ident (Identifier)
+language:
+  self: LANGUAGE (KeywordWithExpr)
+  expr:
+    self: python (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: PROCEDURE (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: connection_ident (Identifier)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE PROCEDURE procedure_ident()
+WITH CONNECTION connection_ident
+LANGUAGE python AS r'code'
+",
+            "\
+self: CREATE (CreateProcedureStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: r (UnaryOperator)
+    right:
+      self: 'code' (StringLiteral)
+group:
+  self: ( (GroupedTypeDeclarations)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: procedure_ident (Identifier)
+language:
+  self: LANGUAGE (KeywordWithExpr)
+  expr:
+    self: python (Identifier)
+what:
+  self: PROCEDURE (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: connection_ident (Identifier)
 ",
             0,
         )),

@@ -83,7 +83,6 @@ pub enum NodeType {
     InOperator,
     IsDistinctFromOperator,
     JoinOperator,      // JOIN | ,
-    LanguageSpecifier, // LANGUAGE js
     LimitClause,
     LoadStatement,
     LoopStatement,

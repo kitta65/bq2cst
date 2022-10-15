@@ -2101,9 +2101,9 @@ impl Parser {
                 }
             }
             self.next_token()?; // -> LANGUAGE
-            let mut language = self.construct_node(NodeType::LanguageSpecifier)?;
+            let mut language = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> js
-            language.push_node("language", self.construct_node(NodeType::Identifier)?);
+            language.push_node("expr", self.construct_node(NodeType::Identifier)?);
             node.push_node("language", language);
             if self.get_token(1)?.is("OPTIONS") {
                 self.next_token()?; // -> OPTIONS
@@ -2137,12 +2137,31 @@ impl Parser {
         create.push_node("ident", self.parse_identifier()?);
         self.next_token()?; // -> (
         create.push_node("group", self.parse_grouped_type_declarations(true)?);
+        if self.get_token(1)?.is("WITH") {
+            self.next_token()?; // -> WITH
+            create.push_node("with_connection", self.parse_with_connection_clause()?);
+        }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // -> OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
         }
-        self.next_token()?; // -> BEGIN
-        create.push_node("stmt", self.parse_begin_statement(false)?);
+        if self.get_token(1)?.is("LANGUAGE") {
+            self.next_token()?; // -> LANGUAGE
+            let mut language = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> python
+            language.push_node("expr", self.construct_node(NodeType::Identifier)?);
+            create.push_node("language", language);
+        }
+        if self.get_token(1)?.is("BEGIN") {
+            self.next_token()?; // -> BEGIN
+            create.push_node("stmt", self.parse_begin_statement(false)?);
+        } else if self.get_token(1)?.is("AS") {
+            self.next_token()?; // -> AS
+            let mut as_ = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> "pyspark code"
+            as_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            create.push_node("as", as_);
+        }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol)?);

@@ -75,7 +75,6 @@ export type UnknownNode =
   | KeywordWithStatement
   | KeywordWithStatements
   | KeywordWithType
-  | LanguageSpecifier
   | LimitClause
   | LoadStatement
   | LoopStatement
@@ -505,8 +504,11 @@ export type CreateProcedureStatement = XXXStatement & {
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
     group: NodeChild;
+    with_connection?: NodeChild;
     options?: NodeChild;
-    stmt: NodeChild;
+    language?: NodeChild;
+    stmt?: NodeChild;
+    as?: NodeChild;
   };
 };
 
@@ -909,13 +911,6 @@ export type KeywordWithType = BaseNode & {
   node_type: "KeywordWithType";
   children: {
     type: NodeChild;
-  };
-};
-
-export type LanguageSpecifier = BaseNode & {
-  node_type: "LanguageSpecifier";
-  children: {
-    language: NodeChild;
   };
 };
 
