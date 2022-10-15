@@ -1331,6 +1331,15 @@ impl Parser {
             Ok(self.construct_node(NodeType::Identifier)?)
         }
     }
+    fn parse_with_connection_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut with = self.construct_node(NodeType::KeywordSequence)?;
+        self.next_token()?; // -> CONNECTION
+        let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> ident
+        connection.push_node("expr", self.parse_identifier()?);
+        with.push_node("next_keyword", connection);
+        Ok(with)
+    }
     fn parse_xxxby_exprs(&mut self) -> BQ2CSTResult<Node> {
         let mut xxxby = self.construct_node(NodeType::XXXByExprs)?;
         self.next_token()?; // xxx -> BY
@@ -1920,12 +1929,7 @@ impl Parser {
         }
         if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("CONNECTION") && external {
             self.next_token()?; // -> WITH
-            let mut with = self.construct_node(NodeType::WithConnectionClause)?;
-            self.next_token()?; // -> CONNECTION
-            with.push_node("connection", self.construct_node(NodeType::Keyword)?);
-            self.next_token()?; // -> ident
-            with.push_node("ident", self.parse_identifier()?);
-            create.push_node("with_connection", with);
+            create.push_node("with_connection", self.parse_with_connection_clause()?);
         }
         if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("PARTITION") && external {
             self.next_token()?; // -> WITH

@@ -125,7 +125,6 @@ pub enum NodeType {
     WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
     WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
     WithClause,          // WITH x AS (SELECT 1)
-    WithConnectionClause,
     WithPartitionColumnsClause, // WITH PARTITION COLUMNS (c1 INT64, c2 FLOAT64)
     WithQuery,                  // x AS (SELECT 1)
     XXXByExprs,                 // ORDER BY expr

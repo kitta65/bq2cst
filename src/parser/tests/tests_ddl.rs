@@ -818,11 +818,11 @@ options:
 what:
   self: TABLE (Keyword)
 with_connection:
-  self: WITH (WithConnectionClause)
-  connection:
-    self: CONNECTION (Keyword)
-  ident:
-    self: ident (Identifier)
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: ident (Identifier)
 ",
             0,
         )),
