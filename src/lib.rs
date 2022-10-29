@@ -7,6 +7,8 @@ mod token;
 mod types;
 mod utils;
 
+use serde::Serialize;
+use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::*;
 
 // you can ignore diagnostic message
@@ -15,33 +17,42 @@ use wasm_bindgen::prelude::*;
 pub fn parse(code: String) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
     let l = lexer::Lexer::new(code);
+    let s = Serializer::json_compatible();
     let mut p = parser::Parser::new(match l.tokenize_code() {
         Ok(tokens) => tokens,
         Err(bq2cst_error) => {
-            return Err(serde_wasm_bindgen::to_value(&bq2cst_error)
+            return Err(bq2cst_error
+                .serialize(&s)
                 .expect("Problem converting error struct to json."))
         }
     });
     let stmts = match p.parse_code() {
         Ok(stmts) => stmts,
         Err(bq2cst_error) => {
-            return Err(serde_wasm_bindgen::to_value(&bq2cst_error)
+            return Err(bq2cst_error
+                .serialize(&s)
                 .expect("Problem converting error struct to json."))
         }
     };
-    Ok(serde_wasm_bindgen::to_value(&stmts).expect("Problem converting stmts to json."))
+    Ok(stmts
+        .serialize(&s)
+        .expect("Problem converting stmts to json."))
 }
 
 #[wasm_bindgen(skip_typescript)]
 pub fn tokenize(code: String) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
     let l = lexer::Lexer::new(code);
+    let s = Serializer::json_compatible();
     let tokens = match l.tokenize_code() {
         Ok(tokens) => tokens,
         Err(bq2cst_error) => {
-            return Err(serde_wasm_bindgen::to_value(&bq2cst_error)
+            return Err(bq2cst_error
+                .serialize(&s)
                 .expect("Problem converting error struct to json."))
         }
     };
-    Ok(serde_wasm_bindgen::to_value(&tokens).expect("Problem converting tokens to json."))
+    Ok(tokens
+        .serialize(&s)
+        .expect("Problem converting tokens to json."))
 }
