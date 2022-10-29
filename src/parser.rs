@@ -1852,6 +1852,10 @@ impl Parser {
         } else {
             create.push_node("column_group", self.parse_grouped_exprs(false)?);
         }
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol)?)

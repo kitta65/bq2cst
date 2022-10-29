@@ -106,7 +106,9 @@ what:
         )),
         Box::new(SuccessTestCase::new(
             "\
-CREATE SEARCH INDEX IF NOT EXISTS new_index ON tablename(a, b)
+CREATE SEARCH INDEX IF NOT EXISTS new_index
+ON tablename(a, b)
+OPTIONS(dummy='dummy')
 ",
             "\
 self: CREATE (CreateSearchIndexStatement)
@@ -127,6 +129,18 @@ if_not_exists:
 - self: EXISTS (Keyword)
 on:
   self: ON (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
 tablename:
   self: tablename (Identifier)
 what:

@@ -558,6 +558,7 @@ export type CreateSearchIndexStatement = XXXStatement & {
     on: NodeChild;
     tablename: NodeChild;
     column_group: NodeChild;
+    options?: NodeChild;
   };
 };
 
