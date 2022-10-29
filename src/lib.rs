@@ -1,3 +1,6 @@
+// https://github.com/rustwasm/wasm-bindgen/issues/2882
+#![allow(non_upper_case_globals)]
+
 mod constants;
 mod cst;
 mod error;
@@ -11,8 +14,6 @@ use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::*;
 
-// you can ignore diagnostic message
-// https://github.com/rustwasm/wasm-bindgen/issues/2882
 #[wasm_bindgen(skip_typescript)]
 pub fn parse(code: String) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
