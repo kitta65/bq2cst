@@ -1867,6 +1867,41 @@ from:
 ",
             0,
         )),
+        // built-in table functions
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT uri FROM EXTERNAL_OBJECT_TRANSFORM(TABLE dataset.myobjecttable, ['SIGNED_URL'])
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: uri (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (CallingTableFunction)
+    args:
+    - self: TABLE (UnaryOperator)
+      comma:
+        self: , (Symbol)
+      right:
+        self: . (DotOperator)
+        left:
+          self: dataset (Identifier)
+        right:
+          self: myobjecttable (Identifier)
+    - self: [ (ArrayLiteral)
+      exprs:
+      - self: 'SIGNED_URL' (StringLiteral)
+      rparen:
+        self: ] (Symbol)
+    func:
+      self: EXTERNAL_OBJECT_TRANSFORM (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- WHERE clause -----
         Box::new(SuccessTestCase::new(
             "\
