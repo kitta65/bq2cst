@@ -3067,9 +3067,7 @@ impl Parser {
         self.next_token()?; // -> FILES
         load.push_node("files", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> from_files
-        print!("{:?}", self.construct_node(NodeType::Keyword)?);
         load.push_node("from_files", self.parse_grouped_exprs(false)?);
-        print!("{:?}", self.construct_node(NodeType::Keyword)?);
         if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("PARTITION") {
             self.next_token()?; // -> WITH
             let mut with = self.construct_node(NodeType::WithPartitionColumnsClause)?;
