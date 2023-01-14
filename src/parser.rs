@@ -2637,12 +2637,18 @@ impl Parser {
         create.push_node("what", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> ident
         create.push_node("ident", self.parse_identifier()?);
-        self.next_token()?; // AS
-        create.push_node("as", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // JSON
-        create.push_node("json", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> '''{}'''
-        create.push_node("json_string", self.parse_expr(usize::MAX, false, false)?);
+        if self.get_token(1)?.is("AS") {
+            // may be deprecated
+            self.next_token()?; // -> AS
+            create.push_node("as", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> JSON
+            create.push_node("json", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> '''{}'''
+            create.push_node("json_string", self.parse_expr(usize::MAX, false, false)?);
+        } else if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol)?)

@@ -1587,6 +1587,7 @@ what:
         // ----- CREATE RESERVATIONS statement -----
         // CREATE
         Box::new(SuccessTestCase::new(
+            // may be deprecated
             "\
 CREATE CAPACITY project.region.commitment_id
 AS JSON '''
@@ -1615,6 +1616,32 @@ json_string:
   'slot_count': 100,
   'plan': 'FLEX'
 ''' (StringLiteral)
+what:
+  self: CAPACITY (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE CAPACITY ident
+OPTIONS (plan='FLEX')
+",
+            "\
+self: CREATE (CreateReservationStatement)
+ident:
+  self: ident (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: plan (Identifier)
+      right:
+        self: 'FLEX' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
 what:
   self: CAPACITY (Keyword)
 ",

@@ -517,9 +517,10 @@ export type CreateReservationStatement = XXXStatement & {
   children: {
     what: NodeChild;
     ident: NodeChild;
-    as: NodeChild;
-    json: NodeChild;
-    json_string: NodeChild;
+    as?: NodeChild;
+    json?: NodeChild;
+    json_string?: NodeChild;
+    options?: NodeChild;
   };
 };
 
