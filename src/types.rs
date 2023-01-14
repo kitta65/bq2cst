@@ -12,6 +12,7 @@ export type UnknownNode =
   | AlterColumnStatement
   | AlterOrganizationStatement
   | AlterProjectStatement
+  | AlterReservationStatement
   | AlterSchemaStatement
   | AlterTableStatement
   | AlterViewStatement
@@ -246,6 +247,16 @@ export type AlterProjectStatement = XXXStatement & {
   children: {
     what: NodeChild;
     ident?: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
+  };
+};
+
+export type AlterReservationStatement = XXXStatement & {
+  node_type: "AlterReservationStatement";
+  children: {
+    what: NodeChild;
+    ident: NodeChild;
     set: NodeChild;
     options: NodeChild;
   };

@@ -872,6 +872,9 @@ impl Parser {
                         }
                         "PROJECT" => return self.parse_alter_project_statement(semicolon),
                         "BI_CAPACITY" => return self.parse_alter_bicapacity_statement(semicolon),
+                        "CAPACITY" | "RESERVATION" => {
+                            return self.parse_alter_reservation_statement(semicolon)
+                        }
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -2501,6 +2504,22 @@ impl Parser {
     fn parse_alter_bicapacity_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut alter = self.construct_node(NodeType::AlterBICapacityStatement)?;
         self.next_token()?; // -> BI_CAPACITY
+        alter.push_node("what", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> ident
+        alter.push_node("ident", self.parse_identifier()?);
+        self.next_token()?; // -> SET
+        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> OPTIONS
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(alter)
+    }
+    fn parse_alter_reservation_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut alter = self.construct_node(NodeType::AlterReservationStatement)?;
+        self.next_token()?; // -> CAPACITY | RESERVATION
         alter.push_node("what", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);

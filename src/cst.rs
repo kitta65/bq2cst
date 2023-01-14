@@ -20,6 +20,7 @@ pub enum NodeType {
     AlterBICapacityStatement,
     AlterOrganizationStatement,
     AlterProjectStatement,
+    AlterReservationStatement,
     AlterSchemaStatement,
     AlterTableStatement,
     AlterViewStatement,
@@ -82,7 +83,7 @@ pub enum NodeType {
     IntervalLiteral,
     InOperator,
     IsDistinctFromOperator,
-    JoinOperator,      // JOIN | ,
+    JoinOperator, // JOIN | ,
     LimitClause,
     LoadStatement,
     LoopStatement,
@@ -107,7 +108,7 @@ pub enum NodeType {
     Symbol,               // ) | ] | * | ...
     TableSampleClause,    // TABLESAMPLE SYSTEM (10 PERCENT)
     TableSampleRatio,     // (10 PERCENT)
-    Template,              // {{variable}}
+    Template,             // {{variable}}
     TransactionStatement, // BEGIN | COMMIT | ROLLBACK
     TruncateStatement,
     Type,            // INT64
@@ -119,11 +120,11 @@ pub enum NodeType {
     UpdateStatement,
     WhenClause, // WHEN MATCHED THEN DELETE
     WhileStatement,
-    WindowClause,        // WINDOW x AS (PARTITION BY c1)
-    WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)
-    WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-    WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
-    WithClause,          // WITH x AS (SELECT 1)
+    WindowClause,               // WINDOW x AS (PARTITION BY c1)
+    WindowExpr,                 // x AS (PARTITION BY c1 ORDER BY c2)
+    WindowFrameClause,          // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
+    WindowSpecification,        // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
+    WithClause,                 // WITH x AS (SELECT 1)
     WithPartitionColumnsClause, // WITH PARTITION COLUMNS (c1 INT64, c2 FLOAT64)
     WithQuery,                  // x AS (SELECT 1)
     XXXByExprs,                 // ORDER BY expr

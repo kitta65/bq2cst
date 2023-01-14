@@ -2428,6 +2428,34 @@ what:
 ",
             0,
         )),
+        // ----- ALTER RESERVATION statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER RESERVATION ident SET OPTIONS(plan='FLEX')
+",
+            "\
+self: ALTER (AlterReservationStatement)
+ident:
+  self: ident (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: plan (Identifier)
+      right:
+        self: 'FLEX' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+set:
+  self: SET (Keyword)
+what:
+  self: RESERVATION (Keyword)
+",
+            0,
+        )),
         // ----- DROP statement -----
         // general
         Box::new(SuccessTestCase::new(
