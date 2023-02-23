@@ -59,7 +59,7 @@ export type UnknownNode =
   | GroupedExpr
   | GroupedExprs
   | GroupedStatement
-  | GroupedTypeDeclarations
+  | GroupedTypeDeclarationOrConstraints
   | GroupedType
   | Identifier
   | IfStatement
@@ -788,8 +788,8 @@ export type GroupedStatement = FromItemExpr &
     };
   };
 
-export type GroupedTypeDeclarations = BaseNode & {
-  node_type: "GroupedTypeDeclarations";
+export type GroupedTypeDeclarationOrConstraints = BaseNode & {
+  node_type: "GroupedTypeDeclarationOrConstraints";
   children: {
     declarations: NodeVecChild;
     rparen: NodeChild;

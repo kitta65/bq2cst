@@ -158,7 +158,7 @@ CREATE TABLE example (x int64);
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -182,7 +182,7 @@ CREATE TABLE this-is-project-name.dataset.table-123 (x int64);
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -223,7 +223,7 @@ CREATE TEMP TABLE example (x INT64, y STRING(10));
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     comma:
@@ -261,7 +261,7 @@ OPTIONS(partition_expiration_days = 1);
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -343,7 +343,7 @@ clusterby:
   exprs:
   - self: x (Identifier)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -373,7 +373,7 @@ CREATE TABLE example (x STRING COLLATE 'und:ci' NOT NULL)
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -402,7 +402,7 @@ DEFAULT COLLATE 'und:ci'
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -429,7 +429,7 @@ CREATE TABLE example (x STRING DEFAULT 'hello')
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -735,7 +735,7 @@ what:
 with_partition_columns:
   self: WITH (WithPartitionColumnsClause)
   column_schema_group:
-    self: ( (GroupedTypeDeclarations)
+    self: ( (GroupedTypeDeclarationOrConstraints)
     declarations:
     - self: col1 (TypeDeclaration)
       type:
@@ -761,7 +761,7 @@ OPTIONS (
             "\
 self: CREATE (CreateTableStatement)
 column_schema_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: col (TypeDeclaration)
     type:
@@ -994,7 +994,7 @@ as:
     rparen:
       self: ) (Symbol)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1024,7 +1024,7 @@ as:
     rparen:
       self: ) (Symbol)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -1059,7 +1059,7 @@ as:
     rparen:
       self: ) (Symbol)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     comma:
@@ -1110,7 +1110,7 @@ as:
   expr:
     self: '''return 1''' (StringLiteral)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1151,7 +1151,7 @@ as:
 determinism:
 - self: DETERMINISTIC (Keyword)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1202,7 +1202,7 @@ determinism:
 - self: NOT (Keyword)
 - self: DETERMINISTIC (Keyword)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1233,7 +1233,7 @@ OPTIONS (endpoint = 'https://region-project.cloudfunctions.net/function')
             "\
 self: CREATE (CreateFunctionStatement)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1291,7 +1291,7 @@ as:
       as:
         self: AS (Keyword)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     type:
@@ -1305,7 +1305,7 @@ returns:
   type:
     self: TABLE (Type)
     type_declaration:
-      self: < (GroupedTypeDeclarations)
+      self: < (GroupedTypeDeclarationOrConstraints)
       declarations:
       - self: one (TypeDeclaration)
         type:
@@ -1327,7 +1327,7 @@ CREATE PROCEDURE dataset.procede() BEGIN SELECT 1; END;
             "\
 self: CREATE (CreateProcedureStatement)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1362,7 +1362,7 @@ BEGIN SELECT 1; END;
             "\
 self: CREATE (CreateProcedureStatement)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: x (TypeDeclaration)
     comma:
@@ -1422,7 +1422,7 @@ LANGUAGE python
             "\
 self: CREATE (CreateProcedureStatement)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1469,7 +1469,7 @@ as:
     right:
       self: 'code' (StringLiteral)
 group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1843,7 +1843,7 @@ add_columns:
     type:
       self: STRUCT (Type)
       type_declaration:
-        self: < (GroupedTypeDeclarations)
+        self: < (GroupedTypeDeclarationOrConstraints)
         declarations:
         - self: z (TypeDeclaration)
           type:

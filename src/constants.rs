@@ -96,4 +96,3 @@ pub const KEYWORDS: [&str; 96] = [
     "WITH",
     "WITHIN",
 ];
-

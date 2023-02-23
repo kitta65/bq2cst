@@ -115,7 +115,7 @@ clusterby:
   exprs:
   - self: s (Identifier)
 column_group:
-  self: ( (GroupedTypeDeclarations)
+  self: ( (GroupedTypeDeclarationOrConstraints)
   declarations:
   - self: dt (TypeDeclaration)
     comma:
@@ -205,7 +205,7 @@ into:
 with_partition_columns:
   self: WITH (WithPartitionColumnsClause)
   column_schema_group:
-    self: ( (GroupedTypeDeclarations)
+    self: ( (GroupedTypeDeclarationOrConstraints)
     declarations:
     - self: x (TypeDeclaration)
       type:

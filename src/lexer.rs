@@ -219,7 +219,9 @@ impl Lexer {
                     }
                     end = true
                 }
-                for _ in 0..count {self.next_char()?}; // } ->
+                for _ in 0..count {
+                    self.next_char()?
+                } // } ->
                 let res = self.input[first_position..self.position]
                     .into_iter()
                     .collect();

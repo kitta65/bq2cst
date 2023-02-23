@@ -64,11 +64,11 @@ pub enum NodeType {
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
     GrantStatement,
-    GroupedExpr,             // (1)
-    GroupedExprs,            // (1, 2, 3)
-    GroupedStatement,        // (SELECT 1)
-    GroupedType,             // <INT64>
-    GroupedTypeDeclarations, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
+    GroupedExpr,                         // (1)
+    GroupedExprs,                        // (1, 2, 3)
+    GroupedStatement,                    // (SELECT 1)
+    GroupedType,                         // <INT64>
+    GroupedTypeDeclarationOrConstraints, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
     Keyword,
     KeywordSequence,
     KeywordWithExpr,       // WHEN expr

@@ -616,7 +616,7 @@ exprs:
       type:
         self: STRUCT (Type)
         type_declaration:
-          self: < (GroupedTypeDeclarations)
+          self: < (GroupedTypeDeclarationOrConstraints)
           declarations:
           - self: None (TypeDeclaration)
             comma:
@@ -706,7 +706,7 @@ exprs:
   type:
     self: STRUCT (Type)
     type_declaration:
-      self: < (GroupedTypeDeclarations)
+      self: < (GroupedTypeDeclarationOrConstraints)
       declarations:
       - self: None (TypeDeclaration)
         type:
@@ -738,7 +738,7 @@ exprs:
   type:
     self: STRUCT (Type)
     type_declaration:
-      self: < (GroupedTypeDeclarations)
+      self: < (GroupedTypeDeclarationOrConstraints)
       declarations:
       - self: None (TypeDeclaration)
         comma:

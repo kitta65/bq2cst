@@ -678,7 +678,7 @@ impl Parser {
         &mut self,
         schema: bool,
     ) -> BQ2CSTResult<Node> {
-        let mut group = self.construct_node(NodeType::GroupedTypeDeclarations)?;
+        let mut group = self.construct_node(NodeType::GroupedTypeDeclarationOrConstraints)?;
         self.next_token()?; // ( -> INOUT | ident | type | PRIMARY | CONSTRAING | FOREIGN
         let mut type_declarations = Vec::new();
         let marker_tokens = vec![",", ">", ")", "TYPE", "<"];
@@ -1201,7 +1201,8 @@ impl Parser {
                 let mut res = self.construct_node(NodeType::Type)?;
                 if self.get_token(1)?.literal.as_str() == "<" {
                     self.next_token()?; // STRUCT -> <
-                    let mut type_ = self.construct_node(NodeType::GroupedTypeDeclarations)?;
+                    let mut type_ =
+                        self.construct_node(NodeType::GroupedTypeDeclarationOrConstraints)?;
                     self.next_token()?; // < -> type or ident
                     let mut type_declarations = Vec::new();
                     while !self.get_token(0)?.is(">") {
