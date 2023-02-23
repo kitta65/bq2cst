@@ -508,7 +508,8 @@ impl Parser {
                             limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
                             node.push_node("limit", limit);
                         }
-                        if self.get_token(1)?.is("HAVING") { // TODO
+                        if self.get_token(1)?.is("HAVING") {
+                            // TODO
                             // check if parse order is collect
                             // this block shold be placed before RESPECT/IGNORE?
                             self.next_token()?; // expr -> HAVING
@@ -673,14 +674,18 @@ impl Parser {
         group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(group)
     }
-    fn parse_grouped_type_declarations(&mut self, schema: bool) -> BQ2CSTResult<Node> {
+    fn parse_grouped_type_declaration_or_constraints(
+        &mut self,
+        schema: bool,
+    ) -> BQ2CSTResult<Node> {
         let mut group = self.construct_node(NodeType::GroupedTypeDeclarations)?;
-        self.next_token()?; // ( -> INOUT | ident | type
+        self.next_token()?; // ( -> INOUT | ident | type | PRIMARY | CONSTRAING | FOREIGN
         let mut type_declarations = Vec::new();
+        let marker_tokens = vec![",", ">", ")", "TYPE", "<"];
         while !self.get_token(0)?.in_(&vec![">", ")"]) {
             let mut type_declaration;
             if self.get_token(0)?.in_(&vec!["IN", "OUT", "INOUT"])
-                && !self.get_token(2)?.in_(&vec![",", ">", ")", "TYPE", "<"])
+                && !self.get_token(2)?.in_(&marker_tokens)
             {
                 // `self.get_token(1).is_identifier()` does not work here
                 // because `INT64` is also valid identifier
@@ -694,7 +699,13 @@ impl Parser {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
                 type_declaration.push_node("in_out", in_out);
                 self.next_token()?; // -> type
-            } else if !self.get_token(1)?.in_(&vec![",", ">", ")", "TYPE", "<"]) {
+            } else if (self.get_token(0)?.is("PRIMARY") && self.get_token(1)?.is("KEY"))
+                || (self.get_token(0)?.is("FOREIGN") && self.get_token(1)?.is("KEY"))
+                || (self.get_token(0)?.is("CONSTRAINT") && !self.get_token(2)?.in_(&marker_tokens))
+            {
+                // TODO parse constraint
+                panic!("not implemented")
+            } else if !self.get_token(1)?.in_(&marker_tokens) {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
                 self.next_token()?; // -> type
             } else {
@@ -1245,19 +1256,20 @@ impl Parser {
             );
             res.push_node("collate", collate);
         }
-        if self.get_token(1)?.is("NOT") && schema {
-            self.next_token()?; // -> NOT
-            let not_ = self.construct_node(NodeType::Keyword)?;
-            self.next_token()?; // -> null
-            let null = self.construct_node(NodeType::Keyword)?;
-            res.push_node_vec("not_null", vec![not_, null]);
-        }
+        // TODO primary key | references
         if self.get_token(1)?.is("DEFAULT") && schema {
             self.next_token()?; // -> DEFAULT
             let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> expr
             default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
             res.push_node("default", default);
+        }
+        if self.get_token(1)?.is("NOT") && schema {
+            self.next_token()?; // -> NOT
+            let not_ = self.construct_node(NodeType::Keyword)?;
+            self.next_token()?; // -> null
+            let null = self.construct_node(NodeType::Keyword)?;
+            res.push_node_vec("not_null", vec![not_, null]);
         }
         if self.get_token(1)?.is("OPTIONS") && schema {
             self.next_token()?; // -> OPTIONS
@@ -1534,7 +1546,6 @@ impl Parser {
             node.push_node("having", having);
         }
         // QUALIFY
-        // TODO check when it becomes GA
         if self.get_token(1)?.is("QUALIFY") {
             self.next_token()?; // -> QUALIFY
             let mut qualify = self.construct_node(NodeType::KeywordWithExpr)?;
@@ -1919,7 +1930,7 @@ impl Parser {
             self.next_token()?; // -> (
             create.push_node(
                 "column_schema_group",
-                self.parse_grouped_type_declarations(true)?,
+                self.parse_grouped_type_declaration_or_constraints(true)?,
             );
         }
         if self.get_token(1)?.is("default") {
@@ -1959,7 +1970,7 @@ impl Parser {
                 self.next_token()?; // -> (
                 with.push_node(
                     "column_schema_group",
-                    self.parse_grouped_type_declarations(false)?,
+                    self.parse_grouped_type_declaration_or_constraints(false)?,
                 );
             }
             create.push_node("with_partition_columns", with);
@@ -2064,7 +2075,10 @@ impl Parser {
         self.next_token()?; // -> ident
         node.push_node("ident", self.parse_identifier()?);
         self.next_token()?; // -> (
-        node.push_node("group", self.parse_grouped_type_declarations(false)?);
+        node.push_node(
+            "group",
+            self.parse_grouped_type_declaration_or_constraints(false)?,
+        );
         if self.get_token(1)?.is("RETURNS") {
             self.next_token()?; // -> RETURNS
             let mut returns = self.construct_node(NodeType::KeywordWithType)?;
@@ -2155,7 +2169,10 @@ impl Parser {
         self.next_token()?; // -> ident
         create.push_node("ident", self.parse_identifier()?);
         self.next_token()?; // -> (
-        create.push_node("group", self.parse_grouped_type_declarations(true)?);
+        create.push_node(
+            "group",
+            self.parse_grouped_type_declaration_or_constraints(true)?,
+        );
         if self.get_token(1)?.is("WITH") {
             self.next_token()?; // -> WITH
             create.push_node("with_connection", self.parse_with_connection_clause()?);
@@ -3085,7 +3102,10 @@ impl Parser {
         load.push_node("ident", self.parse_identifier()?);
         if self.get_token(1)?.is("(") {
             self.next_token()?; // -> (
-            load.push_node("column_group", self.parse_grouped_type_declarations(false)?);
+            load.push_node(
+                "column_group",
+                self.parse_grouped_type_declaration_or_constraints(false)?,
+            );
         }
         if self.get_token(1)?.is("PARTITION") {
             self.next_token()?; // -> PARTITION
@@ -3114,7 +3134,7 @@ impl Parser {
                 self.next_token()?; // -> (
                 with.push_node(
                     "column_schema_group",
-                    self.parse_grouped_type_declarations(false)?,
+                    self.parse_grouped_type_declaration_or_constraints(false)?,
                 );
             }
             load.push_node("with_partition_columns", with);
