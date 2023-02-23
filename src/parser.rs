@@ -483,7 +483,7 @@ impl Parser {
                                 node.push_node_vec("args", self.parse_exprs(&vec![], false)?);
                             }
                         }
-                        if self.get_token(1)?.in_(&vec!["respect", "ignore"]) {
+                        if self.get_token(1)?.in_(&vec!["RESPECT", "IGNORE"]) {
                             self.next_token()?; // expr -> RESPECT, IGNORE
                             let ignore_or_respect = self.construct_node(NodeType::Keyword)?;
                             self.next_token()?; // RESPECT, IGNORE -> NULLS
@@ -492,7 +492,7 @@ impl Parser {
                                 vec![ignore_or_respect, self.construct_node(NodeType::Keyword)?],
                             );
                         }
-                        if self.get_token(1)?.is("order") {
+                        if self.get_token(1)?.is("ORDER") {
                             self.next_token()?; // expr -> ORDER
                             let mut orderby = self.construct_node(NodeType::XXXByExprs)?;
                             self.next_token()?; // ORDER -> BY
@@ -507,6 +507,18 @@ impl Parser {
                             self.next_token()?;
                             limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
                             node.push_node("limit", limit);
+                        }
+                        if self.get_token(1)?.is("HAVING") { // TODO
+                            // check if parse order is collect
+                            // this block shold be placed before RESPECT/IGNORE?
+                            self.next_token()?; // expr -> HAVING
+                            let mut having = self.construct_node(NodeType::KeywordSequence)?;
+                            self.next_token()?; // -> MAX | MIN
+                            let mut max = self.construct_node(NodeType::KeywordWithExpr)?;
+                            self.next_token()?; // -> expr
+                            max.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                            having.push_node("next_keyword", max);
+                            node.push_node("having", having);
                         }
                         self.next_token()?; // expr -> )
                     }

@@ -147,6 +147,7 @@ export type CallingFunctionGeneral = Expr & {
     ignore_nulls?: NodeVecChild;
     orderby?: NodeChild;
     limit?: NodeChild;
+    having?: NodeChild;
     rparen: NodeChild;
     over?: NodeChild;
   };
@@ -401,6 +402,7 @@ export type CallingTableFunction = FromItemExpr &
       ignore_nulls: undefined;
       orderby: undefined;
       limit: undefined;
+      having: undefined;
       over: undefined;
       comma: undefined;
       order: undefined;
@@ -419,6 +421,7 @@ export type CallingUnnest = FromItemExpr &
       ignore_nulls: undefined;
       orderby: undefined;
       limit: undefined;
+      having: undefined;
       over: undefined;
       order: undefined;
       null_order: undefined;

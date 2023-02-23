@@ -1120,6 +1120,30 @@ exprs:
 ",
             0,
         )),
+        // ANY_VALUE
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT ANY_VALUE(x HAVING MAX y)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: x (Identifier)
+  func:
+    self: ANY_VALUE (Identifier)
+  having:
+    self: HAVING (KeywordSequence)
+    next_keyword:
+      self: MAX (KeywordWithExpr)
+      expr:
+        self: y (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+            0,
+        )),
         // ARRAY_AGG
         Box::new(SuccessTestCase::new(
             "\
