@@ -11,8 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
     steps:
-    - run: echo "version=aaa" >> $GITHUB_OUTPUT
-    - run: echo ${{ steps.first.outputs.VALUE }}
+    - id: version
+      run: echo "value=aaa" >> $GITHUB_OUTPUT
+    - run: echo ${{ steps.version.outputs.value }}
 
   deploy:
     if: ${{ github.ref_type == 'tag' }}
