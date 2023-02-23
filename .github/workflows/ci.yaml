@@ -1,6 +1,6 @@
 on: [push, pull_request]
 jobs:
-  ci:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -15,18 +15,26 @@ jobs:
           ~/.cargo/registry/cache
           ~/.cargo/db
 
-    - run: command -v wasm-pack || cargo install wasm-pack
-    - run: command -v makers || cargo install cargo-make
+    - run: make build
+    - run: make build
+    - uses: actions/upload-artifact@v3
+      with:
+        name: pkg
+        path: ./pkg
 
-    - run: makers test
+  publish:
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: pkg
 
     - uses: actions/setup-node@v3
-      if: ${{ github.ref_type == 'tag' }}
       with:
         node-version: '16.x'
         registry-url: 'https://registry.npmjs.org'
 
-    - run: make rs publish
+    - run: make publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
