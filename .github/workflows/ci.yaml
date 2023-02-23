@@ -1,44 +1,32 @@
 on: [push, pull_request]
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
 
-    - run: cargo test
+    - uses: actions/cache@v3
+      with:
+        key: ${{ hashFiles('./Cargo.lock') }}
+        # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+        path: |
+          ~/.cargo/bin
+          ~/.cargo/registry/index
+          ~/.cargo/registry/cache
+          ~/.cargo/db
 
-  wip:
-    runs-on: ubuntu-latest
-    # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
-    steps:
-    - id: version
-      run: echo "value=$(rustc --version | grep -Eo '[a-z0-9]{9}')" >> $GITHUB_OUTPUT
-    - run: echo ${{ steps.version.outputs.value }}
+    - run: command -v wasm-pack || cargo install wasm-pack
+    - run: command -v makers || cargo install cargo-make
 
-  deploy:
-    if: ${{ github.ref_type == 'tag' }}
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: install wasp-pack
-      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-    - name: build
-      run: |
-        wasm-pack test --node && \
-        wasm-pack build --target nodejs --scope dr666m1 && \
-        cp LICENSE* pkg/
+    - run: makers test
 
     - uses: actions/setup-node@v3
+      if: ${{ github.ref_type == 'tag' }}
       with:
         node-version: '16.x'
         registry-url: 'https://registry.npmjs.org'
 
-    - name: publish
-      working-directory: ./pkg
-      run: npm publish --access public
+    - run: make rs publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
