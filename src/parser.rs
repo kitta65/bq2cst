@@ -231,6 +231,17 @@ impl Parser {
         node.push_node("right", self.parse_expr(precedence, false, false)?);
         Ok(node)
     }
+    fn parse_enforced(&mut self) -> BQ2CSTResult<Node> {
+        let mut enforced;
+        if self.get_token(0)?.is("NOT") {
+            enforced = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> ENFORCED
+            enforced.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+        } else {
+            enforced = self.construct_node(NodeType::Keyword)?;
+        }
+        Ok(enforced)
+    }
     fn parse_expr(&mut self, precedence: usize, alias: bool, as_table: bool) -> BQ2CSTResult<Node> {
         let mut left = self.construct_node(NodeType::Unknown)?;
         if as_table {
@@ -730,15 +741,7 @@ impl Parser {
                 }
                 if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
                     self.next_token()?; // -> NOT | ENFORCED
-                    let mut enforced;
-                    if self.get_token(0)?.is("NOT") {
-                        enforced = self.construct_node(NodeType::KeywordSequence)?;
-                        self.next_token()?; // -> ENFORCED
-                        enforced.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
-                    } else {
-                        enforced = self.construct_node(NodeType::Keyword)?;
-                    }
-                    type_declaration.push_node("enforced", enforced);
+                    type_declaration.push_node("enforced", self.parse_enforced()?);
                 }
             } else if !self.get_token(1)?.in_(&marker_tokens) {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
@@ -1293,7 +1296,37 @@ impl Parser {
             );
             res.push_node("collate", collate);
         }
-        // TODO primary key | references
+        if self.get_token(1)?.is("CONSTRAINT") {
+            self.next_token()?; // -> constraint
+            let mut constraint = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> ident
+            constraint.push_node("expr", self.parse_identifier()?);
+            res.push_node("constraint", constraint);
+        }
+        if self.get_token(1)?.is("PRIMARY") {
+            self.next_token()?; // -> PRIMARY
+            let mut primary = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> KEY
+            let key = self.construct_node(NodeType::Keyword)?;
+            primary.push_node("next_keyword", key);
+            res.push_node("primarykey", primary);
+            if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
+                self.next_token()?; // -> NOT | ENFORCED
+                res.push_node("enforced", self.parse_enforced()?);
+            }
+        }
+        if self.get_token(1)?.is("REFERENCES") {
+            self.next_token()?; // -> REFERENCES
+            let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> ident
+            let col = self.parse_expr(usize::MAX, false, true)?;
+            references.push_node("expr", col);
+            res.push_node("references", references);
+            if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
+                self.next_token()?; // -> NOT | ENFORCED
+                res.push_node("enforced", self.parse_enforced()?);
+            }
+        }
         if self.get_token(1)?.is("DEFAULT") && schema {
             self.next_token()?; // -> DEFAULT
             let mut default = self.construct_node(NodeType::KeywordWithExpr)?;

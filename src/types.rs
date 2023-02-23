@@ -1181,6 +1181,10 @@ export type Type = BaseNode & {
     type_declaration?: NodeChild;
     parameter?: NodeChild;
     not_null?: NodeVecChild;
+    constraint?: NodeChild;
+    primarykey?: NodeChild;
+    references?: NodeChild;
+    enforced?: NodeChild;
     default?: NodeChild;
     options?: NodeChild;
     collate?: NodeChild

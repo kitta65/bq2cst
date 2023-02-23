@@ -524,6 +524,73 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE example (
+  x STRING PRIMARY KEY NOT ENFORCED,
+  y STRING REFERENCES tablename(col),
+  z STRING CONSTRAINT ident REFERENCES tablename(col)
+)
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: x (TypeDeclaration)
+    comma:
+      self: , (Symbol)
+    type:
+      self: STRING (Type)
+      enforced:
+        self: NOT (KeywordSequence)
+        next_keyword:
+          self: ENFORCED (Keyword)
+      primarykey:
+        self: PRIMARY (KeywordSequence)
+        next_keyword:
+          self: KEY (Keyword)
+  - self: y (TypeDeclaration)
+    comma:
+      self: , (Symbol)
+    type:
+      self: STRING (Type)
+      references:
+        self: REFERENCES (KeywordWithExpr)
+        expr:
+          self: ( (CallingFunction)
+          args:
+          - self: col (Identifier)
+          func:
+            self: tablename (Identifier)
+          rparen:
+            self: ) (Symbol)
+  - self: z (TypeDeclaration)
+    type:
+      self: STRING (Type)
+      constraint:
+        self: CONSTRAINT (KeywordWithExpr)
+        expr:
+          self: ident (Identifier)
+      references:
+        self: REFERENCES (KeywordWithExpr)
+        expr:
+          self: ( (CallingFunction)
+          args:
+          - self: col (Identifier)
+          func:
+            self: tablename (Identifier)
+          rparen:
+            self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
         // LIKE
         Box::new(SuccessTestCase::new(
             "\
