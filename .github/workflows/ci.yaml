@@ -7,6 +7,12 @@ jobs:
 
     - run: cargo test
 
+  wip:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo "::set-output name=VALUE::$(rustc --version)"
+    - run: echo ${{ steps.first.outputs.VALUE }}
+
   deploy:
     if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
