@@ -10,7 +10,7 @@ jobs:
   wip:
     runs-on: ubuntu-latest
     steps:
-    - run: echo "::set-output name=VALUE::$(rustc --version)"
+    - run: echo "::set-output name=VALUE::$(rustc --version | tr -d '[:space:]')"
     - run: echo ${{ steps.first.outputs.VALUE }}
 
   deploy:
