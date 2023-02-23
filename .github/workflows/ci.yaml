@@ -12,7 +12,7 @@ jobs:
     # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
     steps:
     - id: version
-      run: echo "value=aaa" >> $GITHUB_OUTPUT
+      run: echo "value=$(rustc --version)" >> $GITHUB_OUTPUT
     - run: echo ${{ steps.version.outputs.value }}
 
   deploy:
