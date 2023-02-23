@@ -125,6 +125,7 @@ impl Parser {
             "=" | "<" | ">" | "<=" | ">=" | "!=" | "<>" | "LIKE" | "BETWEEN" | "IN" | "IS" => 109,
             "NOT" => match self.get_token(offset + 1)?.literal.to_uppercase().as_str() {
                 "IN" | "LIKE" | "BETWEEN" => 109,
+                "ENFORCED" => usize::MAX,
                 _ => {
                     return Err(BQ2CSTError::from_token(
                         self.get_token(offset + 1)?,
@@ -699,19 +700,54 @@ impl Parser {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
                 type_declaration.push_node("in_out", in_out);
                 self.next_token()?; // -> type
+                type_declaration.push_node("type", self.parse_type(schema)?);
             } else if (self.get_token(0)?.is("PRIMARY") && self.get_token(1)?.is("KEY"))
                 || (self.get_token(0)?.is("FOREIGN") && self.get_token(1)?.is("KEY"))
                 || (self.get_token(0)?.is("CONSTRAINT") && !self.get_token(2)?.in_(&marker_tokens))
             {
-                // TODO parse constraint
-                panic!("not implemented")
+                if self.get_token(0)?.is("CONSTRAINT") {
+                    let mut constraint = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // CONSTRAINT -> ident
+                    constraint.push_node("expr", self.parse_identifier()?);
+                    self.next_token()?; // ident -> PRIMARY | FOREIGN
+                    type_declaration = self.construct_node(NodeType::Constraint)?;
+                    type_declaration.push_node("constraint", constraint);
+                } else {
+                    type_declaration = self.construct_node(NodeType::Constraint)?;
+                }
+                self.next_token()?; // -> KEY
+                type_declaration.push_node("key", self.construct_node(NodeType::Keyword)?);
+                if self.get_token(1)?.is("(") {
+                    self.next_token()?; // -> (
+                    type_declaration.push_node("columns", self.parse_grouped_exprs(false)?);
+                }
+                if self.get_token(1)?.is("REFERENCES") {
+                    self.next_token()?; // -> REFERENCES
+                    let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // -> table_ident
+                    references.push_node("expr", self.parse_expr(usize::MAX, false, true)?);
+                    type_declaration.push_node("references", references);
+                }
+                if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
+                    self.next_token()?; // -> NOT | ENFORCED
+                    let mut enforced;
+                    if self.get_token(0)?.is("NOT") {
+                        enforced = self.construct_node(NodeType::KeywordSequence)?;
+                        self.next_token()?; // -> ENFORCED
+                        enforced.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+                    } else {
+                        enforced = self.construct_node(NodeType::Keyword)?;
+                    }
+                    type_declaration.push_node("enforced", enforced);
+                }
             } else if !self.get_token(1)?.in_(&marker_tokens) {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
                 self.next_token()?; // -> type
+                type_declaration.push_node("type", self.parse_type(schema)?);
             } else {
                 type_declaration = Node::empty(NodeType::TypeDeclaration);
+                type_declaration.push_node("type", self.parse_type(schema)?);
             }
-            type_declaration.push_node("type", self.parse_type(schema)?);
             self.next_token()?; //  -> , | > | )
             if self.get_token(0)?.is(",") {
                 type_declaration.push_node("comma", self.construct_node(NodeType::Symbol)?);

@@ -447,6 +447,83 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE example (
+  x STRING,
+  PRIMARY KEY (x),
+  FOREIGN KEY (x) REFERENCES tablename(y) NOT ENFORCED,
+  CONSTRAINT ident FOREIGN KEY (x)
+)
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: x (TypeDeclaration)
+    comma:
+      self: , (Symbol)
+    type:
+      self: STRING (Type)
+  - self: PRIMARY (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: x (Identifier)
+      rparen:
+        self: ) (Symbol)
+    comma:
+      self: , (Symbol)
+    key:
+      self: KEY (Keyword)
+  - self: FOREIGN (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: x (Identifier)
+      rparen:
+        self: ) (Symbol)
+    comma:
+      self: , (Symbol)
+    enforced:
+      self: NOT (KeywordSequence)
+      next_keyword:
+        self: ENFORCED (Keyword)
+    key:
+      self: KEY (Keyword)
+    references:
+      self: REFERENCES (KeywordWithExpr)
+      expr:
+        self: ( (CallingFunction)
+        args:
+        - self: y (Identifier)
+        func:
+          self: tablename (Identifier)
+        rparen:
+          self: ) (Symbol)
+  - self: FOREIGN (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: x (Identifier)
+      rparen:
+        self: ) (Symbol)
+    constraint:
+      self: CONSTRAINT (KeywordWithExpr)
+      expr:
+        self: ident (Identifier)
+    key:
+      self: KEY (Keyword)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
         // LIKE
         Box::new(SuccessTestCase::new(
             "\

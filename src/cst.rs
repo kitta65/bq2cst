@@ -36,6 +36,7 @@ pub enum NodeType {
     CallingTableFunction, // (
     CallingUnnest,        // UNNEST([1, 2])
     CallStatement,        // CALL procedure_name (arg);
+    Constraint,           // PRIMARY KEY (a) | CONSTRAINT name REFERENCES `table`(col) NOT ENFORCED
     CaseExpr,             // CASE WHEN a then b ELSE c END
     CaseExprArm,          // WHEN a THEN b
     CaseStatement,

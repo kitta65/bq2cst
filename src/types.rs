@@ -34,6 +34,7 @@ export type UnknownNode =
   | CaseStatementArm
   | CastArgument
   | Comment
+  | Constraint
   | CreateFunctionStatement
   | CreateProcedureStatement
   | CreateReservationStatement
@@ -488,6 +489,18 @@ export type Comment = BaseNode & {
   children: {
     leading_comments: undefined;
     trailing_comments: undefined;
+  };
+};
+
+export type Constraint = BaseNode & {
+  token: Token;
+  node_type: "constraint";
+  children: {
+    constraint?: NodeChild;
+    key: NodeChild;
+    columns?: NodeChild;
+    references?: NodeChild;
+    enforced?: NodeChild;
   };
 };
 
