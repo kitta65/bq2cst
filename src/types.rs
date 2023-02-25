@@ -518,6 +518,7 @@ export type Constraint = BaseNode & {
   node_type: "Constraint";
   children: {
     constraint?: NodeChild;
+    ident?: NodeChild;
     if_not_exists?: NodeVecChild;
     key: NodeChild;
     columns?: NodeChild;

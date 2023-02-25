@@ -234,16 +234,25 @@ impl Parser {
     fn parse_constraint(&mut self) -> BQ2CSTResult<Node> {
         let mut res;
         if self.get_token(0)?.is("CONSTRAINT") {
-            let mut constraint = self.construct_node(NodeType::KeywordWithExpr)?;
+            let constraint = self.construct_node(NodeType::Keyword)?;
             if self.get_token(1)?.is("IF") {
                 self.next_token()?; // -> IF
-                constraint.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+                let _if_not_exists = self.parse_n_keywords(3)?;
+                self.next_token()?; // -> ident
+                let ident = self.parse_identifier()?;
+                self.next_token()?; // ident -> PRIMARY | FOREIGN
+                res = self.construct_node(NodeType::Constraint)?;
+                res.push_node("constraint", constraint);
+                res.push_node_vec("if_not_exists", _if_not_exists);
+                res.push_node("ident", ident);
+            } else {
+                self.next_token()?; // -> ident
+                let ident = self.parse_identifier()?;
+                self.next_token()?; // ident -> PRIMARY | FOREIGN
+                res = self.construct_node(NodeType::Constraint)?;
+                res.push_node("constraint", constraint);
+                res.push_node("ident", ident);
             }
-            self.next_token()?; // -> ident
-            constraint.push_node("expr", self.parse_identifier()?);
-            self.next_token()?; // ident -> PRIMARY | FOREIGN
-            res = self.construct_node(NodeType::Constraint)?;
-            res.push_node("constraint", constraint);
         } else {
             res = self.construct_node(NodeType::Constraint)?;
         }

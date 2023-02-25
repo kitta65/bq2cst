@@ -510,9 +510,9 @@ column_schema_group:
       rparen:
         self: ) (Symbol)
     constraint:
-      self: CONSTRAINT (KeywordWithExpr)
-      expr:
-        self: ident (Identifier)
+      self: CONSTRAINT (Keyword)
+    ident:
+      self: ident (Identifier)
     key:
       self: KEY (Keyword)
   rparen:
@@ -2099,13 +2099,13 @@ add_constraints:
     comma:
       self: , (Symbol)
     constraint:
-      self: CONSTRAINT (KeywordWithExpr)
-      expr:
-        self: foo (Identifier)
-      if_not_exists:
-      - self: IF (Keyword)
-      - self: NOT (Keyword)
-      - self: EXISTS (Keyword)
+      self: CONSTRAINT (Keyword)
+    ident:
+      self: foo (Identifier)
+    if_not_exists:
+    - self: IF (Keyword)
+    - self: NOT (Keyword)
+    - self: EXISTS (Keyword)
     key:
       self: KEY (Keyword)
     references:
@@ -2133,13 +2133,13 @@ add_constraints:
     comma:
       self: , (Symbol)
     constraint:
-      self: CONSTRAINT (KeywordWithExpr)
-      expr:
-        self: bar (Identifier)
+      self: CONSTRAINT (Keyword)
     enforced:
       self: NOT (KeywordSequence)
       next_keyword:
         self: ENFORCED (Keyword)
+    ident:
+      self: bar (Identifier)
     key:
       self: KEY (Keyword)
     references:
