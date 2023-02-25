@@ -306,6 +306,8 @@ export type AlterTableStatement = XXXStatement & {
     default_collate?: NodeChild;
     // ADD COLUMN
     add_columns?: NodeVecChild;
+    // ADD CONSTRAINT
+    add_constraints?: NodeVecChild;
     // RENAME TO
     rename?: NodeChild;
     to?: NodeChild;
