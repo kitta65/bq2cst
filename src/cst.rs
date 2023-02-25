@@ -20,6 +20,7 @@ pub enum NodeType {
     AlterColumnStatement,
     AlterBICapacityStatement,
     AlterOrganizationStatement,
+    AlterTableDropClause, // DROP COLUMN x
     AlterProjectStatement,
     AlterReservationStatement,
     AlterSchemaStatement,
@@ -55,7 +56,6 @@ pub enum NodeType {
     DeclareStatement,
     DeleteStatement,
     DotOperator,
-    DropColumnClause, // DROP COLUMN x
     DropStatement,
     DropRowAccessPolicyStatement,
     ElseIfClause, // ELSEIF true SELECT;

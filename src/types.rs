@@ -14,6 +14,7 @@ export type UnknownNode =
   | AlterProjectStatement
   | AlterReservationStatement
   | AlterSchemaStatement
+  | AlterTableDropClause
   | AlterTableStatement
   | AlterViewStatement
   | ArrayLiteral
@@ -46,7 +47,6 @@ export type UnknownNode =
   | DeclareStatement
   | DeleteStatement
   | DotOperator
-  | DropColumnClause
   | DropRowAccessPolicyStatement
   | DropStatement
   | ElseIfClause
@@ -281,6 +281,16 @@ export type AlterSchemaStatement = XXXStatement & {
     set: NodeChild;
     default_collate?: NodeChild;
     options?: NodeChild;
+  };
+};
+
+export type AlterTableDropClause = BaseNode & {
+  node_type: "AlterTableDropClause";
+  children: {
+    what: NodeChild;
+    if_exists?: NodeVecChild;
+    ident?: NodeChild;
+    comma?: NodeChild;
   };
 };
 
@@ -662,16 +672,6 @@ export type DotOperator = IdentifierGeneral & {
   children: {
     left: { Node: IdentifierGeneral & UnknownNode };
     right: { Node: IdentifierGeneral & UnknownNode };
-  };
-};
-
-export type DropColumnClause = BaseNode & {
-  node_type: "DropColumnClause";
-  children: {
-    column: NodeChild;
-    if_exists?: NodeVecChild;
-    ident: NodeChild;
-    comma?: NodeChild;
   };
 };
 

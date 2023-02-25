@@ -2478,15 +2478,27 @@ impl Parser {
                 let mut drop_columns = Vec::new();
                 while self.get_token(1)?.is("DROP") {
                     self.next_token()?; // -> DROP
-                    let mut drop_column = self.construct_node(NodeType::DropColumnClause)?;
-                    self.next_token()?; // -> COLUMN
-                    drop_column.push_node("column", self.construct_node(NodeType::Keyword)?);
-                    if self.get_token(1)?.is("IF") {
-                        self.next_token()?; // -> IF
-                        drop_column.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+                    let mut drop_column = self.construct_node(NodeType::AlterTableDropClause)?;
+                    if self.get_token(1)?.is("PRIMARY") {
+                        self.next_token()?; // -> PRIMARY
+                        let mut pk = self.construct_node(NodeType::KeywordWithExpr)?;
+                        self.next_token()?; // -> KEY
+                        pk.push_node("expr", self.construct_node(NodeType::Keyword)?);
+                        drop_column.push_node("what", pk);
+                        if self.get_token(1)?.is("IF") {
+                            self.next_token()?; // -> IF
+                            drop_column.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+                        }
+                    } else {
+                        self.next_token()?; // -> COLUMN | CONSTRAINT
+                        drop_column.push_node("what", self.construct_node(NodeType::Keyword)?);
+                        if self.get_token(1)?.is("IF") {
+                            self.next_token()?; // -> IF
+                            drop_column.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+                        }
+                        self.next_token()?; // -> ident
+                        drop_column.push_node("ident", self.parse_identifier()?);
                     }
-                    self.next_token()?; // -> ident
-                    drop_column.push_node("ident", self.parse_identifier()?);
                     if self.get_token(1)?.is(",") {
                         self.next_token()?; // -> ,
                         drop_column.push_node("comma", self.construct_node(NodeType::Symbol)?);

@@ -2275,7 +2275,7 @@ what:
 ",
             0,
         )),
-        // DROP
+        // DROP COLUMN
         Box::new(SuccessTestCase::new(
             "\
 ALTER TABLE example
@@ -2285,9 +2285,7 @@ DROP COLUMN y
             "\
 self: ALTER (AlterTableStatement)
 drop_columns:
-- self: DROP (DropColumnClause)
-  column:
-    self: COLUMN (Keyword)
+- self: DROP (AlterTableDropClause)
   comma:
     self: , (Symbol)
   ident:
@@ -2295,11 +2293,53 @@ drop_columns:
   if_exists:
   - self: IF (Keyword)
   - self: EXISTS (Keyword)
-- self: DROP (DropColumnClause)
-  column:
+  what:
     self: COLUMN (Keyword)
+- self: DROP (AlterTableDropClause)
   ident:
     self: y (Identifier)
+  what:
+    self: COLUMN (Keyword)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        // DROP CONSTRAINT
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE example
+DROP PRIMARY KEY,
+DROP PRIMARY KEY IF EXISTS,
+DROP CONSTRAINT ident
+",
+            "\
+self: ALTER (AlterTableStatement)
+drop_columns:
+- self: DROP (AlterTableDropClause)
+  comma:
+    self: , (Symbol)
+  what:
+    self: PRIMARY (KeywordWithExpr)
+    expr:
+      self: KEY (Keyword)
+- self: DROP (AlterTableDropClause)
+  comma:
+    self: , (Symbol)
+  if_exists:
+  - self: IF (Keyword)
+  - self: EXISTS (Keyword)
+  what:
+    self: PRIMARY (KeywordWithExpr)
+    expr:
+      self: KEY (Keyword)
+- self: DROP (AlterTableDropClause)
+  ident:
+    self: ident (Identifier)
+  what:
+    self: CONSTRAINT (Keyword)
 ident:
   self: example (Identifier)
 what:
