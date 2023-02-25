@@ -512,7 +512,7 @@ export type Comment = BaseNode & {
 
 export type Constraint = BaseNode & {
   token: Token;
-  node_type: "constraint";
+  node_type: "Constraint";
   children: {
     constraint?: NodeChild;
     if_not_exists?: NodeVecChild;
