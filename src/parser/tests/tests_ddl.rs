@@ -2043,6 +2043,8 @@ ADD PRIMARY KEY (b)
 self: ALTER (AlterTableStatement)
 add_constraints:
 - self: ADD (AddConstraintClause)
+  comma:
+    self: , (Symbol)
   what:
     self: PRIMARY (Constraint)
     columns:
@@ -2051,8 +2053,6 @@ add_constraints:
       - self: a (Identifier)
       rparen:
         self: ) (Symbol)
-    comma:
-      self: , (Symbol)
     enforced:
       self: NOT (KeywordSequence)
       next_keyword:
@@ -2088,6 +2088,8 @@ ADD FOREIGN KEY (d) REFERENCES tablename(z)
 self: ALTER (AlterTableStatement)
 add_constraints:
 - self: ADD (AddConstraintClause)
+  comma:
+    self: , (Symbol)
   what:
     self: FOREIGN (Constraint)
     columns:
@@ -2096,8 +2098,6 @@ add_constraints:
       - self: a (Identifier)
       rparen:
         self: ) (Symbol)
-    comma:
-      self: , (Symbol)
     constraint:
       self: CONSTRAINT (Keyword)
     ident:
@@ -2119,6 +2119,8 @@ add_constraints:
         rparen:
           self: ) (Symbol)
 - self: ADD (AddConstraintClause)
+  comma:
+    self: , (Symbol)
   what:
     self: FOREIGN (Constraint)
     columns:
@@ -2130,8 +2132,6 @@ add_constraints:
       - self: c (Identifier)
       rparen:
         self: ) (Symbol)
-    comma:
-      self: , (Symbol)
     constraint:
       self: CONSTRAINT (Keyword)
     enforced:

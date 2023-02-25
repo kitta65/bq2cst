@@ -2433,10 +2433,11 @@ impl Parser {
                         let mut add_constraint =
                             self.construct_node(NodeType::AddConstraintClause)?;
                         self.next_token()?; // -> PRIMARY | CONSTRAINT | REFERENCES
-                        let mut constraint = self.parse_constraint()?;
+                        let constraint = self.parse_constraint()?;
                         if self.get_token(1)?.is(",") {
                             self.next_token()?; // -> ,
-                            constraint.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                            add_constraint
+                                .push_node("comma", self.construct_node(NodeType::Symbol)?);
                         }
                         add_constraint.push_node("what", constraint);
                         add_constraints.push(add_constraint);
