@@ -14,8 +14,9 @@ pub enum ContentType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
-    AccessOperator,  // arr[OFFSET(1)] | json['path']
-    AddColumnClause, // ADD COLUMN x INT64 OPTIONS()
+    AccessOperator,      // arr[OFFSET(1)] | json['path']
+    AddColumnClause,     // ADD COLUMN x INT64 OPTIONS()
+    AddConstraintClause, // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
     AlterColumnStatement,
     AlterBICapacityStatement,
     AlterOrganizationStatement,

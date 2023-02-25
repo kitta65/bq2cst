@@ -1930,12 +1930,12 @@ ADD COLUMN x INT64;
 self: ALTER (AlterTableStatement)
 add_columns:
 - self: ADD (AddColumnClause)
-  column:
-    self: COLUMN (Keyword)
   type_declaration:
     self: x (TypeDeclaration)
     type:
       self: INT64 (Type)
+  what:
+    self: COLUMN (Keyword)
 ident:
   self: example (Identifier)
 semicolon:
@@ -1955,8 +1955,6 @@ ADD COLUMN y STRUCT<z INT64 NOT NULL>;
 self: ALTER (AlterTableStatement)
 add_columns:
 - self: ADD (AddColumnClause)
-  column:
-    self: COLUMN (Keyword)
   comma:
     self: , (Symbol)
   if_not_exists:
@@ -1979,9 +1977,9 @@ add_columns:
               self: 'dummy' (StringLiteral)
           rparen:
             self: ) (Symbol)
-- self: ADD (AddColumnClause)
-  column:
+  what:
     self: COLUMN (Keyword)
+- self: ADD (AddColumnClause)
   type_declaration:
     self: y (TypeDeclaration)
     type:
@@ -1997,6 +1995,8 @@ add_columns:
             - self: NULL (Keyword)
         rparen:
           self: > (Symbol)
+  what:
+    self: COLUMN (Keyword)
 ident:
   self: example (Identifier)
 semicolon:
@@ -2014,8 +2014,6 @@ ALTER TABLE ident ADD COLUMN col1 STRING COLLATE 'und:ci'
 self: ALTER (AlterTableStatement)
 add_columns:
 - self: ADD (AddColumnClause)
-  column:
-    self: COLUMN (Keyword)
   type_declaration:
     self: col1 (TypeDeclaration)
     type:
@@ -2024,8 +2022,159 @@ add_columns:
         self: COLLATE (KeywordWithExpr)
         expr:
           self: 'und:ci' (StringLiteral)
+  what:
+    self: COLUMN (Keyword)
 ident:
   self: ident (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        // ADD CONSTRAINT
+        // not allowed syntax but don't worry
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE example
+ADD PRIMARY KEY (a) NOT ENFORCED,
+ADD PRIMARY KEY (b)
+",
+            "\
+self: ALTER (AlterTableStatement)
+add_constraints:
+- self: ADD (AddConstraintClause)
+  what:
+    self: PRIMARY (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+    comma:
+      self: , (Symbol)
+    enforced:
+      self: NOT (KeywordSequence)
+      next_keyword:
+        self: ENFORCED (Keyword)
+    key:
+      self: KEY (Keyword)
+- self: ADD (AddConstraintClause)
+  what:
+    self: PRIMARY (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: b (Identifier)
+      rparen:
+        self: ) (Symbol)
+    key:
+      self: KEY (Keyword)
+ident:
+  self: example (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER TABLE example
+ADD CONSTRAINT IF NOT EXISTS foo FOREIGN KEY (a) REFERENCES tablename(x),
+ADD CONSTRAINT bar FOREIGN KEY (b, c) REFERENCES tablename(y) NOT ENFORCED,
+ADD FOREIGN KEY (d) REFERENCES tablename(z)
+",
+            "\
+self: ALTER (AlterTableStatement)
+add_constraints:
+- self: ADD (AddConstraintClause)
+  what:
+    self: FOREIGN (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: a (Identifier)
+      rparen:
+        self: ) (Symbol)
+    comma:
+      self: , (Symbol)
+    constraint:
+      self: CONSTRAINT (KeywordWithExpr)
+      expr:
+        self: foo (Identifier)
+      if_not_exists:
+      - self: IF (Keyword)
+      - self: NOT (Keyword)
+      - self: EXISTS (Keyword)
+    key:
+      self: KEY (Keyword)
+    references:
+      self: REFERENCES (KeywordWithExpr)
+      expr:
+        self: ( (CallingFunction)
+        args:
+        - self: x (Identifier)
+        func:
+          self: tablename (Identifier)
+        rparen:
+          self: ) (Symbol)
+- self: ADD (AddConstraintClause)
+  what:
+    self: FOREIGN (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: b (Identifier)
+        comma:
+          self: , (Symbol)
+      - self: c (Identifier)
+      rparen:
+        self: ) (Symbol)
+    comma:
+      self: , (Symbol)
+    constraint:
+      self: CONSTRAINT (KeywordWithExpr)
+      expr:
+        self: bar (Identifier)
+    enforced:
+      self: NOT (KeywordSequence)
+      next_keyword:
+        self: ENFORCED (Keyword)
+    key:
+      self: KEY (Keyword)
+    references:
+      self: REFERENCES (KeywordWithExpr)
+      expr:
+        self: ( (CallingFunction)
+        args:
+        - self: y (Identifier)
+        func:
+          self: tablename (Identifier)
+        rparen:
+          self: ) (Symbol)
+- self: ADD (AddConstraintClause)
+  what:
+    self: FOREIGN (Constraint)
+    columns:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: d (Identifier)
+      rparen:
+        self: ) (Symbol)
+    key:
+      self: KEY (Keyword)
+    references:
+      self: REFERENCES (KeywordWithExpr)
+      expr:
+        self: ( (CallingFunction)
+        args:
+        - self: z (Identifier)
+        func:
+          self: tablename (Identifier)
+        rparen:
+          self: ) (Symbol)
+ident:
+  self: example (Identifier)
 what:
   self: TABLE (Keyword)
 ",

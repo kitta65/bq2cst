@@ -198,9 +198,17 @@ export type XXXStatement = BaseNode & {
 export type AddColumnClause = BaseNode & {
   node_type: "AddColumnClause";
   children: {
-    column: NodeChild;
+    what: NodeChild;
     if_not_exists?: NodeVecChild;
     type_declaration: NodeChild;
+    comma?: NodeChild;
+  };
+};
+
+export type AddConstraintClause = BaseNode & {
+  node_type: "AddConstraintClause";
+  children: {
+    what?: NodeChild;
     comma?: NodeChild;
   };
 };
@@ -497,6 +505,7 @@ export type Constraint = BaseNode & {
   node_type: "constraint";
   children: {
     constraint?: NodeChild;
+    if_not_exists?: NodeVecChild;
     key: NodeChild;
     columns?: NodeChild;
     references?: NodeChild;

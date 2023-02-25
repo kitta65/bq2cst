@@ -231,6 +231,41 @@ impl Parser {
         node.push_node("right", self.parse_expr(precedence, false, false)?);
         Ok(node)
     }
+    fn parse_constraint(&mut self) -> BQ2CSTResult<Node> {
+        let mut res;
+        if self.get_token(0)?.is("CONSTRAINT") {
+            let mut constraint = self.construct_node(NodeType::KeywordWithExpr)?;
+            if self.get_token(1)?.is("IF") {
+                self.next_token()?; // -> IF
+                constraint.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+            }
+            self.next_token()?; // -> ident
+            constraint.push_node("expr", self.parse_identifier()?);
+            self.next_token()?; // ident -> PRIMARY | FOREIGN
+            res = self.construct_node(NodeType::Constraint)?;
+            res.push_node("constraint", constraint);
+        } else {
+            res = self.construct_node(NodeType::Constraint)?;
+        }
+        self.next_token()?; // -> KEY
+        res.push_node("key", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("(") {
+            self.next_token()?; // -> (
+            res.push_node("columns", self.parse_grouped_exprs(false)?);
+        }
+        if self.get_token(1)?.is("REFERENCES") {
+            self.next_token()?; // -> REFERENCES
+            let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> table_ident
+            references.push_node("expr", self.parse_expr(usize::MAX, false, true)?);
+            res.push_node("references", references);
+        }
+        if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
+            self.next_token()?; // -> NOT | ENFORCED
+            res.push_node("enforced", self.parse_enforced()?);
+        }
+        return Ok(res);
+    }
     fn parse_enforced(&mut self) -> BQ2CSTResult<Node> {
         let mut enforced;
         if self.get_token(0)?.is("NOT") {
@@ -716,33 +751,7 @@ impl Parser {
                 || (self.get_token(0)?.is("FOREIGN") && self.get_token(1)?.is("KEY"))
                 || (self.get_token(0)?.is("CONSTRAINT") && !self.get_token(2)?.in_(&marker_tokens))
             {
-                if self.get_token(0)?.is("CONSTRAINT") {
-                    let mut constraint = self.construct_node(NodeType::KeywordWithExpr)?;
-                    self.next_token()?; // CONSTRAINT -> ident
-                    constraint.push_node("expr", self.parse_identifier()?);
-                    self.next_token()?; // ident -> PRIMARY | FOREIGN
-                    type_declaration = self.construct_node(NodeType::Constraint)?;
-                    type_declaration.push_node("constraint", constraint);
-                } else {
-                    type_declaration = self.construct_node(NodeType::Constraint)?;
-                }
-                self.next_token()?; // -> KEY
-                type_declaration.push_node("key", self.construct_node(NodeType::Keyword)?);
-                if self.get_token(1)?.is("(") {
-                    self.next_token()?; // -> (
-                    type_declaration.push_node("columns", self.parse_grouped_exprs(false)?);
-                }
-                if self.get_token(1)?.is("REFERENCES") {
-                    self.next_token()?; // -> REFERENCES
-                    let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
-                    self.next_token()?; // -> table_ident
-                    references.push_node("expr", self.parse_expr(usize::MAX, false, true)?);
-                    type_declaration.push_node("references", references);
-                }
-                if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
-                    self.next_token()?; // -> NOT | ENFORCED
-                    type_declaration.push_node("enforced", self.parse_enforced()?);
-                }
+                type_declaration = self.parse_constraint()?;
             } else if !self.get_token(1)?.in_(&marker_tokens) {
                 type_declaration = self.construct_node(NodeType::TypeDeclaration)?;
                 self.next_token()?; // -> type
@@ -2385,28 +2394,46 @@ impl Parser {
                 }
             }
             "ADD" => {
-                let mut add_columns = Vec::new();
-                while self.get_token(1)?.is("ADD") {
-                    self.next_token()?; // -> ADD
-                    let mut add_column = self.construct_node(NodeType::AddColumnClause)?;
-                    self.next_token()?; // -> COLUMN
-                    add_column.push_node("column", self.construct_node(NodeType::Keyword)?);
-                    if self.get_token(1)?.is("IF") {
-                        self.next_token()?; // -> IF
-                        add_column.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+                if self.get_token(2)?.is("COLUMN") {
+                    let mut add_columns = Vec::new();
+                    while self.get_token(1)?.is("ADD") {
+                        self.next_token()?; // -> ADD
+                        let mut add_column = self.construct_node(NodeType::AddColumnClause)?;
+                        self.next_token()?; // -> COLUMN
+                        add_column.push_node("what", self.construct_node(NodeType::Keyword)?);
+                        if self.get_token(1)?.is("IF") {
+                            self.next_token()?; // -> IF
+                            add_column.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+                        }
+                        self.next_token()?; // -> ident
+                        let mut ident = self.construct_node(NodeType::TypeDeclaration)?;
+                        self.next_token()?; // -> type
+                        ident.push_node("type", self.parse_type(true)?);
+                        add_column.push_node("type_declaration", ident);
+                        if self.get_token(1)?.is(",") {
+                            self.next_token()?; // -> ,
+                            add_column.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                        }
+                        add_columns.push(add_column);
                     }
-                    self.next_token()?; // -> ident
-                    let mut ident = self.construct_node(NodeType::TypeDeclaration)?;
-                    self.next_token()?; // -> type
-                    ident.push_node("type", self.parse_type(true)?);
-                    add_column.push_node("type_declaration", ident);
-                    if self.get_token(1)?.is(",") {
-                        self.next_token()?; // -> ,
-                        add_column.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                    alter.push_node_vec("add_columns", add_columns);
+                } else {
+                    let mut add_constraints = Vec::new();
+                    while self.get_token(1)?.is("ADD") {
+                        self.next_token()?; // -> ADD
+                        let mut add_constraint =
+                            self.construct_node(NodeType::AddConstraintClause)?;
+                        self.next_token()?; // -> PRIMARY | CONSTRAINT | REFERENCES
+                        let mut constraint = self.parse_constraint()?;
+                        if self.get_token(1)?.is(",") {
+                            self.next_token()?; // -> ,
+                            constraint.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                        }
+                        add_constraint.push_node("what", constraint);
+                        add_constraints.push(add_constraint);
                     }
-                    add_columns.push(add_column);
+                    alter.push_node_vec("add_constraints", add_constraints);
                 }
-                alter.push_node_vec("add_columns", add_columns);
             }
             "RENAME" => {
                 if self.get_token(2)?.is("TO") {
