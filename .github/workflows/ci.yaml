@@ -32,6 +32,11 @@ jobs:
       with:
         name: pkg
 
+    - uses: actions/setup-python@v4
+      with:
+        # needed to use tomllib
+        python-version: '3.11'
+
     - uses: actions/setup-node@v3
       with:
         node-version: '16.x'
