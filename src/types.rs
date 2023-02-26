@@ -524,6 +524,7 @@ export type Constraint = BaseNode & {
     columns?: NodeChild;
     references?: NodeChild;
     enforced?: NodeChild;
+    comma?: NodeChild;
   };
 };
 
