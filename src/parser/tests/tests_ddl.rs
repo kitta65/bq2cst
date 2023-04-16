@@ -316,6 +316,60 @@ what:
         )),
         Box::new(SuccessTestCase::new(
             "\
+CREATE TABLE tablename (
+  outer_col STRUCT<
+    inner_col NUMERIC(5, 2) OPTIONS(rounding_mode = 'ROUND_HALF_EVEN')
+  >
+)
+",
+            "\
+self: CREATE (CreateTableStatement)
+column_schema_group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: outer_col (TypeDeclaration)
+    type:
+      self: STRUCT (Type)
+      type_declaration:
+        self: < (GroupedTypeDeclarationOrConstraints)
+        declarations:
+        - self: inner_col (TypeDeclaration)
+          type:
+            self: NUMERIC (Type)
+            options:
+              self: OPTIONS (KeywordWithGroupedXXX)
+              group:
+                self: ( (GroupedExprs)
+                exprs:
+                - self: = (BinaryOperator)
+                  left:
+                    self: rounding_mode (Identifier)
+                  right:
+                    self: 'ROUND_HALF_EVEN' (StringLiteral)
+                rparen:
+                  self: ) (Symbol)
+            parameter:
+              self: ( (GroupedExprs)
+              exprs:
+              - self: 5 (NumericLiteral)
+                comma:
+                  self: , (Symbol)
+              - self: 2 (NumericLiteral)
+              rparen:
+                self: ) (Symbol)
+        rparen:
+          self: > (Symbol)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: tablename (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 CREATE TABLE IF NOT EXISTS example (x INT64 NOT NULL)
 CLUSTER BY x
 AS SELECT 1 UNION ALL SELECT 2;
