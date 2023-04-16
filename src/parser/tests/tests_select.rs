@@ -215,6 +215,39 @@ semicolon:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM (SELECT 1 UNION ALL SELECT 2) LIMIT 100
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: UNION (SetOperator)
+      distinct_or_all:
+        self: ALL (Keyword)
+      left:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+      right:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 2 (NumericLiteral)
+limit:
+  self: LIMIT (LimitClause)
+  expr:
+    self: 100 (NumericLiteral)
+",
+            0,
+        )),
         // NOTE `WITH` belongs to `UNION ALL`
         Box::new(SuccessTestCase::new(
             "\

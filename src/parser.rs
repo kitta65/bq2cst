@@ -1498,7 +1498,7 @@ impl Parser {
                 node = operator;
             }
             // ORDER BY
-            if self.get_token(1)?.is("ORDER") {
+            if self.get_token(1)?.is("ORDER") && root {
                 self.next_token()?; // -> ORDER
                 let mut order = self.construct_node(NodeType::XXXByExprs)?;
                 self.next_token()?; // -> BY
@@ -1508,7 +1508,7 @@ impl Parser {
                 node.push_node("orderby", order);
             }
             // LIMIT
-            if self.get_token(1)?.is("LIMIT") {
+            if self.get_token(1)?.is("LIMIT") && root {
                 self.next_token()?; // -> LIMIT
                 let mut limit = self.construct_node(NodeType::LimitClause)?;
                 self.next_token()?; // -> expr
