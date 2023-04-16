@@ -3,46 +3,46 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - uses: actions/cache@v3
-      with:
-        key: ${{ hashFiles('./Cargo.lock') }}
-        # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
-        path: |
-          ~/.cargo/bin
-          ~/.cargo/registry/index
-          ~/.cargo/registry/cache
-          ~/.cargo/db
+      - uses: actions/cache@v3
+        with:
+          key: ${{ hashFiles('./Cargo.lock') }}
+          # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/db
 
-    - run: make build
-    - uses: actions/upload-artifact@v3
-      with:
-        name: pkg
-        path: ./pkg
+      - run: make build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pkg
+          path: ./pkg
 
   publish:
     if: ${{ github.ref_type == 'tag' }}
     needs: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - uses: actions/download-artifact@v3
-      with:
-        name: pkg
-        path: ./pkg
+      - uses: actions/download-artifact@v3
+        with:
+          name: pkg
+          path: ./pkg
 
-    - uses: actions/setup-python@v4
-      with:
-        # needed to use tomllib
-        python-version: '3.11'
+      - uses: actions/setup-python@v4
+        with:
+          # needed to use tomllib
+          python-version: '3.11'
 
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '16.x'
-        registry-url: 'https://registry.npmjs.org'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
 
-    - run: make publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: make publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
