@@ -567,6 +567,28 @@ exprs:
         // array with type declaration
         Box::new(SuccessTestCase::new(
             "\
+SELECT ARRAY<STRING>[]
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (ArrayLiteral)
+  exprs: []
+  rparen:
+    self: ] (Symbol)
+  type:
+    self: ARRAY (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: STRING (Type)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 SELECT ARRAY<INT64>[1]
 ",
             "\

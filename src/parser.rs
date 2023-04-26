@@ -377,9 +377,13 @@ impl Parser {
                         let type_ = self.parse_type(false)?;
                         self.next_token()?; // > -> [
                         let mut arr = self.construct_node(NodeType::ArrayLiteral)?;
-                        self.next_token()?; // [ -> exprs
-                        arr.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-                        self.next_token()?; // exprs -> ]
+                        self.next_token()?; // [ -> exprs | ]
+                        if self.get_token(0)?.is("]") {
+                            arr.push_node_vec("exprs", vec![]);
+                        } else {
+                            arr.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
+                            self.next_token()?; // exprs -> ]
+                        }
                         arr.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                         arr.push_node("type", type_);
                         left = arr;
