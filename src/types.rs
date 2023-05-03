@@ -192,6 +192,7 @@ export type IdentifierGeneral = FromItemExpr & {
 };
 
 export type IdentWithOptions = Expr & {
+  node_type: "IdentWithOptions";
   children: {
     as: undefined;
     alias: undefined;
