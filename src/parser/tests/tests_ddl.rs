@@ -2692,6 +2692,41 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER VIEW viewname
+alter column colname set options(dummy='dummy');",
+            "\
+self: ALTER (AlterViewStatement)
+alter_column_stmt:
+  self: alter (AlterColumnStatement)
+  ident:
+    self: colname (Identifier)
+  options:
+    self: options (KeywordWithGroupedXXX)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: = (BinaryOperator)
+        left:
+          self: dummy (Identifier)
+        right:
+          self: 'dummy' (StringLiteral)
+      rparen:
+        self: ) (Symbol)
+  set:
+    self: set (Keyword)
+  what:
+    self: column (Keyword)
+ident:
+  self: viewname (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: VIEW (Keyword)
+",
+            0,
+        )),
         // MATERIALIZED
         Box::new(SuccessTestCase::new(
             "\

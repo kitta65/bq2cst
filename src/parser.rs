@@ -2632,11 +2632,16 @@ impl Parser {
         }
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);
-        // TODO alter column
-        self.next_token()?; // -> SET
-        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> OPTIONS
-        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is("ALTER") {
+            self.next_token()?;
+            let alter_column = self.parse_alter_column_statement(false)?;
+            alter.push_node("alter_column_stmt", alter_column);
+        } else {
+            self.next_token()?; // -> SET
+            alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> OPTIONS
+            alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);

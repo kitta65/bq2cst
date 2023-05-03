@@ -340,8 +340,11 @@ export type AlterViewStatement = XXXStatement & {
     what: NodeChild;
     if_exists?: NodeVecChild;
     ident: NodeChild;
-    set: NodeChild;
-    options: NodeChild;
+    // SET
+    set?: NodeChild;
+    options?: NodeChild;
+    // ALTER COLUMN statement
+    alter_column_stmt?: NodeChild;
   };
 };
 
