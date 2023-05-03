@@ -2092,6 +2092,7 @@ impl Parser {
         Ok(create)
     }
     fn parse_create_view_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        // NOTE currently multi token ident is not supported
         let mut create = self.construct_node(NodeType::CreateViewStatement)?;
         let mut materialized = false;
         // NOTE actually, OR REPLACE is not allowed in CREATE MATERIALIZED VIEW statement
@@ -2127,7 +2128,7 @@ impl Parser {
                 ident.node_type = NodeType::IdentWithOptions;
                 if self.get_token(1)?.is("OPTIONS") {
                     self.next_token()?; // -> OPTIONS
-                    ident.push_node("OPTIONS", self.parse_keyword_with_grouped_exprs(false)?);
+                    ident.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
                 }
                 if self.get_token(1)?.is(",") {
                     self.next_token()?; // -> ,

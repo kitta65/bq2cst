@@ -1135,7 +1135,7 @@ column_name_list:
   self: ( (GroupedIdentWithOptions)
   idents:
   - self: uno (IdentWithOptions)
-    OPTIONS:
+    options:
       self: OPTIONS (KeywordWithGroupedXXX)
       group:
         self: ( (GroupedExprs)
