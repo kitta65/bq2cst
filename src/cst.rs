@@ -66,6 +66,7 @@ pub enum NodeType {
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
     GrantStatement,
+    GroupedIdentWithOptions,             // (col OPTIONS())
     GroupedExpr,                         // (1)
     GroupedExprs,                        // (1, 2, 3)
     GroupedStatement,                    // (SELECT 1)
@@ -80,6 +81,7 @@ pub enum NodeType {
     KeywordWithStatement,  // THEN INSERT ROW
     KeywordWithStatements, // THEN SELECT 1;
     Identifier,
+    IdentWithOptions,
     IfStatement,
     InsertStatement,
     IntervalLiteral,

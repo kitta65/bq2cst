@@ -1097,12 +1097,12 @@ as:
       alias:
         self: TWO (Identifier)
 column_name_list:
-  self: ( (GroupedExprs)
-  exprs:
-  - self: uno (Identifier)
+  self: ( (GroupedIdentWithOptions)
+  idents:
+  - self: uno (IdentWithOptions)
     comma:
       self: , (Symbol)
-  - self: dos (Identifier)
+  - self: dos (IdentWithOptions)
   rparen:
     self: ) (Symbol)
 ident:
@@ -1111,6 +1111,46 @@ ident:
     self: dataset_name (Identifier)
   right:
     self: view_name (Identifier)
+what:
+  self: VIEW (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE VIEW viewname (uno OPTIONS(description='single'))
+AS SELECT 1 ONE
+",
+            "\
+self: CREATE (CreateViewStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+      alias:
+        self: ONE (Identifier)
+column_name_list:
+  self: ( (GroupedIdentWithOptions)
+  idents:
+  - self: uno (IdentWithOptions)
+    OPTIONS:
+      self: OPTIONS (KeywordWithGroupedXXX)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: = (BinaryOperator)
+          left:
+            self: description (Identifier)
+          right:
+            self: 'single' (StringLiteral)
+        rparen:
+          self: ) (Symbol)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: viewname (Identifier)
 what:
   self: VIEW (Keyword)
 ",
@@ -2647,6 +2687,41 @@ semicolon:
   self: ; (Symbol)
 set:
   self: SET (Keyword)
+what:
+  self: VIEW (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER VIEW viewname
+alter column colname set options(dummy='dummy');",
+            "\
+self: ALTER (AlterViewStatement)
+alter_column_stmt:
+  self: alter (AlterColumnStatement)
+  ident:
+    self: colname (Identifier)
+  options:
+    self: options (KeywordWithGroupedXXX)
+    group:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: = (BinaryOperator)
+        left:
+          self: dummy (Identifier)
+        right:
+          self: 'dummy' (StringLiteral)
+      rparen:
+        self: ) (Symbol)
+  set:
+    self: set (Keyword)
+  what:
+    self: column (Keyword)
+ident:
+  self: viewname (Identifier)
+semicolon:
+  self: ; (Symbol)
 what:
   self: VIEW (Keyword)
 ",
