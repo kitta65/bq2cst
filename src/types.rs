@@ -60,11 +60,13 @@ export type UnknownNode =
   | GrantStatement
   | GroupedExpr
   | GroupedExprs
+  | GroupedIdentWithOptions
   | GroupedStatement
   | GroupedTypeDeclarationOrConstraints
   | GroupedType
   | Identifier
   | IfStatement
+  | IdentWithOptions
   | InOperator
   | InsertStatement
   | IntervalLiteral
@@ -186,6 +188,16 @@ export type IdentifierGeneral = FromItemExpr & {
     // TABLESAMPLE SYSTEM can only be applied directly to base tables
     tablesample?: NodeChild;
     for_system_time_as_of?: NodeChild;
+  };
+};
+
+export type IdentWithOptions = Expr & {
+  children: {
+    as: undefined;
+    alias: undefined;
+    order: undefined;
+    null_order: undefined;
+    options?: NodeChild;
   };
 };
 
@@ -800,6 +812,15 @@ export type GroupedExprs = BaseNode & {
     row_value_alias?: NodeChild;
     // only in INSERT statement
     comma?: NodeChild;
+  };
+};
+
+export type GroupedIdentWithOptions = BaseNode & {
+  token: Token;
+  node_type: "GroupedIdentWithOptions";
+  children: {
+    idents: NodeVecChild;
+    rparen: NodeChild;
   };
 };
 

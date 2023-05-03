@@ -2115,9 +2115,29 @@ impl Parser {
         create.push_node("ident", self.parse_identifier()?);
         if self.get_token(1)?.is("(") && !materialized {
             self.next_token()?; // -> (
-            create.push_node("column_name_list", self.parse_grouped_exprs(false)?);
+            let mut column_name_list = self.construct_node(NodeType::GroupedIdentWithOptions)?;
+            let mut idents = vec![];
+            loop {
+                self.next_token()?; // -> ident
+                if self.get_token(0)?.is(")") {
+                    column_name_list.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                    break;
+                }
+                let mut ident = self.parse_identifier()?;
+                ident.node_type = NodeType::IdentWithOptions;
+                if self.get_token(1)?.is("OPTIONS") {
+                    self.next_token()?; // -> OPTIONS
+                    ident.push_node("OPTIONS", self.parse_keyword_with_grouped_exprs(false)?);
+                }
+                if self.get_token(1)?.is(",") {
+                    self.next_token()?; // -> ,
+                    ident.push_node("comma", self.construct_node(NodeType::Symbol)?);
+                }
+                idents.push(ident);
+            }
+            column_name_list.push_node_vec("idents", idents);
+            create.push_node("column_name_list", column_name_list)
         }
-        // TODO view column name list
         if self.get_token(1)?.is("PARTITION") && materialized {
             self.next_token()?; // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs()?);
