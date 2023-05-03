@@ -2117,6 +2117,7 @@ impl Parser {
             self.next_token()?; // -> (
             create.push_node("column_name_list", self.parse_grouped_exprs(false)?);
         }
+        // TODO view column name list
         if self.get_token(1)?.is("PARTITION") && materialized {
             self.next_token()?; // -> PARTITION
             create.push_node("partitionby", self.parse_xxxby_exprs()?);
@@ -2611,6 +2612,7 @@ impl Parser {
         }
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);
+        // TODO alter column
         self.next_token()?; // -> SET
         alter.push_node("set", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // -> OPTIONS
