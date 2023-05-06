@@ -699,6 +699,32 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE snap
+CLONE snap FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP
+",
+            "\
+self: CREATE (CreateTableStatement)
+clone:
+  self: CLONE (KeywordWithExpr)
+  expr:
+    self: snap (Identifier)
+    for_system_time_as_of:
+      self: FOR (ForSystemTimeAsOfClause)
+      expr:
+        self: CURRENT_TIMESTAMP (Identifier)
+      system_time_as_of:
+      - self: SYSTEM_TIME (Keyword)
+      - self: AS (Keyword)
+      - self: OF (Keyword)
+ident:
+  self: snap (Identifier)
+what:
+  self: TABLE (Keyword)
+",
+            0,
+        )),
         // SNAPSHOT
         Box::new(SuccessTestCase::new(
             "\
