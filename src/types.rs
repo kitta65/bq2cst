@@ -47,6 +47,7 @@ export type UnknownNode =
   | CreateViewStatement
   | DeclareStatement
   | DeleteStatement
+  | DifferentialPrivacyClause
   | DotOperator
   | DropRowAccessPolicyStatement
   | DropStatement
@@ -688,6 +689,15 @@ export type DeleteStatement = XXXStatement & {
   };
 };
 
+export type DifferentialPrivacyClause = BaseNode & {
+  token: Token;
+  node_type: "DifferentialPrivacyClause";
+  children: {
+    differential_privacy: NodeChild;
+    options?: NodeChild;
+  };
+};
+
 export type DotOperator = IdentifierGeneral & {
   node_type: "DotOperator";
   children: {
@@ -1121,6 +1131,7 @@ export type SelectStatement = XXXStatement & {
   node_type: "SelectStatement";
   children: {
     with?: { Node: WithClause };
+    differential_privacy?: NodeChild;
     as_struct_or_value?: NodeVecChild;
     distinct_or_all?: NodeChild;
     exprs: NodeVecChild;

@@ -55,6 +55,7 @@ pub enum NodeType {
     Comment,
     DeclareStatement,
     DeleteStatement,
+    DifferentialPrivacyClause, // WITH DIFFERENTIAL_PRIVACY OPTIONS ()
     DotOperator,
     DropStatement,
     DropRowAccessPolicyStatement,

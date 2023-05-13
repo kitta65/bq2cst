@@ -542,6 +542,28 @@ with:
             0,
         )),
         // ----- SELECT clause -----
+        // DIFFERENTIAL_PRIVACY
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT WITH DIFFERENTIAL_PRIVACY OPTIONS() col1
+",
+            "\
+self: SELECT (SelectStatement)
+differential_privacy:
+  self: WITH (DifferentialPrivacyClause)
+  differential_privacy:
+    self: DIFFERENTIAL_PRIVACY (Keyword)
+  options:
+    self: OPTIONS (KeywordWithGroupedXXX)
+    group:
+      self: ( (GroupedExprs)
+      rparen:
+        self: ) (Symbol)
+exprs:
+- self: col1 (Identifier)
+",
+            0,
+        )),
         // DISTINCT
         Box::new(SuccessTestCase::new(
             "\
