@@ -1563,6 +1563,21 @@ impl Parser {
         // SELECT
         let mut node = self.construct_node(NodeType::SelectStatement)?;
 
+        // WITH DIFFERENTIAL_PRIVACY
+        if self.get_token(1)?.is("WITH") {
+            self.next_token()?; // -> WITH
+            let mut with = self.construct_node(NodeType::DifferentialPrivacyClause)?;
+            self.next_token()?; // -> differential_privacy
+            with.push_node(
+                "differential_privacy",
+                self.construct_node(NodeType::Keyword)?,
+            );
+            if self.get_token(1)?.is("OPTIONS") {
+                self.next_token()?; // -> OPTIONS
+                with.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+            };
+            node.push_node("differential_privacy", with);
+        }
         // AS STRUCT, VALUE
         if self.get_token(1)?.literal.to_uppercase() == "AS" {
             self.next_token()?; // SELECT -> AS
