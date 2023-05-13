@@ -14,9 +14,9 @@ test: setup
 
 .PHONY: build
 build: test
-	wasm-pack build --target nodejs --scope dr666m1
+	wasm-pack build --target nodejs
 	cp ./LICENSE* pkg/
 
 .PHONY: publish
 publish:
-	cd ./pkg && npm publish --access public
+	cd ./pkg && npm publish

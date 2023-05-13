@@ -38,7 +38,7 @@ jobs:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - uses: dr666m1/tag-version-match@main
+      - uses: kitta65/tag-version-match@main
         with:
           file: ./Cargo.toml
           query: .package.version

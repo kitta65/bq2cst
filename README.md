@@ -9,12 +9,12 @@ Parse standard SQL, which is a dialect of [BigQuery](https://cloud.google.com/bi
 
 ## Install
 ```shell
-npm install @dr666m1/bq2cst
+npm install bq2cst
 ```
 
 ## Usage
 ```javascript
-const parser = require("@dr666m1/bq2cst");
+const parser = require("bq2cst");
 parser.parse("SELECT 1;")
 
 //[
