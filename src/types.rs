@@ -761,6 +761,7 @@ export type ExportStatement = XXXStatement & {
   node_type: "ExportStatement";
   children: {
     data: NodeChild;
+    with_connection?: NodeChild;
     options: NodeChild;
     as: NodeChild;
   };
