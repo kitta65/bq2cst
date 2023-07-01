@@ -45,6 +45,45 @@ semicolon:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+EXPORT DATA
+WITH CONNECTION conn
+OPTIONS(
+  format = 'CSV'
+) AS SELECT 1
+",
+            "\
+self: EXPORT (ExportStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+data:
+  self: DATA (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: format (Identifier)
+      right:
+        self: 'CSV' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: conn (Identifier)
+",
+            0,
+        )),
         // ----- LOAD statement -----
         Box::new(SuccessTestCase::new(
             "\

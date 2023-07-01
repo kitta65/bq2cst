@@ -3245,6 +3245,10 @@ impl Parser {
         let mut export = self.construct_node(NodeType::ExportStatement)?;
         self.next_token()?; // -> DATA
         export.push_node("data", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("WITH") {
+            self.next_token()?; // -> WITH
+            export.push_node("with_connection", self.parse_with_connection_clause()?);
+        }
         self.next_token()?; // -> OPTIONS
         export.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
         self.next_token()?; // -> AS
