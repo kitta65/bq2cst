@@ -2313,7 +2313,7 @@ impl Parser {
         if self.get_token(1)?.is("LANGUAGE") {
             self.next_token()?; // -> LANGUAGE
             let mut language = self.construct_node(NodeType::KeywordWithExpr)?;
-            self.next_token()?; // -> python
+            self.next_token()?; // -> PYTHON | JAVA | SCALA
             language.push_node("expr", self.construct_node(NodeType::Identifier)?);
             create.push_node("language", language);
         }
