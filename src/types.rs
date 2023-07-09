@@ -89,6 +89,7 @@ export type UnknownNode =
   | NullLiteral
   | NumericLiteral
   | OverClause
+  | OverwritePartitionsClause
   | Parameter
   | PivotOperator
   | PivotConfig
@@ -1015,6 +1016,7 @@ export type LoadStatement = XXXStatement & {
     data: NodeChild;
     into: NodeChild;
     ident: NodeChild;
+    overwrite_partitions?: NodeChild;
     column_group?: NodeChild;
     partitionby?: NodeChild;
     clusterby?: NodeChild;
@@ -1060,6 +1062,15 @@ export type OverClause = BaseNode & {
   node_type: "OverClause";
   children: {
     window: NodeChild;
+  };
+};
+
+export type OverwritePartitionsClause = BaseNode & {
+  token: Token;
+  node_type: "OverwritePartitionsClause";
+  children: {
+    overwrite?: NodeChild;
+    grouped_expr: NodeChild;
   };
 };
 

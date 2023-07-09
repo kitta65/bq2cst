@@ -3277,6 +3277,27 @@ impl Parser {
                 self.parse_grouped_type_declaration_or_constraints(false)?,
             );
         }
+        if self.get_token(1)?.in_(&vec!["OVERWRITE", "PARTITIONS"]) {
+            self.next_token()?; // -> OVERWRITE | PARTITIONS
+            let mut op = self.construct_node(NodeType::OverwritePartitionsClause)?;
+            if self.get_token(0)?.is("OVERWRITE") {
+                let mut o = op;
+                o.node_type = NodeType::Keyword;
+                self.next_token()?; // -> PARTITIONS
+                op = self.construct_node(NodeType::OverwritePartitionsClause)?;
+                op.push_node("overwrite", o);
+            }
+            self.next_token()?; // -> grouped expr
+            op.push_node("grouped_expr", self.parse_expr(usize::MAX, false, false)?);
+            load.push_node("overwrite_partitions", op);
+        }
+        if self.get_token(1)?.is("OVERWRITE") {
+            self.next_token()?; // -> OVERWRITE
+            load.push_node_vec("overwrite_partitions", self.parse_n_keywords(2)?);
+        } else if self.get_token(1)?.is("PARTITIONS") {
+            self.next_token()?; // -> PARTITIONS
+            load.push_node_vec("overwrite_partitions", self.parse_n_keywords(1)?);
+        }
         if self.get_token(1)?.is("PARTITION") {
             self.next_token()?; // -> PARTITION
             load.push_node("partitionby", self.parse_xxxby_exprs()?);

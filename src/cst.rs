@@ -96,9 +96,10 @@ pub enum NodeType {
     MultiTokenIdentifier,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
-    OverClause,  // OVER (PARTITON BY x, y)
-    Parameter,   // ? | @param
-    PivotConfig, // (SUM(c1) FOR c2 IN (v1, v2))
+    OverClause,                // OVER (PARTITON BY x, y)
+    OverwritePartitionsClause, // OVERWRITE PARTITIONS (_PARTITIONTIME = ts)
+    Parameter,                 // ? | @param
+    PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
     RenameColumnClause,

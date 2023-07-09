@@ -257,6 +257,94 @@ with_partition_columns:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+LOAD DATA OVERWRITE ident
+OVERWRITE PARTITIONS(_PARTITIONTIME = ts)
+FROM FILES (dummy = 'dummy')
+",
+            "\
+self: LOAD (LoadStatement)
+data:
+  self: DATA (Keyword)
+files:
+  self: FILES (Keyword)
+from:
+  self: FROM (Keyword)
+from_files:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    left:
+      self: dummy (Identifier)
+    right:
+      self: 'dummy' (StringLiteral)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: ident (Identifier)
+into:
+  self: OVERWRITE (Keyword)
+overwrite_partitions:
+  self: PARTITIONS (OverwritePartitionsClause)
+  grouped_expr:
+    self: ( (GroupedExpr)
+    expr:
+      self: = (BinaryOperator)
+      left:
+        self: _PARTITIONTIME (Identifier)
+      right:
+        self: ts (Identifier)
+    rparen:
+      self: ) (Symbol)
+  overwrite:
+    self: OVERWRITE (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+LOAD DATA OVERWRITE ident
+PARTITIONS(_PARTITIONTIME = ts)
+FROM FILES (dummy = 'dummy')
+",
+            "\
+self: LOAD (LoadStatement)
+data:
+  self: DATA (Keyword)
+files:
+  self: FILES (Keyword)
+from:
+  self: FROM (Keyword)
+from_files:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: = (BinaryOperator)
+    left:
+      self: dummy (Identifier)
+    right:
+      self: 'dummy' (StringLiteral)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: ident (Identifier)
+into:
+  self: OVERWRITE (Keyword)
+overwrite_partitions:
+  self: PARTITIONS (OverwritePartitionsClause)
+  grouped_expr:
+    self: ( (GroupedExpr)
+    expr:
+      self: = (BinaryOperator)
+      left:
+        self: _PARTITIONTIME (Identifier)
+      right:
+        self: ts (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();
