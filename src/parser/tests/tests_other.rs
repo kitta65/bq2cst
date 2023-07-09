@@ -306,10 +306,19 @@ overwrite_partitions:
             "\
 LOAD DATA OVERWRITE ident
 PARTITIONS(_PARTITIONTIME = ts)
+(dt date)
 FROM FILES (dummy = 'dummy')
 ",
             "\
 self: LOAD (LoadStatement)
+column_group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: dt (TypeDeclaration)
+    type:
+      self: date (Type)
+  rparen:
+    self: ) (Symbol)
 data:
   self: DATA (Keyword)
 files:
