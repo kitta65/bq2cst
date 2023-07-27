@@ -1931,6 +1931,51 @@ SELECT * FROM (
 )
 ",
             "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedExpr)
+    expr:
+      self: JOIN (JoinOperator)
+      join_type:
+        self: CROSS (Keyword)
+      left:
+        self: ( (GroupedStatement)
+        alias:
+          self: a (Identifier)
+        as:
+          self: AS (Keyword)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+            alias:
+              self: one (Identifier)
+            as:
+              self: AS (Keyword)
+      right:
+        self: ( (GroupedStatement)
+        alias:
+          self: b (Identifier)
+        as:
+          self: AS (Keyword)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 2 (NumericLiteral)
+            alias:
+              self: two (Identifier)
+            as:
+              self: AS (Keyword)
+    rparen:
+      self: ) (Symbol)
 ",
             0,
         )),
