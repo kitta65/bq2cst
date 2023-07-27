@@ -1922,6 +1922,18 @@ from:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM (
+  (SELECT 1 AS one) AS a
+  CROSS JOIN
+  (SELECT 2 AS two) AS b
+)
+",
+            "\
+",
+            0,
+        )),
         // built-in table functions
         Box::new(SuccessTestCase::new(
             "\
