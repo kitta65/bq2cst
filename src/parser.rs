@@ -6,6 +6,7 @@ use crate::cst::NodeType;
 use crate::error::{BQ2CSTError, BQ2CSTResult};
 use crate::token::Token;
 
+#[derive(Clone)]
 pub struct Parser {
     position: usize,
     leading_comment_indices: Vec<usize>,
@@ -1034,7 +1035,27 @@ impl Parser {
                     }
                 }
                 if statement_flg {
-                    group = self.parse_select_statement(false, false)?;
+                    let org = self.clone();
+                    group = match self.parse_select_statement(false, false) {
+                        Ok(stmt) => stmt,
+
+                        // maybe that is a table quoted by ()! not a select statement!
+                        Err(_) => {
+                            // restore original state
+                            self.position = org.position;
+                            self.leading_comment_indices = org.leading_comment_indices;
+                            self.trailing_comment_indices = org.trailing_comment_indices;
+                            self.tokens = org.tokens;
+
+                            // retry
+                            let mut group = self.construct_node(NodeType::GroupedExpr)?;
+                            self.next_token()?; // ( -> table
+                            group.push_node("expr", self.parse_table(true)?);
+                            self.next_token()?; // -> )
+                            group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                            group
+                        }
+                    }
                 } else {
                     group = self.construct_node(NodeType::GroupedExpr)?;
                     self.next_token()?; // ( -> expr
@@ -1486,6 +1507,12 @@ impl Parser {
             self.next_token()?; // ( -> SELECT
             node.push_node("stmt", self.parse_select_statement(false, true)?);
             self.next_token()?; // stmt -> )
+            if !self.get_token(0)?.is(")") {
+                return Err(BQ2CSTError::from_token(
+                    self.get_token(0)?,
+                    "expected )".to_string(),
+                ));
+            }
             node.push_node("rparen", self.construct_node(NodeType::Symbol)?);
             while self
                 .get_token(1)?
