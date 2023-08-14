@@ -394,6 +394,7 @@ export type BinaryOperator = Expr & {
   children: {
     not?: NodeChild;
     left: { Node: Expr & UnknownNode };
+    quantifier?: NodeChild;
     right: { Node: Expr & UnknownNode };
   };
 };

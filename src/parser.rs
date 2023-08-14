@@ -227,6 +227,10 @@ impl Parser {
             self.next_token()?; // IS -> NOT
             node.push_node("not", self.construct_node(NodeType::Keyword)?);
         }
+        if self.get_token(1)?.in_(&vec!["ALL", "ANY", "SOME"]) {
+            self.next_token()?; // -> ALL | ANY | SOME
+            node.push_node("quantifier", self.construct_node(NodeType::Keyword)?);
+        }
         self.next_token()?; // binary_operator -> expr
         node.push_node("left", left);
         node.push_node("right", self.parse_expr(precedence, false, false)?);

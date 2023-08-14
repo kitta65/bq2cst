@@ -316,6 +316,49 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  'x' LIKE ANY ('%x%'),
+  'x' NOT LIKE SOME ('%x%', ''),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: LIKE (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 'x' (StringLiteral)
+  quantifier:
+    self: ANY (Keyword)
+  right:
+    self: ( (GroupedExpr)
+    expr:
+      self: '%x%' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+- self: LIKE (BinaryOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: 'x' (StringLiteral)
+  not:
+    self: NOT (Keyword)
+  quantifier:
+    self: SOME (Keyword)
+  right:
+    self: ( (StructLiteral)
+    exprs:
+    - self: '%x%' (StringLiteral)
+      comma:
+        self: , (Symbol)
+    - self: '' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // IS
         Box::new(SuccessTestCase::new(
             "\
