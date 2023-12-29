@@ -439,7 +439,7 @@ impl Parser {
                     }
                     left.push_node("expr", right);
                 }
-                "TABLE" => {
+                "TABLE" | "MODEL" => {
                     left.node_type = NodeType::UnaryOperator;
                     self.next_token()?; // TABLE -> ident
                     let right = self.parse_expr(002, false, true)?;

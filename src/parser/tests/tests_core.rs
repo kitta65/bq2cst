@@ -86,6 +86,7 @@ SELECT
   DATE '2020-01-01',
   TIMESTAMP r'2020-01-01',
   NOT TRUE,
+  MODEL `ident.ident`
 ",
             "\
 self: SELECT (SelectStatement)
@@ -122,6 +123,9 @@ exprs:
     self: , (Symbol)
   right:
     self: TRUE (BooleanLiteral)
+- self: MODEL (UnaryOperator)
+  right:
+    self: `ident.ident` (Identifier)
 ",
             0,
         )),
