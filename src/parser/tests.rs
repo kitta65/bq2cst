@@ -7,6 +7,7 @@ mod tests_dcl;
 mod tests_ddl;
 mod tests_debug;
 mod tests_dml;
+mod tests_ml;
 mod tests_other;
 mod tests_script;
 mod tests_select;
