@@ -12,7 +12,7 @@ EXPORT DATA OPTIONS(
 ) AS SELECT 1;
 ",
             "\
-self: EXPORT (ExportStatement)
+self: EXPORT (ExportDataStatement)
 as:
   self: AS (KeywordWithStatement)
   stmt:
@@ -54,7 +54,7 @@ OPTIONS(
 ) AS SELECT 1
 ",
             "\
-self: EXPORT (ExportStatement)
+self: EXPORT (ExportDataStatement)
 as:
   self: AS (KeywordWithStatement)
   stmt:

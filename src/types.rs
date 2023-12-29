@@ -11,6 +11,7 @@ export type UnknownNode =
   | AddConstraintClause
   | AlterBICapacityStatement
   | AlterColumnStatement
+  | AlterModelStatement
   | AlterOrganizationStatement
   | AlterProjectStatement
   | AlterReservationStatement
@@ -38,6 +39,7 @@ export type UnknownNode =
   | Comment
   | Constraint
   | CreateFunctionStatement
+  | CreateModelStatement
   | CreateProcedureStatement
   | CreateReservationStatement
   | CreateRowAccessPolicyStatement
@@ -55,7 +57,8 @@ export type UnknownNode =
   | EmptyStruct
   | EOF
   | ExecuteStatement
-  | ExportStatement
+  | ExportDataStatement
+  | ExportModelStatement
   | ExtractArgument
   | ForStatement
   | ForSystemTimeAsOfClause
@@ -110,6 +113,7 @@ export type UnknownNode =
   | TableSampleRatio
   | Template
   | TransactionStatement
+  | TrainingDataCustomHolidayClause
   | TruncateStatement
   | Type
   | TypeDeclaration
@@ -258,6 +262,17 @@ export type AlterColumnStatement = BaseNode & {
     // DROP
     drop_not_null?: NodeVecChild;
     drop_default?: NodeVecChild;
+  };
+};
+
+export type AlterModelStatement = XXXStatement & {
+  node_type: "AlterModelStatement";
+  children: {
+    what: NodeChild;
+    if_exists?: NodeVecChild;
+    ident: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
   };
 };
 
@@ -568,6 +583,23 @@ export type CreateFunctionStatement = XXXStatement & {
   };
 };
 
+export type CreateModelStatement = XXXStatement & {
+  node_type: "CreateModelStatement";
+  children: {
+    or_replace?: NodeVecChild;
+    what: NodeChild;
+    if_not_exists?: NodeVecChild;
+    ident: NodeChild;
+    transform?: NodeChild;
+    output?: NodeChild;
+    input?: NodeChild;
+    remote?: NodeChild;
+    options?: NodeChild;
+    query?: NodeChild;
+    training_data_custom_holiday?: NodeChild;
+  };
+};
+
 export type CreateProcedureStatement = XXXStatement & {
   node_type: "CreateProcedureStatement";
   children: {
@@ -768,13 +800,22 @@ export type ExecuteStatement = XXXStatement & {
   };
 };
 
-export type ExportStatement = XXXStatement & {
-  node_type: "ExportStatement";
+export type ExportDataStatement = XXXStatement & {
+  node_type: "ExportDataStatement";
   children: {
     data: NodeChild;
     with_connection?: NodeChild;
     options: NodeChild;
     as: NodeChild;
+  };
+};
+
+export type ExportModelStatement = XXXStatement & {
+  node_type: "ExportModelStatement";
+  children: {
+    what: NodeChild;
+    ident: NodeChild;
+    options?: NodeChild;
   };
 };
 
@@ -1244,6 +1285,15 @@ export type TransactionStatement = XXXStatement & {
   node_type: "TransactionStatement";
   children: {
     transaction?: NodeChild;
+  };
+};
+
+export type TrainingDataCustomHolidayClause = BaseNode & {
+  node_type: "TrainingDataCustomHolidayClause";
+  children: {
+    training_data: NodeChild;
+    custom_holiday: NodeChild;
+    rparen: NodeChild;
   };
 };
 

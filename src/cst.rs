@@ -19,6 +19,7 @@ pub enum NodeType {
     AddConstraintClause, // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
     AlterColumnStatement,
     AlterBICapacityStatement,
+    AlterModelStatement,
     AlterOrganizationStatement,
     AlterTableDropClause, // DROP COLUMN x
     AlterProjectStatement,
@@ -45,6 +46,7 @@ pub enum NodeType {
     CaseStatementArm,
     CastArgument, // x AS INT64
     CreateFunctionStatement,
+    CreateModelStatement,
     CreateProcedureStatement,
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
     CreateRowAccessPolicyStatement,
@@ -63,7 +65,8 @@ pub enum NodeType {
     EOF,
     EmptyStruct,      // ()
     ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'
-    ExportStatement,
+    ExportDataStatement,
+    ExportModelStatement,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
@@ -113,11 +116,12 @@ pub enum NodeType {
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
-    Symbol,               // ) | ] | * | ...
-    TableSampleClause,    // TABLESAMPLE SYSTEM (10 PERCENT)
-    TableSampleRatio,     // (10 PERCENT)
-    Template,             // {{variable}}
-    TransactionStatement, // BEGIN | COMMIT | ROLLBACK
+    Symbol,                          // ) | ] | * | ...
+    TableSampleClause,               // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSampleRatio,                // (10 PERCENT)
+    Template,                        // {{variable}}
+    TrainingDataCustomHolidayClause, // (training_data AS (SELECT ...), custom_holiday AS (SELECT ...))
+    TransactionStatement,            // BEGIN | COMMIT | ROLLBACK
     TruncateStatement,
     Type,            // INT64
     TypeDeclaration, // x INT64
