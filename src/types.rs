@@ -11,6 +11,7 @@ export type UnknownNode =
   | AddConstraintClause
   | AlterBICapacityStatement
   | AlterColumnStatement
+  | AlterModelStatement
   | AlterOrganizationStatement
   | AlterProjectStatement
   | AlterReservationStatement
@@ -259,6 +260,17 @@ export type AlterColumnStatement = BaseNode & {
     // DROP
     drop_not_null?: NodeVecChild;
     drop_default?: NodeVecChild;
+  };
+};
+
+export type AlterModelStatement = XXXStatement & {
+  node_type: "AlterModelStatement";
+  children: {
+    what: NodeChild;
+    if_exists?: NodeVecChild;
+    ident: NodeChild;
+    set: NodeChild;
+    options: NodeChild;
   };
 };
 

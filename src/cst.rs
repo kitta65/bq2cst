@@ -19,6 +19,7 @@ pub enum NodeType {
     AddConstraintClause, // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
     AlterColumnStatement,
     AlterBICapacityStatement,
+    AlterModelStatement,
     AlterOrganizationStatement,
     AlterTableDropClause, // DROP COLUMN x
     AlterProjectStatement,

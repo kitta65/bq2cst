@@ -965,6 +965,7 @@ impl Parser {
                         "CAPACITY" | "RESERVATION" => {
                             return self.parse_alter_reservation_statement(semicolon)
                         }
+                        "MODEL" => return self.parse_alter_model_statement(semicolon),
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -2761,6 +2762,26 @@ impl Parser {
         let mut alter = self.construct_node(NodeType::AlterReservationStatement)?;
         self.next_token()?; // -> CAPACITY | RESERVATION
         alter.push_node("what", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> ident
+        alter.push_node("ident", self.parse_identifier()?);
+        self.next_token()?; // -> SET
+        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> OPTIONS
+        alter.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(alter)
+    }
+    fn parse_alter_model_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut alter = self.construct_node(NodeType::AlterModelStatement)?;
+        self.next_token()?; // -> MODEL
+        alter.push_node("what", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            alter.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+        }
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);
         self.next_token()?; // -> SET
