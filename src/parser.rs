@@ -324,13 +324,14 @@ impl Parser {
                 "(" => {
                     self.next_token()?; // ( -> expr
                     let mut exprs;
-                    let mut statement_flg = false;
                     if self.get_token(0)?.in_(&vec!["WITH", "SELECT"]) {
-                        statement_flg = true;
-                    }
-                    if statement_flg {
                         left.node_type = NodeType::GroupedStatement;
                         left.push_node("stmt", self.parse_select_statement(false, true)?);
+                        self.next_token()?; // expr -> )
+                        left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                    } else if self.get_token(0)?.is(")") {
+                        left.node_type = NodeType::EmptyStruct;
+                        left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                     } else {
                         exprs = self.parse_exprs(&vec![], true)?; // parse alias in the case of struct
                         if exprs.len() == 1 {
@@ -340,9 +341,9 @@ impl Parser {
                             left.node_type = NodeType::StructLiteral;
                             left.push_node_vec("exprs", exprs);
                         }
+                        self.next_token()?; // expr -> )
+                        left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                     }
-                    self.next_token()?; // expr -> )
-                    left.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                 }
                 "STRUCT" => {
                     let type_ = self.parse_type(false)?;

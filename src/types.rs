@@ -52,6 +52,7 @@ export type UnknownNode =
   | DropRowAccessPolicyStatement
   | DropStatement
   | ElseIfClause
+  | EmptyStruct
   | EOF
   | ExecuteStatement
   | ExportStatement
@@ -739,6 +740,13 @@ export type ElseIfClause = BaseNode & {
   children: {
     condition: NodeChild;
     then: NodeChild;
+  };
+};
+
+export type EmptyStruct = Expr & {
+  node_type: "EmptyStruct";
+  children: {
+    rparen: NodeChild
   };
 };
 

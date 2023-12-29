@@ -2037,6 +2037,29 @@ where:
         // ----- GROUP BY clause -----
         Box::new(SuccessTestCase::new(
             "\
+SELECT 1 FROM t GROUP BY ()
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: 1 (NumericLiteral)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+groupby:
+  self: GROUP (GroupByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: ( (EmptyStruct)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 SELECT x, y FROM t GROUP BY 1, 2
 ",
             "\

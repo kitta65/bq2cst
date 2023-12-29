@@ -61,6 +61,7 @@ pub enum NodeType {
     DropRowAccessPolicyStatement,
     ElseIfClause, // ELSEIF true SELECT;
     EOF,
+    EmptyStruct,      // ()
     ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'
     ExportStatement,
     ExtractArgument,         // DAY FROM expr
