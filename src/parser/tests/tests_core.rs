@@ -755,6 +755,52 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  (1,2)[0],
+  STRUCT(1,2)[0],
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: [ (AccessOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: ( (StructLiteral)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+  right:
+    self: 0 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+- self: [ (AccessOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: ( (StructLiteral)
+    exprs:
+    - self: 1 (NumericLiteral)
+      comma:
+        self: , (Symbol)
+    - self: 2 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+    type:
+      self: STRUCT (Type)
+  right:
+    self: 0 (NumericLiteral)
+  rparen:
+    self: ] (Symbol)
+",
+            0,
+        )),
         // struct with type declarations
         Box::new(SuccessTestCase::new(
             "\
