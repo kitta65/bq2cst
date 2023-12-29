@@ -96,6 +96,20 @@ what:
 ",
             0,
         )),
+        // DROP statement
+        Box::new(SuccessTestCase::new(
+            "\
+DROP MODEL ident
+",
+            "\
+self: DROP (DropStatement)
+ident:
+  self: ident (Identifier)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();
