@@ -1671,6 +1671,13 @@ impl Parser {
             let mut groupby = self.construct_node(NodeType::XXXByExprs)?;
             self.next_token()?; // GROUP -> BY
             groupby.push_node("by", self.construct_node(NodeType::Keyword)?);
+            if self.get_token(1)?.in_(&vec!["ROLLUP", "CUBE"]) {
+                self.next_token()?; // -> ROLLUP | CUBE
+                groupby.push_node_vec("how", self.parse_n_keywords(1)?);
+            } else if self.get_token(1)?.in_(&vec!["GROUPING"]) {
+                self.next_token()?; // -> GROUPING
+                groupby.push_node_vec("how", self.parse_n_keywords(2)?);
+            }
             self.next_token()?; // BY -> expr
             groupby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
             node.push_node("groupby", groupby);

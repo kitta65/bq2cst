@@ -2062,7 +2062,6 @@ groupby:
 ",
             0,
         )),
-        // NOTE ROLLUP is not a function but it is OK
         Box::new(SuccessTestCase::new(
             "\
 SELECT x, SUM(y) FROM t GROUP BY ROLLUP(x)
@@ -2089,13 +2088,57 @@ groupby:
   by:
     self: BY (Keyword)
   exprs:
-  - self: ( (CallingFunction)
-    args:
-    - self: x (Identifier)
-    func:
-      self: ROLLUP (Identifier)
+  - self: ( (GroupedExpr)
+    expr:
+      self: x (Identifier)
     rparen:
       self: ) (Symbol)
+  how:
+  - self: ROLLUP (Keyword)
+",
+            0,
+        )),
+        // CUBE() may be not a function but it's OK
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT count(*) FROM t GROUP BY GROUPING SETS (a, CUBE(b))
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: * (Asterisk)
+  func:
+    self: count (Identifier)
+  rparen:
+    self: ) (Symbol)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+groupby:
+  self: GROUP (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: ( (StructLiteral)
+    exprs:
+    - self: a (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: ( (CallingFunction)
+      args:
+      - self: b (Identifier)
+      func:
+        self: CUBE (Identifier)
+      rparen:
+        self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+  how:
+  - self: GROUPING (Keyword)
+  - self: SETS (Keyword)
 ",
             0,
         )),
