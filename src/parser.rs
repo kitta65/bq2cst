@@ -3308,20 +3308,15 @@ impl Parser {
         Ok(export)
     }
     fn parse_export_model_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
-        let mut export = self.construct_node(NodeType::ExportDataStatement)?;
-        self.next_token()?; // -> DATA
-        export.push_node("data", self.construct_node(NodeType::Keyword)?);
-        if self.get_token(1)?.is("WITH") {
-            self.next_token()?; // -> WITH
-            export.push_node("with_connection", self.parse_with_connection_clause()?);
+        let mut export = self.construct_node(NodeType::ExportModelStatement)?;
+        self.next_token()?; // -> MODEL
+        export.push_node("what", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> ident
+        export.push_node("ident", self.parse_identifier()?);
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            export.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
         }
-        self.next_token()?; // -> OPTIONS
-        export.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
-        self.next_token()?; // -> AS
-        let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
-        self.next_token()?; // -> stmt
-        as_.push_node("stmt", self.parse_statement(false)?);
-        export.push_node("as", as_);
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             export.push_node("semicolon", self.construct_node(NodeType::Symbol)?);

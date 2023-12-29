@@ -56,6 +56,7 @@ export type UnknownNode =
   | EOF
   | ExecuteStatement
   | ExportDataStatement
+  | ExportModelStatement
   | ExtractArgument
   | ForStatement
   | ForSystemTimeAsOfClause
@@ -775,6 +776,15 @@ export type ExportDataStatement = XXXStatement & {
     with_connection?: NodeChild;
     options: NodeChild;
     as: NodeChild;
+  };
+};
+
+export type ExportModelStatement = XXXStatement & {
+  node_type: "ExportModelStatement";
+  children: {
+    what: NodeChild;
+    ident: NodeChild;
+    options?: NodeChild;
   };
 };
 
