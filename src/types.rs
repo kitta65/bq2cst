@@ -55,7 +55,7 @@ export type UnknownNode =
   | EmptyStruct
   | EOF
   | ExecuteStatement
-  | ExportStatement
+  | ExportDataStatement
   | ExtractArgument
   | ForStatement
   | ForSystemTimeAsOfClause
@@ -768,8 +768,8 @@ export type ExecuteStatement = XXXStatement & {
   };
 };
 
-export type ExportStatement = XXXStatement & {
-  node_type: "ExportStatement";
+export type ExportDataStatement = XXXStatement & {
+  node_type: "ExportDataStatement";
   children: {
     data: NodeChild;
     with_connection?: NodeChild;

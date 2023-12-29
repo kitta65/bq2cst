@@ -1018,7 +1018,13 @@ impl Parser {
             // DEBUG
             "ASSERT" => self.parse_assert_satement(semicolon)?,
             // other
-            "EXPORT" => self.parse_export_statement(semicolon)?,
+            "EXPORT" => {
+                if self.get_token(1)?.is("DATA") {
+                    self.parse_export_data_statement(semicolon)?
+                } else {
+                    self.parse_export_model_statement(semicolon)?
+                }
+            }
             _ => self.parse_labeled_statement(semicolon)?,
         };
         Ok(node)
@@ -3280,8 +3286,29 @@ impl Parser {
         Ok(assert)
     }
     // ----- other -----
-    fn parse_export_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
-        let mut export = self.construct_node(NodeType::ExportStatement)?;
+    fn parse_export_data_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut export = self.construct_node(NodeType::ExportDataStatement)?;
+        self.next_token()?; // -> DATA
+        export.push_node("data", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("WITH") {
+            self.next_token()?; // -> WITH
+            export.push_node("with_connection", self.parse_with_connection_clause()?);
+        }
+        self.next_token()?; // -> OPTIONS
+        export.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        self.next_token()?; // -> AS
+        let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
+        self.next_token()?; // -> stmt
+        as_.push_node("stmt", self.parse_statement(false)?);
+        export.push_node("as", as_);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            export.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(export)
+    }
+    fn parse_export_model_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut export = self.construct_node(NodeType::ExportDataStatement)?;
         self.next_token()?; // -> DATA
         export.push_node("data", self.construct_node(NodeType::Keyword)?);
         if self.get_token(1)?.is("WITH") {

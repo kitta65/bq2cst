@@ -63,7 +63,8 @@ pub enum NodeType {
     EOF,
     EmptyStruct,      // ()
     ExecuteStatement, // EXECUTE IMMEDIATE 'SELECT 1;'
-    ExportStatement,
+    ExportDataStatement,
+    ExportModelStatement,
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
