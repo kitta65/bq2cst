@@ -39,6 +39,7 @@ export type UnknownNode =
   | Comment
   | Constraint
   | CreateFunctionStatement
+  | CreateModelStatement
   | CreateProcedureStatement
   | CreateReservationStatement
   | CreateRowAccessPolicyStatement
@@ -112,6 +113,7 @@ export type UnknownNode =
   | TableSampleRatio
   | Template
   | TransactionStatement
+  | TrainingDataCustomHolidayClause
   | TruncateStatement
   | Type
   | TypeDeclaration
@@ -578,6 +580,23 @@ export type CreateFunctionStatement = XXXStatement & {
     language?: NodeChild;
     options?: NodeChild;
     as?: NodeChild;
+  };
+};
+
+export type CreateModelStatement = XXXStatement & {
+  node_type: "CreateModelStatement";
+  children: {
+    or_replace?: NodeVecChild;
+    what: NodeChild;
+    if_not_exists?: NodeVecChild;
+    ident: NodeChild;
+    transform?: NodeChild;
+    output?: NodeChild;
+    input?: NodeChild;
+    remote?: NodeChild;
+    options?: NodeChild;
+    query?: NodeChild;
+    training_data_custom_holiday?: NodeChild;
   };
 };
 
@@ -1266,6 +1285,15 @@ export type TransactionStatement = XXXStatement & {
   node_type: "TransactionStatement";
   children: {
     transaction?: NodeChild;
+  };
+};
+
+export type TrainingDataCustomHolidayClause = BaseNode & {
+  node_type: "TrainingDataCustomHolidayClause";
+  children: {
+    training_data: NodeChild;
+    custom_holiday: NodeChild;
+    rparen: NodeChild;
   };
 };
 

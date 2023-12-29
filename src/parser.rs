@@ -2443,7 +2443,7 @@ impl Parser {
         }
         if self.get_token(1)?.is("INPUT") {
             self.next_token()?; // -> INPUT
-            let mut input = self.construct_node(NodeType::KeywordWithGroupedTypes)?;
+            let mut input = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
             self.next_token()?; // -> (
             input.push_node(
                 "group",
@@ -2453,7 +2453,7 @@ impl Parser {
         }
         if self.get_token(1)?.is("OUTPUT") {
             self.next_token()?; // -> OUTPUT
-            let mut output = self.construct_node(NodeType::KeywordWithGroupedTypes)?;
+            let mut output = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
             self.next_token()?; // -> (
             output.push_node(
                 "group",
@@ -2483,15 +2483,15 @@ impl Parser {
             if self.get_token(2)?.is("training_data") {
                 let mut as_ = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
                 self.next_token()?; // -> (
-                let mut group = self.construct_node(NodeType::TraininDataCustomHolidayClause)?;
+                let mut group = self.construct_node(NodeType::TrainingDataCustomHolidayClause)?;
                 self.next_token()?; // -> trainin_data
-                group.push_node("trainin_data", self.parse_cte()?);
+                group.push_node("training_data", self.parse_cte()?);
                 self.next_token()?; // -> custom_holiday
                 group.push_node("custom_holiday", self.parse_cte()?);
                 self.next_token()?; // -> )
                 group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-                as_.push_node("training_data_custom_holiday", group);
-                create.push_node("group", as_)
+                as_.push_node("group", group);
+                create.push_node("training_data_custom_holiday", as_)
             } else {
                 let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
                 self.next_token()?; // -> SELECT

@@ -62,7 +62,7 @@ self: CREATE (CreateModelStatement)
 ident:
   self: ident (Identifier)
 input:
-  self: INPUT (KeywordWithGroupedTypes)
+  self: INPUT (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedTypeDeclarationOrConstraints)
     declarations:
@@ -77,7 +77,7 @@ input:
     rparen:
       self: ) (Symbol)
 output:
-  self: OUTPUT (KeywordWithGroupedTypes)
+  self: OUTPUT (KeywordWithGroupedXXX)
   group:
     self: ( (GroupedTypeDeclarationOrConstraints)
     declarations:
@@ -162,10 +162,12 @@ AS (
 ",
             "\
 self: CREATE (CreateModelStatement)
-group:
+ident:
+  self: ident (Identifier)
+training_data_custom_holiday:
   self: AS (KeywordWithGroupedXXX)
-  training_data_custom_holiday:
-    self: ( (TraininDataCustomHolidayClause)
+  group:
+    self: ( (TrainingDataCustomHolidayClause)
     custom_holiday:
       self: custom_holiday (WithQuery)
       as:
@@ -180,7 +182,7 @@ group:
           - self: 1 (NumericLiteral)
     rparen:
       self: ) (Symbol)
-    trainin_data:
+    training_data:
       self: training_data (WithQuery)
       as:
         self: AS (Keyword)
@@ -194,8 +196,6 @@ group:
           self: SELECT (SelectStatement)
           exprs:
           - self: 1 (NumericLiteral)
-ident:
-  self: ident (Identifier)
 what:
   self: MODEL (Keyword)
 ",
