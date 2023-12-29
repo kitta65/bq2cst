@@ -1668,7 +1668,7 @@ impl Parser {
         // GROUP BY
         if self.get_token(1)?.is("GROUP") {
             self.next_token()?; // expr -> GROUP
-            let mut groupby = self.construct_node(NodeType::XXXByExprs)?;
+            let mut groupby = self.construct_node(NodeType::GroupByExprs)?;
             self.next_token()?; // GROUP -> BY
             groupby.push_node("by", self.construct_node(NodeType::Keyword)?);
             if self.get_token(1)?.in_(&vec!["ROLLUP", "CUBE"]) {

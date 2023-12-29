@@ -59,6 +59,7 @@ export type UnknownNode =
   | ForStatement
   | ForSystemTimeAsOfClause
   | GrantStatement
+  | GroupByExprs
   | GroupedExpr
   | GroupedExprs
   | GroupedIdentWithOptions
@@ -807,6 +808,16 @@ export type GrantStatement = XXXStatement & {
     resource_type: NodeChild;
     ident: NodeChild;
     to: NodeChild;
+  };
+};
+
+export type GroupByExprs = BaseNode & {
+  token: Token;
+  node_type: "GroupByExprs";
+  children: {
+    by: NodeChild;
+    how?: NodeVecChild;
+    exprs: { NodeVec: Expr[] & UnknownNode[] };
   };
 };
 

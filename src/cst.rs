@@ -67,6 +67,7 @@ pub enum NodeType {
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
     GrantStatement,
+    GroupByExprs,
     GroupedIdentWithOptions,             // (col OPTIONS())
     GroupedExpr,                         // (1)
     GroupedExprs,                        // (1, 2, 3)

@@ -2051,7 +2051,7 @@ from:
   expr:
     self: t (Identifier)
 groupby:
-  self: GROUP (XXXByExprs)
+  self: GROUP (GroupByExprs)
   by:
     self: BY (Keyword)
   exprs:
@@ -2084,7 +2084,7 @@ from:
   expr:
     self: t (Identifier)
 groupby:
-  self: GROUP (XXXByExprs)
+  self: GROUP (GroupByExprs)
   by:
     self: BY (Keyword)
   exprs:
@@ -2118,7 +2118,7 @@ from:
   expr:
     self: t (Identifier)
 groupby:
-  self: GROUP (XXXByExprs)
+  self: GROUP (GroupByExprs)
   by:
     self: BY (Keyword)
   exprs:
@@ -2167,7 +2167,7 @@ from:
   expr:
     self: t (Identifier)
 groupby:
-  self: GROUP (XXXByExprs)
+  self: GROUP (GroupByExprs)
   by:
     self: BY (Keyword)
   exprs:
