@@ -280,6 +280,18 @@ impl Parser {
         }
         return Ok(res);
     }
+    fn parse_cte(&mut self) -> BQ2CSTResult<Node> {
+        let mut query = self.construct_node(NodeType::WithQuery)?;
+        self.next_token()?; // ident -> AS
+        query.push_node("as", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // AS -> (
+        query.push_node("stmt", self.parse_select_statement(false, true)?);
+        if self.get_token(1)?.literal.as_str() == "," {
+            self.next_token()?; // ) -> ,
+            query.push_node("comma", self.construct_node(NodeType::Symbol)?);
+        };
+        Ok(query)
+    }
     fn parse_enforced(&mut self) -> BQ2CSTResult<Node> {
         let mut enforced;
         if self.get_token(0)?.is("NOT") {
@@ -734,7 +746,7 @@ impl Parser {
         let mut group = self.construct_node(NodeType::GroupedExprs)?;
         if !self.get_token(1)?.is(")") {
             self.next_token()?; // ( -> exprs
-            group.push_node_vec("exprs", self.parse_exprs(&vec![], alias)?);
+            group.push_node_vec("exprs", self.parse_exprs(&vec![")"], alias)?);
         }
         self.next_token()?; // exprs -> )
         group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
@@ -936,6 +948,7 @@ impl Parser {
                             return self.parse_create_reservation_statement(semicolon)
                         }
                         "SEARCH" => return self.parse_create_search_index_statement(semicolon),
+                        "MODEL" => return self.parse_create_model_statement(semicolon),
                         _ => {
                             offset += 1;
                             if 5 < offset {
@@ -1582,16 +1595,7 @@ impl Parser {
                 && self.get_token(1)?.literal != "("
             {
                 self.next_token()?; // WITH -> ident, ) -> ident
-                let mut query = self.construct_node(NodeType::WithQuery)?;
-                self.next_token()?; // ident -> AS
-                query.push_node("as", self.construct_node(NodeType::Keyword)?);
-                self.next_token()?; // AS -> (
-                query.push_node("stmt", self.parse_select_statement(false, true)?);
-                if self.get_token(1)?.literal.as_str() == "," {
-                    self.next_token()?; // ) -> ,
-                    query.push_node("comma", self.construct_node(NodeType::Symbol)?);
-                }
-                queries.push(query);
+                queries.push(self.parse_cte()?);
             }
             with.push_node_vec("queries", queries);
             self.next_token()?; // -> SELECT | '('
@@ -2266,10 +2270,8 @@ impl Parser {
             let mut remote = self.construct_node(NodeType::KeywordSequence)?;
             self.next_token()?; // -> WITH
             let mut with = self.construct_node(NodeType::KeywordSequence)?;
-            // remote.push_node("next_token", self.construct_node(NodeType::KeywordSequence)?);
             self.next_token()?; // -> CONNECTION
             let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
-            // remote.push_node("connection", self.construct_node(NodeType::KeywordWithExpr)?);
             self.next_token()?; // -> ident
             connection.push_node("expr", self.parse_identifier()?);
             with.push_node("next_keyword", connection);
@@ -2418,6 +2420,88 @@ impl Parser {
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             create.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(create)
+    }
+    fn parse_create_model_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut create = self.construct_node(NodeType::CreateModelStatement)?;
+        if self.get_token(1)?.is("OR") {
+            self.next_token()?; // -> OR
+            create.push_node_vec("or_replace", self.parse_n_keywords(2)?);
+        }
+        self.next_token()?; // -> MODEL
+        create.push_node("what", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            create.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+        }
+        self.next_token()?; // -> ident
+        create.push_node("ident", self.parse_identifier()?);
+        if self.get_token(1)?.is("TRANSFORM") {
+            self.next_token()?; // -> TRANSFORM
+            create.push_node("transform", self.parse_keyword_with_grouped_exprs(true)?);
+        }
+        if self.get_token(1)?.is("INPUT") {
+            self.next_token()?; // -> INPUT
+            let mut input = self.construct_node(NodeType::KeywordWithGroupedTypes)?;
+            self.next_token()?; // -> (
+            input.push_node(
+                "group",
+                self.parse_grouped_type_declaration_or_constraints(false)?,
+            );
+            create.push_node("input", input);
+        }
+        if self.get_token(1)?.is("OUTPUT") {
+            self.next_token()?; // -> OUTPUT
+            let mut output = self.construct_node(NodeType::KeywordWithGroupedTypes)?;
+            self.next_token()?; // -> (
+            output.push_node(
+                "group",
+                self.parse_grouped_type_declaration_or_constraints(false)?,
+            );
+            create.push_node("output", output);
+        }
+        if self.get_token(1)?.is("REMOTE") {
+            self.next_token()?; // -> REMOTE
+            let mut remote = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> WITH
+            let mut with = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> CONNECTION
+            let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> ident
+            connection.push_node("expr", self.parse_identifier()?);
+            with.push_node("next_keyword", connection);
+            remote.push_node("next_keyword", with);
+            create.push_node("remote", remote);
+        }
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        }
+        if self.get_token(1)?.is("AS") {
+            self.next_token()?; // -> AS
+            if self.get_token(2)?.is("training_data") {
+                let mut as_ = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
+                self.next_token()?; // -> (
+                let mut group = self.construct_node(NodeType::TraininDataCustomHolidayClause)?;
+                self.next_token()?; // -> trainin_data
+                group.push_node("trainin_data", self.parse_cte()?);
+                self.next_token()?; // -> custom_holiday
+                group.push_node("custom_holiday", self.parse_cte()?);
+                self.next_token()?; // -> )
+                group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+                as_.push_node("training_data_custom_holiday", group);
+                create.push_node("group", as_)
+            } else {
+                let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
+                self.next_token()?; // -> SELECT
+                as_.push_node("stmt", self.parse_select_statement(false, true)?);
+                create.push_node("query", as_)
+            }
+        }
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            create.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
         }
         Ok(create)
     }

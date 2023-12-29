@@ -46,6 +46,7 @@ pub enum NodeType {
     CaseStatementArm,
     CastArgument, // x AS INT64
     CreateFunctionStatement,
+    CreateModelStatement,
     CreateProcedureStatement,
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
     CreateRowAccessPolicyStatement,
@@ -83,6 +84,7 @@ pub enum NodeType {
     KeywordWithExprs,      // USING 1, 2
     KeywordWithType,       // RETURNS INT64
     KeywordWithGroupedXXX, // AS (1 + 1)
+    KeywordWithGroupedTypes,
     KeywordWithStatement,  // THEN INSERT ROW
     KeywordWithStatements, // THEN SELECT 1;
     Identifier,
@@ -115,11 +117,12 @@ pub enum NodeType {
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
-    Symbol,               // ) | ] | * | ...
-    TableSampleClause,    // TABLESAMPLE SYSTEM (10 PERCENT)
-    TableSampleRatio,     // (10 PERCENT)
-    Template,             // {{variable}}
-    TransactionStatement, // BEGIN | COMMIT | ROLLBACK
+    Symbol,                         // ) | ] | * | ...
+    TableSampleClause,              // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSampleRatio,               // (10 PERCENT)
+    Template,                       // {{variable}}
+    TraininDataCustomHolidayClause, // (training_data AS (SELECT ...), custom_holiday AS (SELECT ...))
+    TransactionStatement,           // BEGIN | COMMIT | ROLLBACK
     TruncateStatement,
     Type,            // INT64
     TypeDeclaration, // x INT64

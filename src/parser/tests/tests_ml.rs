@@ -3,6 +3,204 @@ use super::*;
 #[test]
 fn test_parse_code_ml() {
     let test_cases = vec![
+        // CREATE MODEL statement
+        Box::new(SuccessTestCase::new(
+            // NOTE trailing comma seems to be acceptable
+            "\
+CREATE MODEL ident
+TRANSFORM (
+  expr_a as alias_a,
+  *,
+  * EXCEPT(expr_b),
+)
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+transform:
+  self: TRANSFORM (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: expr_a (Identifier)
+      alias:
+        self: alias_a (Identifier)
+      as:
+        self: as (Keyword)
+      comma:
+        self: , (Symbol)
+    - self: * (Asterisk)
+      comma:
+        self: , (Symbol)
+    - self: * (Asterisk)
+      comma:
+        self: , (Symbol)
+      except:
+        self: EXCEPT (KeywordWithGroupedXXX)
+        group:
+          self: ( (GroupedExprs)
+          exprs:
+          - self: expr_b (Identifier)
+          rparen:
+            self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MODEL ident
+INPUT (a INT64, b FLOAT64)
+OUTPUT (c STRING)
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+input:
+  self: INPUT (KeywordWithGroupedTypes)
+  group:
+    self: ( (GroupedTypeDeclarationOrConstraints)
+    declarations:
+    - self: a (TypeDeclaration)
+      comma:
+        self: , (Symbol)
+      type:
+        self: INT64 (Type)
+    - self: b (TypeDeclaration)
+      type:
+        self: FLOAT64 (Type)
+    rparen:
+      self: ) (Symbol)
+output:
+  self: OUTPUT (KeywordWithGroupedTypes)
+  group:
+    self: ( (GroupedTypeDeclarationOrConstraints)
+    declarations:
+    - self: c (TypeDeclaration)
+      type:
+        self: STRING (Type)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MODEL ident
+REMOTE WITH CONNECTION ident
+OPTIONS (ENDPOINT = '')
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: ENDPOINT (Identifier)
+      right:
+        self: '' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+remote:
+  self: REMOTE (KeywordSequence)
+  next_keyword:
+    self: WITH (KeywordSequence)
+    next_keyword:
+      self: CONNECTION (KeywordWithExpr)
+      expr:
+        self: ident (Identifier)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MODEL ident
+AS (SELECT 1);
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+query:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MODEL ident
+AS (
+  training_data AS (SELECT 1),
+  custom_holiday AS (SELECT 1)
+)
+",
+            "\
+self: CREATE (CreateModelStatement)
+group:
+  self: AS (KeywordWithGroupedXXX)
+  training_data_custom_holiday:
+    self: ( (TraininDataCustomHolidayClause)
+    custom_holiday:
+      self: custom_holiday (WithQuery)
+      as:
+        self: AS (Keyword)
+      stmt:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+    trainin_data:
+      self: training_data (WithQuery)
+      as:
+        self: AS (Keyword)
+      comma:
+        self: , (Symbol)
+      stmt:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+ident:
+  self: ident (Identifier)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
         // EXPORT MODEL statement
         Box::new(SuccessTestCase::new(
             "\
