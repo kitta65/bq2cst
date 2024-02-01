@@ -2004,7 +2004,7 @@ impl Parser {
         Ok(create)
     }
     fn parse_create_search_index_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
-        let mut create = self.construct_node(NodeType::CreateSearchIndexStatement)?;
+        let mut create = self.construct_node(NodeType::CreateIndexStatement)?;
         self.next_token()?; // -> SEARCH
         let mut what = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> INDEX

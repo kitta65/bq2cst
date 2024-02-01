@@ -80,7 +80,7 @@ what:
 CREATE SEARCH INDEX new_index ON tablename(ALL COLUMNS);
 ",
             "\
-self: CREATE (CreateSearchIndexStatement)
+self: CREATE (CreateIndexStatement)
 column_group:
   self: ( (GroupedExpr)
   expr:
@@ -111,7 +111,7 @@ ON tablename(a, b)
 OPTIONS(dummy='dummy')
 ",
             "\
-self: CREATE (CreateSearchIndexStatement)
+self: CREATE (CreateIndexStatement)
 column_group:
   self: ( (GroupedExprs)
   exprs:
