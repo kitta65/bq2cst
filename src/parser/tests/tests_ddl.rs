@@ -108,7 +108,6 @@ what:
             "\
 CREATE SEARCH INDEX IF NOT EXISTS new_index
 ON tablename(a, b)
-OPTIONS(dummy='dummy')
 ",
             "\
 self: CREATE (CreateIndexStatement)
@@ -129,6 +128,32 @@ if_not_exists:
 - self: EXISTS (Keyword)
 on:
   self: ON (Keyword)
+tablename:
+  self: tablename (Identifier)
+what:
+  self: SEARCH (KeywordSequence)
+  next_keyword:
+    self: INDEX (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE OR REPLACE VECTOR INDEX new_index ON tablename(col)
+OPTIONS(dummy='dummy')
+",
+            "\
+self: CREATE (CreateIndexStatement)
+column_group:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: col (Identifier)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: new_index (Identifier)
+on:
+  self: ON (Keyword)
 options:
   self: OPTIONS (KeywordWithGroupedXXX)
   group:
@@ -141,10 +166,13 @@ options:
         self: 'dummy' (StringLiteral)
     rparen:
       self: ) (Symbol)
+or_replace:
+- self: OR (Keyword)
+- self: REPLACE (Keyword)
 tablename:
   self: tablename (Identifier)
 what:
-  self: SEARCH (KeywordSequence)
+  self: VECTOR (KeywordSequence)
   next_keyword:
     self: INDEX (Keyword)
 ",

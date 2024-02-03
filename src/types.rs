@@ -657,6 +657,7 @@ export type CreateSchemaStatement = XXXStatement & {
 export type CreateIndexStatement = XXXStatement & {
   node_type: "CreateIndexStatement";
   children: {
+    or_replace?: NodeVecChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;

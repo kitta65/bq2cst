@@ -947,7 +947,9 @@ impl Parser {
                         "CAPACITY" | "RESERVATION" | "ASSIGNMENT" => {
                             return self.parse_create_reservation_statement(semicolon)
                         }
-                        "SEARCH" => return self.parse_create_search_index_statement(semicolon),
+                        "SEARCH" | "VECTOR" => {
+                            return self.parse_create_search_index_statement(semicolon)
+                        }
                         "MODEL" => return self.parse_create_model_statement(semicolon),
                         _ => {
                             offset += 1;
@@ -2005,7 +2007,11 @@ impl Parser {
     }
     fn parse_create_search_index_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateIndexStatement)?;
-        self.next_token()?; // -> SEARCH
+        if self.get_token(1)?.is("OR") {
+            self.next_token()?; // -> OR
+            create.push_node_vec("or_replace", self.parse_n_keywords(2)?);
+        }
+        self.next_token()?; // -> SEARCH | VECTOR
         let mut what = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> INDEX
         what.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
