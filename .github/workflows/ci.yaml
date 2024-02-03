@@ -16,7 +16,7 @@ jobs:
             ~/.cargo/db
 
       - run: make build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: pkg
           path: ./pkg
