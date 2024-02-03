@@ -39,12 +39,12 @@ export type UnknownNode =
   | Comment
   | Constraint
   | CreateFunctionStatement
+  | CreateIndexStatement
   | CreateModelStatement
   | CreateProcedureStatement
   | CreateReservationStatement
   | CreateRowAccessPolicyStatement
   | CreateSchemaStatement
-  | CreateSearchIndexStatement
   | CreateTableStatement
   | CreateViewStatement
   | DeclareStatement
@@ -654,9 +654,10 @@ export type CreateSchemaStatement = XXXStatement & {
   };
 };
 
-export type CreateSearchIndexStatement = XXXStatement & {
-  node_type: "CreateSearchIndexStatement";
+export type CreateIndexStatement = XXXStatement & {
+  node_type: "CreateIndexStatement";
   children: {
+    or_replace?: NodeVecChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;

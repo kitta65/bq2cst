@@ -46,12 +46,12 @@ pub enum NodeType {
     CaseStatementArm,
     CastArgument, // x AS INT64
     CreateFunctionStatement,
+    CreateIndexStatement,
     CreateModelStatement,
     CreateProcedureStatement,
     CreateReservationStatement, // CREATE CAPACITY `ident` AS JSON '{}' | ...
     CreateRowAccessPolicyStatement,
     CreateSchemaStatement,
-    CreateSearchIndexStatement,
     CreateTableStatement,
     CreateViewStatement,
     Comment,
