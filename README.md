@@ -1,7 +1,8 @@
 # bq2cst
 Parse standard SQL, which is a dialect of [BigQuery](https://cloud.google.com/bigquery), into a concrete syntax tree.
 
-⚠️ **This parser is designed to be used via [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq).**
+> [!WARNING]
+> This parser is designed to be used via [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq).
 
 ## Features
 - forcused on standard SQL (in other words, other SQL dialects are out of scope)
