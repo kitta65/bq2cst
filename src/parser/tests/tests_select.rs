@@ -2165,6 +2165,25 @@ groupby:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "SELECT colname FROM tablename GROUP BY ALL",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: colname (Identifier)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: tablename (Identifier)
+groupby:
+  self: GROUP (GroupByExprs)
+  by:
+    self: BY (Keyword)
+  how:
+  - self: ALL (Keyword)
+",
+            0,
+        )),
         // ----- HAVING clause -----
         Box::new(SuccessTestCase::new(
             "\

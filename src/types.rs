@@ -867,7 +867,7 @@ export type GroupByExprs = BaseNode & {
   children: {
     by: NodeChild;
     how?: NodeVecChild;
-    exprs: { NodeVec: Expr[] & UnknownNode[] };
+    exprs?: { NodeVec: Expr[] & UnknownNode[] };
   };
 };
 
