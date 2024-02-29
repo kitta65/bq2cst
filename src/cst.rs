@@ -107,6 +107,7 @@ pub enum NodeType {
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,
+    RangeLiteral, // RANGE<DATE> '[2023-01-01, 2024-01-01)'
     RenameColumnClause,
     RepeatStatement,
     RevokeStatement,

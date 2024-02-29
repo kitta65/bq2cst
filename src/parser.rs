@@ -377,6 +377,13 @@ impl Parser {
                     struct_literal.push_node("type", type_);
                     left = struct_literal;
                 }
+                "RANGE" => {
+                    let type_ = self.parse_type(false)?;
+                    self.next_token()?; // > -> '[lower, upper)'
+                    let mut range_literal = self.construct_node(NodeType::RangeLiteral)?;
+                    range_literal.push_node("type", type_);
+                    left = range_literal;
+                }
                 // ARRAY
                 "[" => {
                     left.node_type = NodeType::ArrayLiteral;
@@ -1293,10 +1300,10 @@ impl Parser {
     }
     fn parse_type(&mut self, schema: bool) -> BQ2CSTResult<Node> {
         let mut res = match self.get_token(0)?.literal.to_uppercase().as_str() {
-            "ARRAY" => {
+            "ARRAY" | "RANGE" => {
                 let mut res = self.construct_node(NodeType::Type)?;
                 if self.get_token(1)?.literal.as_str() == "<" {
-                    self.next_token()?; // ARRAY -> <
+                    self.next_token()?; // -> <
                     let mut type_ = self.construct_node(NodeType::GroupedType)?;
                     self.next_token()?; // < -> type
                     type_.push_node("type", self.parse_type(schema)?);

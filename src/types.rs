@@ -1168,6 +1168,13 @@ export type RaiseStatement = XXXStatement & {
   };
 };
 
+export type RangeLiteral = Expr & {
+  node_type: "RangeLiteral";
+  children: {
+    type: NodeChild;
+  };
+};
+
 export type RenameColumnClause = BaseNode & {
   token: Token;
   node_type: "RenameColumnClause";

@@ -874,6 +874,26 @@ exprs:
 ",
             0,
         )),
+        // ----- range -----
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT RANGE<DATE> '[2023-01-01, 2024-01-01)'
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: '[2023-01-01, 2024-01-01)' (RangeLiteral)
+  type:
+    self: RANGE (Type)
+    type_declaration:
+      self: < (GroupedType)
+      rparen:
+        self: > (Symbol)
+      type:
+        self: DATE (Type)
+",
+            0,
+        )),
         // ----- interval -----
         Box::new(SuccessTestCase::new(
             "\
