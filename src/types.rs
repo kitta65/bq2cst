@@ -99,6 +99,7 @@ export type UnknownNode =
   | PivotOperator
   | PivotConfig
   | RaiseStatement
+  | RangeLiteral
   | RenameColumnClause
   | RepeatStatement
   | RevokeStatement
