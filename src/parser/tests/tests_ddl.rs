@@ -1210,6 +1210,31 @@ what:
 ",
             0,
         )),
+        // REPLICA
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MATERIALIZED VIEW ident1
+AS REPLICA OF ident2
+",
+            "\
+self: CREATE (CreateViewStatement)
+as:
+  self: AS (KeywordSequence)
+  next_keyword:
+    self: REPLICA (KeywordSequence)
+    next_keyword:
+      self: OF (KeywordWithExpr)
+      expr:
+        self: ident2 (Identifier)
+ident:
+  self: ident1 (Identifier)
+materialized:
+  self: MATERIALIZED (Keyword)
+what:
+  self: VIEW (Keyword)
+",
+            0,
+        )),
         // MATERIALIZED
         Box::new(SuccessTestCase::new(
             "\

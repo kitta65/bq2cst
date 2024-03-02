@@ -2236,10 +2236,24 @@ impl Parser {
         }
         if self.get_token(1)?.is("AS") {
             self.next_token()?; // -> AS
-            let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
-            self.next_token()?; // -> SELECT
-            as_.push_node("stmt", self.parse_select_statement(false, true)?);
-            create.push_node("as", as_)
+            if self.get_token(1)?.is("REPLICA") {
+                let mut as_ = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> REPLICA
+                let mut replica = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> OF
+                let mut of = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // -> ident
+
+                of.push_node("expr", self.parse_identifier()?);
+                replica.push_node("next_keyword", of);
+                as_.push_node("next_keyword", replica);
+                create.push_node("as", as_)
+            } else {
+                let mut as_ = self.construct_node(NodeType::KeywordWithStatement)?;
+                self.next_token()?; // -> SELECT
+                as_.push_node("stmt", self.parse_select_statement(false, true)?);
+                create.push_node("as", as_)
+            }
         }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
