@@ -1636,6 +1636,47 @@ what:
 ",
             0,
         )),
+        // AGGREGATE function
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE AGGREGATE FUNCTION plus_one(n int64 not aggregate)
+AS (n + 1)
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+aggregate:
+  self: AGGREGATE (Keyword)
+as:
+  self: AS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExpr)
+    expr:
+      self: + (BinaryOperator)
+      left:
+        self: n (Identifier)
+      right:
+        self: 1 (NumericLiteral)
+    rparen:
+      self: ) (Symbol)
+group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: n (TypeDeclaration)
+    type:
+      self: int64 (Type)
+      aggregate:
+        self: not (KeywordSequence)
+        next_keyword:
+          self: aggregate (Keyword)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: plus_one (Identifier)
+what:
+  self: FUNCTION (Keyword)
+",
+            0,
+        )),
         // ----- CREATE PROCEDURE statement -----
         Box::new(SuccessTestCase::new(
             "\
