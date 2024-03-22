@@ -572,6 +572,7 @@ export type CreateFunctionStatement = XXXStatement & {
     or_replace?: NodeVecChild;
     temp?: NodeChild;
     table?: NodeChild;
+    aggregate?: NodeChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
@@ -1331,6 +1332,7 @@ export type Type = BaseNode & {
     default?: NodeChild;
     options?: NodeChild;
     collate?: NodeChild
+    aggregate?: NodeChild;
   };
 };
 
