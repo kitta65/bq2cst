@@ -3199,6 +3199,43 @@ what:
 ",
             0,
         )),
+        // ----- UNDROP statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+UNDROP SCHEMA datasetname;
+",
+            "\
+self: UNDROP (UndropStatement)
+ident:
+  self: datasetname (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+UNDROP SCHEMA IF NOT EXISTS projectname.datasetname
+",
+            "\
+self: UNDROP (UndropStatement)
+ident:
+  self: . (DotOperator)
+  left:
+    self: projectname (Identifier)
+  right:
+    self: datasetname (Identifier)
+if_not_exists:
+- self: IF (Keyword)
+- self: NOT (Keyword)
+- self: EXISTS (Keyword)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

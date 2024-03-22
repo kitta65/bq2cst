@@ -1011,6 +1011,7 @@ impl Parser {
                     self.parse_drop_statement_general(semicolon)?
                 }
             }
+            "UNDROP" => self.parse_undrop_statement(semicolon)?,
             // DCL
             "GRANT" => self.parse_grant_statement(semicolon)?,
             "REVOKE" => self.parse_revoke_statement(semicolon)?,
@@ -2983,6 +2984,22 @@ impl Parser {
             drop.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
         }
         Ok(drop)
+    }
+    fn parse_undrop_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut undrop = self.construct_node(NodeType::UndropStatement)?;
+        self.next_token()?; // -> SCHEMA
+        undrop.push_node("what", self.construct_node(NodeType::Keyword)?);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            undrop.push_node_vec("if_not_exists", self.parse_n_keywords(3)?);
+        }
+        self.next_token()?; // -> ident
+        undrop.push_node("ident", self.parse_identifier()?);
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            undrop.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(undrop)
     }
     // ----- DCL -----
     fn parse_grant_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
