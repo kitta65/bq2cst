@@ -486,6 +486,34 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  foo.select,
+  foo.select.from
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (DotOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: foo (Identifier)
+  right:
+    self: select (Identifier)
+- self: . (DotOperator)
+  left:
+    self: . (DotOperator)
+    left:
+      self: foo (Identifier)
+    right:
+      self: select (Identifier)
+  right:
+    self: from (Identifier)
+",
+            0,
+        )),
         // precedence
         Box::new(SuccessTestCase::new(
             "\
