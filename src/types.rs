@@ -119,6 +119,7 @@ export type UnknownNode =
   | Type
   | TypeDeclaration
   | UnaryOperator
+  | UndropStatement
   | UnpivotConfig
   | UnpivotOperator
   | UpdateStatement
@@ -1347,6 +1348,15 @@ export type UnaryOperator = Expr & {
   node_type: "UnaryOperator";
   children: {
     right: NodeChild;
+  };
+};
+
+export type UndropStatement = XXXStatement & {
+  node_type: "UndropStatement";
+  children: {
+    what: NodeChild;
+    if_not_exists?: NodeVecChild;
+    ident: NodeChild;
   };
 };
 
