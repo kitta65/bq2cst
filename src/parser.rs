@@ -2383,6 +2383,17 @@ impl Parser {
             "group",
             self.parse_grouped_type_declaration_or_constraints(true)?,
         );
+        if self.get_token(1)?.is("EXTERNAL") {
+            self.next_token()?; // -> EXTERNAL
+            let mut external = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> SECURITY
+            let mut security = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> INVOKER
+            let external_security = self.construct_node(NodeType::Keyword)?;
+            security.push_node("next_keyword", external_security);
+            external.push_node("next_keyword", security);
+            create.push_node("external", external);
+        }
         if self.get_token(1)?.is("WITH") {
             self.next_token()?; // -> WITH
             create.push_node("with_connection", self.parse_with_connection_clause()?);
