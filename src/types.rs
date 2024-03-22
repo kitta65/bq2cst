@@ -610,6 +610,7 @@ export type CreateProcedureStatement = XXXStatement & {
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
     group: NodeChild;
+    external?: NodeChild;
     with_connection?: NodeChild;
     options?: NodeChild;
     language?: NodeChild;

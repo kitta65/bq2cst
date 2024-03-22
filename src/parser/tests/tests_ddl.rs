@@ -1806,6 +1806,46 @@ with_connection:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE PROCEDURE procedure_ident()
+EXTERNAL SECURITY INVOKER
+WITH CONNECTION connection_ident
+LANGUAGE python AS 'code'
+",
+            "\
+self: CREATE (CreateProcedureStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: 'code' (StringLiteral)
+external:
+  self: EXTERNAL (KeywordSequence)
+  next_keyword:
+    self: SECURITY (KeywordSequence)
+    next_keyword:
+      self: INVOKER (Keyword)
+group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: procedure_ident (Identifier)
+language:
+  self: LANGUAGE (KeywordWithExpr)
+  expr:
+    self: python (Identifier)
+what:
+  self: PROCEDURE (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: connection_ident (Identifier)
+",
+            0,
+        )),
         // ----- CREATE ROW ACCESS POLICY statement -----
         Box::new(SuccessTestCase::new(
             "\
