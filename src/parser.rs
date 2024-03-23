@@ -213,11 +213,17 @@ impl Parser {
         self.next_token()?; // BETWEEN -> expr1
 
         // NOTE `AND` is not parsed as binary operator because of precedence
-        between.push_node("right_min", self.parse_expr(precedence, false, false)?);
+        between.push_node(
+            "right_min",
+            self.parse_expr(precedence, false, false, false)?,
+        );
         self.next_token()?; // expr1 -> AND
         between.push_node("and", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // AND -> expr2
-        between.push_node("right_max", self.parse_expr(precedence, false, false)?);
+        between.push_node(
+            "right_max",
+            self.parse_expr(precedence, false, false, false)?,
+        );
         Ok(between)
     }
     fn parse_binary_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
@@ -233,7 +239,7 @@ impl Parser {
         }
         self.next_token()?; // binary_operator -> expr
         node.push_node("left", left);
-        node.push_node("right", self.parse_expr(precedence, false, false)?);
+        node.push_node("right", self.parse_expr(precedence, false, false, false)?);
         Ok(node)
     }
     fn parse_constraint(&mut self) -> BQ2CSTResult<Node> {
@@ -271,7 +277,7 @@ impl Parser {
             self.next_token()?; // -> REFERENCES
             let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> table_ident
-            references.push_node("expr", self.parse_expr(usize::MAX, false, true)?);
+            references.push_node("expr", self.parse_expr(usize::MAX, false, true, false)?);
             res.push_node("references", references);
         }
         if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
@@ -303,11 +309,21 @@ impl Parser {
         }
         Ok(enforced)
     }
-    fn parse_expr(&mut self, precedence: usize, alias: bool, as_table: bool) -> BQ2CSTResult<Node> {
-        let mut left = self.construct_node(NodeType::Unknown)?;
+    fn parse_expr(
+        &mut self,
+        precedence: usize,
+        alias: bool,
+        as_table: bool,
+        after_dot: bool,
+    ) -> BQ2CSTResult<Node> {
+        let mut left = if after_dot {
+            self.construct_node(NodeType::Identifier)?
+        } else {
+            self.construct_node(NodeType::Unknown)?
+        };
         if as_table {
             left = self.parse_identifier()?;
-        } else {
+        } else if !after_dot {
             // prefix or literal
             match self.get_token(0)?.literal.to_uppercase().as_str() {
                 "*" => {
@@ -364,7 +380,7 @@ impl Parser {
                     let mut exprs = vec![];
                     while !self.get_token(1)?.is(")") {
                         self.next_token()?; // -> expr
-                        let mut expr = self.parse_expr(usize::MAX, true, false)?;
+                        let mut expr = self.parse_expr(usize::MAX, true, false, false)?;
                         if self.get_token(1)?.is(",") {
                             self.next_token()?; // -> ,
                             expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
@@ -417,7 +433,7 @@ impl Parser {
                 "-" | "+" | "~" => {
                     left.node_type = NodeType::UnaryOperator;
                     self.next_token()?; // - -> expr
-                    let right = self.parse_expr(102, false, false)?;
+                    let right = self.parse_expr(102, false, false, false)?;
                     left.push_node("right", right);
                 }
                 "DATE" | "TIME" | "DATETIME" | "TIMESTAMP" | "NUMERIC" | "BIGNUMERIC"
@@ -428,14 +444,14 @@ impl Parser {
                     {
                         left.node_type = NodeType::UnaryOperator;
                         self.next_token()?; // -> expr
-                        let right = self.parse_expr(002, false, false)?;
+                        let right = self.parse_expr(002, false, false, false)?;
                         left.push_node("right", right);
                     }
                 }
                 "INTERVAL" => {
                     left.node_type = NodeType::IntervalLiteral;
                     self.next_token()?; // INTERVAL -> expr
-                    let right = self.parse_expr(usize::MAX, false, false)?;
+                    let right = self.parse_expr(usize::MAX, false, false, false)?;
                     self.next_token()?; // expr -> HOUR
                     left.push_node("date_part", self.construct_node(NodeType::Keyword)?);
                     if self.get_token(1)?.is("TO") {
@@ -449,13 +465,13 @@ impl Parser {
                 "TABLE" | "MODEL" => {
                     left.node_type = NodeType::UnaryOperator;
                     self.next_token()?; // TABLE -> ident
-                    let right = self.parse_expr(002, false, true)?;
+                    let right = self.parse_expr(002, false, true, false)?;
                     left.push_node("right", right);
                 }
                 "B" | "R" | "BR" | "RB" => {
                     if self.get_token(1)?.is_string() {
                         self.next_token()?; // R -> 'string'
-                        let right = self.parse_expr(001, false, false)?;
+                        let right = self.parse_expr(001, false, false, false)?;
                         left.push_node("right", right);
                         left.node_type = NodeType::UnaryOperator;
                     }
@@ -466,7 +482,7 @@ impl Parser {
                 }
                 "NOT" => {
                     self.next_token()?; // NOT -> boolean
-                    let right = self.parse_expr(110, false, false)?;
+                    let right = self.parse_expr(110, false, false, false)?;
                     left.push_node("right", right);
                     left.node_type = NodeType::UnaryOperator;
                 }
@@ -474,25 +490,26 @@ impl Parser {
                     left.node_type = NodeType::CaseExpr;
                     self.next_token()?; // CASE -> expr, CASE -> when
                     if !self.get_token(0)?.is("WHEN") {
-                        left.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                        left.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                         self.next_token()?; // expr -> WHEN
                     }
                     let mut arms = Vec::new();
                     while self.get_token(0)?.is("WHEN") {
                         let mut arm = self.construct_node(NodeType::CaseExprArm)?;
                         self.next_token()?; // WHEN -> expr
-                        arm.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                        arm.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                         self.next_token()?; // expr ->THEN
                         arm.push_node("then", self.construct_node(NodeType::Keyword)?);
                         self.next_token()?; // THEN -> result_expr
-                        arm.push_node("result", self.parse_expr(usize::MAX, false, false)?);
+                        arm.push_node("result", self.parse_expr(usize::MAX, false, false, false)?);
                         self.next_token()?; // -> ELSE | WHEN | END
                         arms.push(arm);
                     }
                     if self.get_token(0)?.is("ELSE") {
                         let mut else_ = self.construct_node(NodeType::CaseExprArm)?;
                         self.next_token()?; // ELSE -> result_expr
-                        else_.push_node("result", self.parse_expr(usize::MAX, false, false)?);
+                        else_
+                            .push_node("result", self.parse_expr(usize::MAX, false, false, false)?);
                         arms.push(else_);
                         self.next_token()?; // result_expr -> end
                     }
@@ -518,7 +535,7 @@ impl Parser {
                     if !self.get_token(0)?.is(")") {
                         match func.as_str() {
                             "CAST" | "SAFE_CAST" => {
-                                let cast_from = self.parse_expr(usize::MAX, false, false)?;
+                                let cast_from = self.parse_expr(usize::MAX, false, false, false)?;
                                 self.next_token()?; // expr -> AS
                                 let mut as_ = self.construct_node(NodeType::CastArgument)?;
                                 as_.push_node("cast_from", cast_from);
@@ -531,21 +548,21 @@ impl Parser {
                                     self.next_token()?; // -> string
                                     format.push_node(
                                         "expr",
-                                        self.parse_expr(usize::MAX, false, false)?,
+                                        self.parse_expr(usize::MAX, false, false, false)?,
                                     );
                                     as_.push_node("format", format);
                                 }
                                 node.push_node_vec("args", vec![as_]);
                             }
                             "EXTRACT" => {
-                                let datepart = self.parse_expr(usize::MAX, false, false)?;
+                                let datepart = self.parse_expr(usize::MAX, false, false, false)?;
                                 self.next_token()?; // expr -> FROM
                                 let mut from = self.construct_node(NodeType::ExtractArgument)?;
                                 self.next_token()?; // FROM -> timestamp_expr
                                 from.push_node("extract_datepart", datepart);
                                 from.push_node(
                                     "extract_from",
-                                    self.parse_expr(usize::MAX, false, false)?,
+                                    self.parse_expr(usize::MAX, false, false, false)?,
                                 );
                                 if self.get_token(1)?.is("AT") {
                                     let mut at_time_zone = Vec::new();
@@ -559,7 +576,7 @@ impl Parser {
                                     self.next_token()?; // ZONE -> 'UTC'
                                     from.push_node(
                                         "time_zone",
-                                        self.parse_expr(usize::MAX, false, false)?,
+                                        self.parse_expr(usize::MAX, false, false, false)?,
                                     );
                                 }
                                 node.push_node_vec("args", vec![from]);
@@ -590,7 +607,10 @@ impl Parser {
                             self.next_token()?; // -> LIMIT
                             let mut limit = self.construct_node(NodeType::KeywordWithExpr)?;
                             self.next_token()?;
-                            limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                            limit.push_node(
+                                "expr",
+                                self.parse_expr(usize::MAX, false, false, false)?,
+                            );
                             node.push_node("limit", limit);
                         }
                         if self.get_token(1)?.is("HAVING") {
@@ -602,7 +622,10 @@ impl Parser {
                             self.next_token()?; // -> MAX | MIN
                             let mut max = self.construct_node(NodeType::KeywordWithExpr)?;
                             self.next_token()?; // -> expr
-                            max.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                            max.push_node(
+                                "expr",
+                                self.parse_expr(usize::MAX, false, false, false)?,
+                            );
                             having.push_node("next_keyword", max);
                             node.push_node("having", having);
                         }
@@ -623,7 +646,7 @@ impl Parser {
                     let mut node = self.construct_node(NodeType::AccessOperator)?;
                     node.push_node("left", left);
                     self.next_token()?; // [ -> expr
-                    node.push_node("right", self.parse_expr(usize::MAX, false, false)?);
+                    node.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
                     self.next_token()?; // expr -> ]
                     node.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                     left = node;
@@ -635,9 +658,10 @@ impl Parser {
                     self.next_token()?; // -> identifier
                     dot.push_node("left", left);
                     if self.get_token(0)?.literal.as_str() == "*" {
-                        dot.push_node("right", self.parse_expr(usize::MAX, false, false)?);
+                        dot.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
                     } else {
-                        dot.push_node("right", self.parse_expr(precedence, false, as_table)?);
+                        // TODO
+                        dot.push_node("right", self.parse_expr(precedence, false, as_table, true)?);
                     }
                     left = dot;
                 }
@@ -726,7 +750,7 @@ impl Parser {
     fn parse_exprs(&mut self, until: &Vec<&str>, alias: bool) -> BQ2CSTResult<Vec<Node>> {
         let mut exprs: Vec<Node> = Vec::new();
         // first expr
-        let mut expr = self.parse_expr(usize::MAX, alias, false)?;
+        let mut expr = self.parse_expr(usize::MAX, alias, false, false)?;
         if self.get_token(1)?.is(",") {
             self.next_token()?; // expr -> ,
             expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
@@ -737,7 +761,7 @@ impl Parser {
         // second expr and later
         while !self.get_token(1)?.in_(until) && !self.is_eof(1) {
             self.next_token()?;
-            let mut expr = self.parse_expr(usize::MAX, alias, false)?;
+            let mut expr = self.parse_expr(usize::MAX, alias, false, false)?;
             if self.get_token(1)?.is(",") {
                 self.next_token()?; // expr -> ,
                 expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
@@ -864,7 +888,7 @@ impl Parser {
         node.push_node("left", left);
         if self.get_token(1)?.is("UNNEST") {
             self.next_token()?; // IN -> UNNEST
-            let mut unnest = self.parse_expr(usize::MAX, false, false)?;
+            let mut unnest = self.parse_expr(usize::MAX, false, false, false)?;
             unnest.node_type = NodeType::CallingUnnest;
             node.push_node("right", unnest);
         } else {
@@ -895,7 +919,7 @@ impl Parser {
         self.next_token()?; // DISTINCT -> FROM
         node.push_node("from", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // FROM -> expr
-        node.push_node("right", self.parse_expr(precedence, false, false)?);
+        node.push_node("right", self.parse_expr(precedence, false, false, false)?);
         Ok(node)
     }
     fn parse_keyword_with_grouped_exprs(&mut self, alias: bool) -> BQ2CSTResult<Node> {
@@ -1102,12 +1126,12 @@ impl Parser {
                 left = group;
             }
             "UNNEST" => {
-                left = self.parse_expr(usize::MAX, false, false)?;
+                left = self.parse_expr(usize::MAX, false, false, false)?;
                 left.node_type = NodeType::CallingUnnest;
             }
             _ => {
                 // tvf or identifier
-                left = self.parse_expr(usize::MAX, false, true)?;
+                left = self.parse_expr(usize::MAX, false, true, false)?;
             }
         }
         if left.node_type == NodeType::CallingFunction {
@@ -1133,7 +1157,7 @@ impl Parser {
             system_time_as_of.push(self.construct_node(NodeType::Keyword)?);
             for_.push_node_vec("system_time_as_of", system_time_as_of);
             self.next_token()?; // OF -> timestamp
-            for_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            for_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             left.push_node("for_system_time_as_of", for_);
         }
         // WITH, OFFSET
@@ -1187,7 +1211,7 @@ impl Parser {
                 // in the case of multi column unpivot
                 config.push_node("expr", self.parse_grouped_exprs(false)?);
             } else {
-                config.push_node("expr", self.parse_expr(usize::MAX, true, false)?);
+                config.push_node("expr", self.parse_expr(usize::MAX, true, false, false)?);
             }
             self.next_token()?; // -> FOR
             let mut for_ = self.construct_node(NodeType::KeywordWithExpr)?;
@@ -1206,7 +1230,7 @@ impl Parser {
                     // in the case of multi column unpivot
                     expr = self.parse_grouped_exprs(false)?;
                 } else {
-                    expr = self.parse_expr(usize::MAX, false, false)?;
+                    expr = self.parse_expr(usize::MAX, false, false, false)?;
                 }
                 if self.get_token(1)?.is("AS") {
                     self.next_token()?; // -> AS
@@ -1216,7 +1240,7 @@ impl Parser {
                     self.next_token()?; // -> row_value_alias
                     expr.push_node(
                         "row_value_alias",
-                        self.parse_expr(usize::MAX, false, false)?,
+                        self.parse_expr(usize::MAX, false, false, false)?,
                     );
                 }
                 if self.get_token(1)?.is(",") {
@@ -1249,7 +1273,7 @@ impl Parser {
             self.next_token()?; // -> (
             let mut group = self.construct_node(NodeType::TableSampleRatio)?;
             self.next_token()?; // -> expr
-            group.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            group.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             self.next_token()?; // -> PERCENT
             group.push_node("percent", self.construct_node(NodeType::Keyword)?);
             self.next_token()?; // -> )
@@ -1288,11 +1312,11 @@ impl Parser {
                 self.next_token()?; // `table` -> ON
                 let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
                 self.next_token()?; // ON -> expr
-                on.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                on.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                 join.push_node("on", on);
             } else if self.get_token(1)?.is("using") {
                 self.next_token()?; // -> USING
-                join.push_node("using", self.parse_expr(usize::MAX, false, false)?)
+                join.push_node("using", self.parse_expr(usize::MAX, false, false, false)?)
             }
             join.push_node("left", left);
             join.push_node("right", right);
@@ -1398,7 +1422,7 @@ impl Parser {
             self.next_token()?; // -> REFERENCES
             let mut references = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> ident
-            let col = self.parse_expr(usize::MAX, false, true)?;
+            let col = self.parse_expr(usize::MAX, false, true, false)?;
             references.push_node("expr", col);
             res.push_node("references", references);
             if self.get_token(1)?.in_(&vec!["NOT", "ENFORCED"]) {
@@ -1411,7 +1435,7 @@ impl Parser {
                 self.next_token()?; // -> DEFAULT
                 let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
                 self.next_token()?; // -> expr
-                default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                default.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                 res.push_node("default", default);
             }
             if self.get_token(1)?.is("NOT") {
@@ -1477,7 +1501,7 @@ impl Parser {
                     if self.get_token(0)?.in_(&vec!["UNBOUNDED", "CURRENT"]) {
                         frame_start.push(self.construct_node(NodeType::Keyword)?);
                     } else {
-                        frame_start.push(self.parse_expr(usize::MAX, false, false)?);
+                        frame_start.push(self.parse_expr(usize::MAX, false, false, false)?);
                     }
                     self.next_token()?; // -> PRECEDING, ROW
                     frame_start.push(self.construct_node(NodeType::Keyword)?);
@@ -1490,7 +1514,7 @@ impl Parser {
                     if self.get_token(0)?.in_(&vec!["UNBOUNDED", "CURRENT"]) {
                         frame_end.push(self.construct_node(NodeType::Keyword)?);
                     } else {
-                        frame_end.push(self.parse_expr(usize::MAX, false, false)?);
+                        frame_end.push(self.parse_expr(usize::MAX, false, false, false)?);
                     }
                     self.next_token()?; // -> FOLLOWING, ROW
                     frame_end.push(self.construct_node(NodeType::Keyword)?);
@@ -1503,7 +1527,7 @@ impl Parser {
                         if self.get_token(0)?.in_(&vec!["UNBOUNDED", "CURRENT"]) {
                             frame_start.push(self.construct_node(NodeType::Keyword)?);
                         } else {
-                            frame_start.push(self.parse_expr(usize::MAX, false, false)?);
+                            frame_start.push(self.parse_expr(usize::MAX, false, false, false)?);
                         }
                         self.next_token()?; // -> PRECEDING, ROW
                         frame_start.push(self.construct_node(NodeType::Keyword)?);
@@ -1591,12 +1615,12 @@ impl Parser {
                 self.next_token()?; // -> LIMIT
                 let mut limit = self.construct_node(NodeType::LimitClause)?;
                 self.next_token()?; // -> expr
-                limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                limit.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                 if self.get_token(1)?.literal.to_uppercase() == "OFFSET" {
                     self.next_token()?; // expr -> OFFSET
                     let mut offset = self.construct_node(NodeType::KeywordWithExpr)?;
                     self.next_token()?; // OFFSET -> expr
-                    offset.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                    offset.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                     limit.push_node("offset", offset);
                 }
                 node.push_node("limit", limit);
@@ -1697,7 +1721,7 @@ impl Parser {
             self.next_token()?; // expr -> WHERE
             let mut where_ = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // WHERE -> expr
-            where_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            where_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             node.push_node("where", where_);
         }
         // GROUP BY
@@ -1727,7 +1751,7 @@ impl Parser {
             self.next_token()?; // expr -> HAVING
             let mut having = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // HAVING -> expr
-            having.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            having.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             node.push_node("having", having);
         }
         // QUALIFY
@@ -1735,7 +1759,7 @@ impl Parser {
             self.next_token()?; // -> QUALIFY
             let mut qualify = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> expr
-            qualify.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            qualify.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             node.push_node("qualify", qualify);
         }
         // WINDOW
@@ -1774,12 +1798,12 @@ impl Parser {
             self.next_token()?; // expr -> LIMIT
             let mut limit = self.construct_node(NodeType::LimitClause)?;
             self.next_token()?; // LIMIT -> expr
-            limit.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            limit.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             if self.get_token(1)?.literal.to_uppercase() == "OFFSET" {
                 self.next_token()?; // expr -> OFFSET
                 let mut offset = self.construct_node(NodeType::KeywordWithExpr)?;
                 self.next_token()?; // OFFSET -> expr
-                offset.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                offset.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                 limit.push_node("offset", offset);
             }
             node.push_node("limit", limit);
@@ -1870,7 +1894,7 @@ impl Parser {
         self.next_token()?; // -> WHERE
         let mut where_ = self.construct_node(NodeType::KeywordWithExpr)?;
         self.next_token()?; // WHERE -> expr
-        where_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        where_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         delete.push_node("where", where_);
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
@@ -1912,7 +1936,7 @@ impl Parser {
             self.next_token()?; // exprs -> WHERE
             let mut where_ = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // WHERE -> expr
-            where_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            where_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             update.push_node("where", where_);
         }
         if self.get_token(1)?.is(";") && semicolon {
@@ -1932,7 +1956,7 @@ impl Parser {
         self.next_token()?; // -> USING
         let mut using = self.construct_node(NodeType::KeywordWithExpr)?;
         self.next_token()?; // USING -> expr
-        using.push_node("expr", self.parse_expr(usize::MAX, true, false)?);
+        using.push_node("expr", self.parse_expr(usize::MAX, true, false, false)?);
         merge.push_node("using", using);
         if self.get_token(1)?.is(";") {
             self.next_token()?; // -> ;
@@ -1941,7 +1965,7 @@ impl Parser {
         self.next_token()?; // -> ON
         let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
         self.next_token()?; // ON -> expr
-        on.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        on.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         merge.push_node("on", on);
         let mut whens = Vec::new();
         while self.get_token(1)?.is("when") {
@@ -1964,7 +1988,7 @@ impl Parser {
                 self.next_token()?; // -> AND
                 let mut and = self.construct_node(NodeType::KeywordWithExpr)?;
                 self.next_token()?; // -> expr
-                let cond = self.parse_expr(usize::MAX, false, false)?;
+                let cond = self.parse_expr(usize::MAX, false, false, false)?;
                 and.push_node("expr", cond);
                 when.push_node("and", and);
             }
@@ -2016,7 +2040,7 @@ impl Parser {
             collate.push_node(
                 "expr",
                 // parse_expr is not needed here, construct_node is enough
-                self.parse_expr(usize::MAX, false, false)?,
+                self.parse_expr(usize::MAX, false, false, false)?,
             );
             default.push_node("next_keyword", collate);
             create.push_node("default_collate", default);
@@ -2344,7 +2368,7 @@ impl Parser {
                 self.next_token()?; // -> (
                 let mut group = self.construct_node(NodeType::GroupedExpr)?;
                 self.next_token()?; // ( -> expr
-                group.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                group.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                 self.next_token()?; // expr -> )
                 group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
                 as_.push_node("group", group);
@@ -2372,7 +2396,7 @@ impl Parser {
             self.next_token()?; // -> AS
             let mut as_ = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> javascript_code
-            as_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            as_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             node.push_node("as", as_);
         }
         if self.get_token(1)?.is(";") && semicolon {
@@ -2433,7 +2457,7 @@ impl Parser {
             self.next_token()?; // -> AS
             let mut as_ = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> "pyspark code"
-            as_.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            as_.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             create.push_node("as", as_);
         }
         if self.get_token(1)?.is(";") && semicolon {
@@ -2475,7 +2499,7 @@ impl Parser {
         self.next_token()?; // -> USING
         let mut using = self.construct_node(NodeType::KeywordWithExpr)?;
         self.next_token()?; // -> (
-        using.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        using.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         create.push_node("using", using);
 
         if self.get_token(1)?.is(";") && semicolon {
@@ -2798,7 +2822,7 @@ impl Parser {
                     self.next_token()?; // -> DEFAULT
                     let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
                     self.next_token()?; // -> expr
-                    default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+                    default.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
                     alter.push_node("default", default);
                 }
             }
@@ -3085,7 +3109,10 @@ impl Parser {
             self.next_token()?; // -> JSON
             create.push_node("json", self.construct_node(NodeType::Keyword)?);
             self.next_token()?; // -> '''{}'''
-            create.push_node("json_string", self.parse_expr(usize::MAX, false, false)?);
+            create.push_node(
+                "json_string",
+                self.parse_expr(usize::MAX, false, false, false)?,
+            );
         } else if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // -> OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
@@ -3121,7 +3148,7 @@ impl Parser {
             self.next_token()?; // -> DEFAULT
             let mut default = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // DEFAULT -> expr
-            default.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            default.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             declare.push_node("default", default);
         }
         if self.get_token(1)?.is(";") && semicolon {
@@ -3133,7 +3160,7 @@ impl Parser {
     fn parse_set_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut set = self.construct_node(NodeType::SetStatement)?;
         self.next_token()?; // set -> expr
-        set.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        set.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?;
             set.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
@@ -3145,7 +3172,10 @@ impl Parser {
         self.next_token()?; // EXECUTE -> IMMEDIATE
         execute.push_node("immediate", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // IMMEDIATE -> sql_expr
-        execute.push_node("sql_expr", self.parse_expr(usize::MAX, false, false)?);
+        execute.push_node(
+            "sql_expr",
+            self.parse_expr(usize::MAX, false, false, false)?,
+        );
         if self.get_token(1)?.is("INTO") {
             self.next_token()?; // sql_expr -> INTO
             let mut into = self.construct_node(NodeType::KeywordWithExprs)?;
@@ -3210,7 +3240,10 @@ impl Parser {
     fn parse_if_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut if_ = self.construct_node(NodeType::IfStatement)?;
         self.next_token()?; // -> condition
-        if_.push_node("condition", self.parse_expr(usize::MAX, false, false)?);
+        if_.push_node(
+            "condition",
+            self.parse_expr(usize::MAX, false, false, false)?,
+        );
 
         self.next_token()?; // -> THEN
         if_.push_node(
@@ -3223,7 +3256,10 @@ impl Parser {
             self.next_token()?; // -> ELSEIF
             let mut elseif = self.construct_node(NodeType::ElseIfClause)?;
             self.next_token()?; // -> condition
-            elseif.push_node("condition", self.parse_expr(usize::MAX, false, false)?);
+            elseif.push_node(
+                "condition",
+                self.parse_expr(usize::MAX, false, false, false)?,
+            );
             self.next_token()?; // -> THEN
             elseif.push_node(
                 "then",
@@ -3314,7 +3350,7 @@ impl Parser {
         self.next_token()?; // -> UNTIL
         let mut until = self.construct_node(NodeType::KeywordWithExpr)?;
         self.next_token()?; // -> expr
-        until.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        until.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         repeat.push_node("until", until);
         self.next_token()?; // -> END
         repeat.push_node_vec("end_repeat", self.parse_n_keywords(2)?);
@@ -3327,7 +3363,10 @@ impl Parser {
     fn parse_while_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut while_ = self.construct_node(NodeType::WhileStatement)?;
         self.next_token()?; // -> condition
-        while_.push_node("condition", self.parse_expr(usize::MAX, false, false)?);
+        while_.push_node(
+            "condition",
+            self.parse_expr(usize::MAX, false, false, false)?,
+        );
         self.next_token()?; // -> DO
         while_.push_node("do", self.parse_keyword_with_statements(&vec!["END"])?);
         self.next_token()?; // -> END
@@ -3388,7 +3427,7 @@ impl Parser {
             self.next_token()?; // -> USING
             let mut using = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> MESSAGE
-            using.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            using.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             raise.push_node("using", using);
         }
         if self.get_token(1)?.is(";") && semicolon {
@@ -3401,14 +3440,14 @@ impl Parser {
         let mut case = self.construct_node(NodeType::CaseStatement)?;
         if !self.get_token(1)?.is("WHEN") {
             self.next_token()?; // -> expr
-            case.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            case.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         }
         let mut arms = Vec::new();
         while self.get_token(1)?.is("WHEN") {
             self.next_token()?; // -> WHEN
             let mut when = self.construct_node(NodeType::CaseStatementArm)?;
             self.next_token()?; // -> expr
-            when.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+            when.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             self.next_token()?; // -> THEN
             when.push_node("then", self.construct_node(NodeType::Keyword)?);
             let mut stmts = Vec::new();
@@ -3442,7 +3481,7 @@ impl Parser {
     fn parse_call_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut call = self.construct_node(NodeType::CallStatement)?;
         self.next_token()?; // -> procedure_name
-        let procedure = self.parse_expr(usize::MAX, false, false)?;
+        let procedure = self.parse_expr(usize::MAX, false, false, false)?;
         call.push_node("procedure", procedure);
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
@@ -3454,12 +3493,15 @@ impl Parser {
     fn parse_assert_satement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut assert = self.construct_node(NodeType::AssertStatement)?;
         self.next_token()?; // -> expr
-        assert.push_node("expr", self.parse_expr(usize::MAX, false, false)?);
+        assert.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
         if self.get_token(1)?.is("AS") {
             self.next_token()?; // -> AS
             assert.push_node("as", self.construct_node(NodeType::Keyword)?);
             self.next_token()?; // -> description
-            assert.push_node("description", self.parse_expr(usize::MAX, false, false)?)
+            assert.push_node(
+                "description",
+                self.parse_expr(usize::MAX, false, false, false)?,
+            )
         }
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
@@ -3527,7 +3569,7 @@ impl Parser {
 
             // if precedence is usize::MAX
             // column_group is parsed as function arguments
-            op.push_node("grouped_expr", self.parse_expr(101, false, false)?);
+            op.push_node("grouped_expr", self.parse_expr(101, false, false, false)?);
             load.push_node("overwrite_partitions", op);
         }
         if self.get_token(1)?.is("(") {
