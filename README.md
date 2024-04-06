@@ -1,19 +1,23 @@
 # bq2cst
-Parse standard SQL, which is a dialect of [BigQuery](https://cloud.google.com/bigquery), into a concrete syntax tree.
+
+Parse GoogleSQL, which is a dialect of [BigQuery](https://cloud.google.com/bigquery), into a concrete syntax tree.
 
 > [!WARNING]
-> This parser is designed to be used via [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq).
+> This parser is designed to be used via [prettier-plugin-bq](https://github.com/kitta65/prettier-plugin-bq).
 
 ## Features
-- forcused on standard SQL (in other words, other SQL dialects are out of scope)
+
+- forcused on GoogleSQL (in other words, other SQL dialects are out of scope)
 - developed in Rust, using [wasm-pack](https://github.com/rustwasm/wasm-pack)
 
 ## Install
+
 ```shell
 npm install bq2cst
 ```
 
 ## Usage
+
 ```javascript
 const parser = require("bq2cst");
 parser.parse("SELECT 1;")
