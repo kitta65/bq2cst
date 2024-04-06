@@ -5,6 +5,29 @@ fn test_parse_code_ml() {
     let test_cases = vec![
         // CREATE MODEL statement
         Box::new(SuccessTestCase::new(
+            // NOTE actually, this is not valid syntax
+            "\
+CREATE OR REPLACE MODEL IF NOT EXISTS ident;
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+if_not_exists:
+- self: IF (Keyword)
+- self: NOT (Keyword)
+- self: EXISTS (Keyword)
+or_replace:
+- self: OR (Keyword)
+- self: REPLACE (Keyword)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
             // NOTE trailing comma seems to be acceptable
             "\
 CREATE MODEL ident
