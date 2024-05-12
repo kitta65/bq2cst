@@ -140,6 +140,7 @@ what:
         Box::new(SuccessTestCase::new(
             "\
 CREATE OR REPLACE VECTOR INDEX new_index ON tablename(col)
+STORING(a, b, c)
 OPTIONS(dummy='dummy')
 ",
             "\
@@ -169,6 +170,20 @@ options:
 or_replace:
 - self: OR (Keyword)
 - self: REPLACE (Keyword)
+storing:
+  self: STORING (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: a (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: b (Identifier)
+      comma:
+        self: , (Symbol)
+    - self: c (Identifier)
+    rparen:
+      self: ) (Symbol)
 tablename:
   self: tablename (Identifier)
 what:
