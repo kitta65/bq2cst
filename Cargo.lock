@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "bq2cst"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "console_error_panic_hook",
  "difference",
