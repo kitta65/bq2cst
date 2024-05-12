@@ -2091,6 +2091,10 @@ impl Parser {
         } else {
             create.push_node("column_group", self.parse_grouped_exprs(false)?);
         }
+        if self.get_token(1)?.is("STORING") {
+            self.next_token()?; // -> STORING
+            create.push_node("storing", self.parse_keyword_with_grouped_exprs(false)?);
+        }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // -> OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
