@@ -284,6 +284,31 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 IN UNNEST(1) AND TRUE
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: AND (BinaryOperator)
+  left:
+    self: IN (InOperator)
+    left:
+      self: 1 (NumericLiteral)
+    right:
+      self: ( (CallingUnnest)
+      args:
+      - self: 1 (NumericLiteral)
+      func:
+        self: UNNEST (Identifier)
+      rparen:
+        self: ) (Symbol)
+  right:
+    self: TRUE (BooleanLiteral)
+",
+            0,
+        )),
         Box::new(ErrorTestCase::new(
             "\
 SELECT 1 NOT;

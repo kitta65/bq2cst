@@ -660,7 +660,6 @@ impl Parser {
                     if self.get_token(0)?.literal.as_str() == "*" {
                         dot.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
                     } else {
-                        // TODO
                         dot.push_node("right", self.parse_expr(precedence, false, as_table, true)?);
                     }
                     left = dot;
@@ -888,7 +887,10 @@ impl Parser {
         node.push_node("left", left);
         if self.get_token(1)?.is("UNNEST") {
             self.next_token()?; // IN -> UNNEST
-            let mut unnest = self.parse_expr(usize::MAX, false, false, false)?;
+            let mut unnest = self.parse_expr(
+                102, // NOTE 102 is a little greater than `(` (calling function)
+                false, false, false,
+            )?;
             unnest.node_type = NodeType::CallingUnnest;
             node.push_node("right", unnest);
         } else {
