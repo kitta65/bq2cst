@@ -1696,6 +1696,32 @@ from:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM t, t.arr WITH OFFSET
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: , (JoinOperator)
+    left:
+      self: t (Identifier)
+    right:
+      self: . (DotOperator)
+      left:
+        self: t (Identifier)
+      right:
+        self: arr (Identifier)
+      with_offset:
+      - self: WITH (Keyword)
+      - self: OFFSET (Keyword)
+",
+            0,
+        )),
         // JOIN
         Box::new(SuccessTestCase::new(
             "\
