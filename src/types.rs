@@ -181,6 +181,8 @@ export type Expr = BaseNode & {
 export type FromItemExpr = Expr & {
   children: {
     with_offset: NodeChild;
+    offset_as: NodeChild;
+    offset_alias: NodeChild;
     pivot?: NodeChild;
     unpivot?: NodeChild;
   };
@@ -475,8 +477,6 @@ export type CallingUnnest = FromItemExpr &
   CallingFunctionGeneral & {
     node_type: "CallingUnnest";
     children: {
-      offset_alias: NodeChild;
-      offset_as: NodeChild;
       distinct: undefined;
       ignore_nulls: undefined;
       orderby: undefined;
