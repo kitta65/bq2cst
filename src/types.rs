@@ -130,6 +130,7 @@ export type UnknownNode =
   | WindowFrameClause
   | WindowSpecification
   | WithClause
+  | WithOffsetClause
   | WithPartitionColumnsClause
   | WithQuery
   | XXXByExprs;
@@ -181,8 +182,6 @@ export type Expr = BaseNode & {
 export type FromItemExpr = Expr & {
   children: {
     with_offset: NodeChild;
-    offset_as: NodeChild;
-    offset_alias: NodeChild;
     pivot?: NodeChild;
     unpivot?: NodeChild;
   };
@@ -1463,6 +1462,16 @@ export type WithClause = BaseNode & {
   children: {
     queries: { NodeVec: WithQuery[] };
     recursive?: NodeChild;
+  };
+};
+
+export type WithOffsetClause= BaseNode & {
+  token: Token;
+  node_type: "WithOffsetClause";
+  children: {
+    offset: { Node: Keyword };
+    as?: { Node: Keyword };
+    alias?: { Node: NodeChild };
   };
 };
 

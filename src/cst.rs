@@ -134,11 +134,12 @@ pub enum NodeType {
     UpdateStatement,
     WhenClause, // WHEN MATCHED THEN DELETE
     WhileStatement,
-    WindowClause,               // WINDOW x AS (PARTITION BY c1)
-    WindowExpr,                 // x AS (PARTITION BY c1 ORDER BY c2)
-    WindowFrameClause,          // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-    WindowSpecification,        // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
-    WithClause,                 // WITH x AS (SELECT 1)
+    WindowClause,        // WINDOW x AS (PARTITION BY c1)
+    WindowExpr,          // x AS (PARTITION BY c1 ORDER BY c2)
+    WindowFrameClause,   // ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
+    WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
+    WithClause,          // WITH x AS (SELECT 1)
+    WithOffsetClause,
     WithPartitionColumnsClause, // WITH PARTITION COLUMNS (c1 INT64, c2 FLOAT64)
     WithQuery,                  // x AS (SELECT 1)
     XXXByExprs,                 // ORDER BY expr

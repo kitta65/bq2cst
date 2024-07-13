@@ -1165,19 +1165,19 @@ impl Parser {
         // WITH, OFFSET
         if self.get_token(1)?.literal.to_uppercase() == "WITH" {
             self.next_token()?; // UNNEST() -> WITH
-            let with = self.construct_node(NodeType::Keyword)?;
+            let mut with = self.construct_node(NodeType::WithOffsetClause)?;
             self.next_token()?; // WITH -> OFFSET
-            let offset = self.construct_node(NodeType::Keyword)?;
+            with.push_node("offset", self.construct_node(NodeType::Keyword)?);
             if self.get_token(1)?.is("AS") {
                 self.next_token()?; // OFFSET -> AS
-                left.push_node("offset_as", self.construct_node(NodeType::Keyword)?);
+                with.push_node("as", self.construct_node(NodeType::Keyword)?);
                 self.next_token()?; // AS -> alias
-                left.push_node("offset_alias", self.construct_node(NodeType::Identifier)?);
+                with.push_node("alias", self.construct_node(NodeType::Identifier)?);
             } else if self.get_token(1)?.is_identifier() {
-                self.next_token()?; // expr -> alias
-                left.push_node("offset_alias", self.construct_node(NodeType::Identifier)?);
+                self.next_token()?; // OFFSET -> alias
+                with.push_node("alias", self.construct_node(NodeType::Identifier)?);
             }
-            left.push_node_vec("with_offset", vec![with, offset]);
+            left.push_node("with_offset", with);
         }
         // PIVOT, UNPIVOT
         if self.get_token(1)?.is("PIVOT") {
