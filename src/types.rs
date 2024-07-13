@@ -1465,13 +1465,13 @@ export type WithClause = BaseNode & {
   };
 };
 
-export type WithOffsetClause= BaseNode & {
+export type WithOffsetClause = BaseNode & {
   token: Token;
   node_type: "WithOffsetClause";
   children: {
     offset: { Node: Keyword };
     as?: { Node: Keyword };
-    alias?: { Node: NodeChild };
+    alias?: NodeChild;
   };
 };
 
