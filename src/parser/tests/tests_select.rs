@@ -1657,8 +1657,9 @@ from:
     rparen:
       self: ) (Symbol)
     with_offset:
-    - self: WITH (Keyword)
-    - self: OFFSET (Keyword)
+      self: WITH (WithOffsetClause)
+      offset:
+        self: OFFSET (Keyword)
 ",
             0,
         )),
@@ -1684,15 +1685,16 @@ from:
         self: ] (Symbol)
     func:
       self: UNNEST (Identifier)
-    offset_alias:
-      self: b (Identifier)
-    offset_as:
-      self: AS (Keyword)
     rparen:
       self: ) (Symbol)
     with_offset:
-    - self: WITH (Keyword)
-    - self: OFFSET (Keyword)
+      self: WITH (WithOffsetClause)
+      alias:
+        self: b (Identifier)
+      as:
+        self: AS (Keyword)
+      offset:
+        self: OFFSET (Keyword)
 ",
             0,
         )),
@@ -1717,8 +1719,9 @@ from:
       right:
         self: arr (Identifier)
       with_offset:
-      - self: WITH (Keyword)
-      - self: OFFSET (Keyword)
+        self: WITH (WithOffsetClause)
+        offset:
+          self: OFFSET (Keyword)
 ",
             0,
         )),

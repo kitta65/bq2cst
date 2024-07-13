@@ -130,6 +130,7 @@ export type UnknownNode =
   | WindowFrameClause
   | WindowSpecification
   | WithClause
+  | WithOffsetClause
   | WithPartitionColumnsClause
   | WithQuery
   | XXXByExprs;
@@ -475,8 +476,6 @@ export type CallingUnnest = FromItemExpr &
   CallingFunctionGeneral & {
     node_type: "CallingUnnest";
     children: {
-      offset_alias: NodeChild;
-      offset_as: NodeChild;
       distinct: undefined;
       ignore_nulls: undefined;
       orderby: undefined;
@@ -1463,6 +1462,16 @@ export type WithClause = BaseNode & {
   children: {
     queries: { NodeVec: WithQuery[] };
     recursive?: NodeChild;
+  };
+};
+
+export type WithOffsetClause = BaseNode & {
+  token: Token;
+  node_type: "WithOffsetClause";
+  children: {
+    offset: { Node: Keyword };
+    as?: { Node: Keyword };
+    alias?: NodeChild;
   };
 };
 
