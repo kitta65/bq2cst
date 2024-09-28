@@ -1,6 +1,6 @@
 [package]
 name = "bq2cst"
-version = "0.5.8"
+version = "0.5.9"
 authors = ["kitta65 <kitta65kitta@gmail.com>"]
 edition = "2021"
 license = "MIT"
