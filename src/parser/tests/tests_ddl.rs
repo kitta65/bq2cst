@@ -74,6 +74,7 @@ what:
 ",
             0,
         )),
+        // TODO add test of external schema
         // ----- CREATE SEARCH INDEX statement -----
         Box::new(SuccessTestCase::new(
             "\

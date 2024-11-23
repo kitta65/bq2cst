@@ -2025,6 +2025,7 @@ impl Parser {
     // ----- DDL -----
     fn parse_create_schema_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateSchemaStatement)?;
+        // TODO allow external schema
         self.next_token()?; // -> SCHEMA
         create.push_node("what", self.construct_node(NodeType::Keyword)?);
         if self.get_token(1)?.is("IF") {
