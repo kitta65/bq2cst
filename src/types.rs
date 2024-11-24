@@ -649,10 +649,12 @@ export type CreateRowAccessPolicyStatement = XXXStatement & {
 export type CreateSchemaStatement = XXXStatement & {
   node_type: "CreateSchemaStatement";
   children: {
+    external?: NodeChild;
     what: NodeChild;
     if_not_exists?: NodeVecChild;
     ident: NodeChild;
     default_collate: NodeChild;
+    with_connection?: NodeChild;
     options?: NodeChild;
   };
 };

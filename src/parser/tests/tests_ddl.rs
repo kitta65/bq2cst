@@ -74,6 +74,28 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE EXTERNAL SCHEMA dataset_name
+WITH CONNECTION connection_name
+",
+            "\
+self: CREATE (CreateSchemaStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: dataset_name (Identifier)
+what:
+  self: SCHEMA (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: connection_name (Identifier)
+",
+            0,
+        )),
         // ----- CREATE SEARCH INDEX statement -----
         Box::new(SuccessTestCase::new(
             "\
