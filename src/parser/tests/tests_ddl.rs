@@ -74,7 +74,21 @@ what:
 ",
             0,
         )),
-        // TODO add test of external schema
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE EXTERNAL SCHEMA dataset_name
+",
+            "\
+self: CREATE (CreateSchemaStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: dataset_name (Identifier)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
         // ----- CREATE SEARCH INDEX statement -----
         Box::new(SuccessTestCase::new(
             "\

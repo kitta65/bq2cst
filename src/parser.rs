@@ -2025,7 +2025,10 @@ impl Parser {
     // ----- DDL -----
     fn parse_create_schema_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let mut create = self.construct_node(NodeType::CreateSchemaStatement)?;
-        // TODO allow external schema
+        if self.get_token(1)?.is("EXTERNAL") {
+            self.next_token()?; // -> EXTERNAL
+            create.push_node("external", self.construct_node(NodeType::Keyword)?);
+        }
         self.next_token()?; // -> SCHEMA
         create.push_node("what", self.construct_node(NodeType::Keyword)?);
         if self.get_token(1)?.is("IF") {
@@ -2048,6 +2051,7 @@ impl Parser {
             default.push_node("next_keyword", collate);
             create.push_node("default_collate", default);
         }
+        // TODO with connection
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
