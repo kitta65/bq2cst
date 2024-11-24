@@ -2051,7 +2051,10 @@ impl Parser {
             default.push_node("next_keyword", collate);
             create.push_node("default_collate", default);
         }
-        // TODO with connection
+        if self.get_token(1)?.is("WITH") && self.get_token(2)?.is("CONNECTION") {
+            self.next_token()?; // -> WITH
+            create.push_node("with_connection", self.parse_with_connection_clause()?);
+        }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // OPTIONS
             create.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);

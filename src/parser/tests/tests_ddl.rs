@@ -77,6 +77,7 @@ what:
         Box::new(SuccessTestCase::new(
             "\
 CREATE EXTERNAL SCHEMA dataset_name
+WITH CONNECTION connection_name
 ",
             "\
 self: CREATE (CreateSchemaStatement)
@@ -86,6 +87,12 @@ ident:
   self: dataset_name (Identifier)
 what:
   self: SCHEMA (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: connection_name (Identifier)
 ",
             0,
         )),
