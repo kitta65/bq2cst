@@ -17,6 +17,7 @@ pub enum NodeType {
     AccessOperator,      // arr[OFFSET(1)] | json['path']
     AddColumnClause,     // ADD COLUMN x INT64 OPTIONS()
     AddConstraintClause, // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
+    AggregatePipeOperator, // AGGREGATE COUNT(*) GROUP BY col
     AlterColumnStatement,
     AlterBICapacityStatement,
     AlterModelStatement,

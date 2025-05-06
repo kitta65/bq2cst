@@ -103,6 +103,57 @@ expr:
 ",
             0,
         )),
+        // ----- base pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> EXTEND 1 AS one, 2 AS two,;
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: EXTEND (BasePipeOperator)
+  exprs:
+  - self: 1 (NumericLiteral)
+    alias:
+      self: one (Identifier)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+    alias:
+      self: two (Identifier)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            // alias is array... but do not mind it!
+            "\
+FROM t |> AS u
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: AS (BasePipeOperator)
+  exprs:
+  - self: u (Identifier)
+",
+            0,
+        )),
         // ----- select pipe operator -----
         Box::new(SuccessTestCase::new(
             // trailing comma is allowed
@@ -169,10 +220,11 @@ right:
 ",
             0,
         )),
-        // ----- extend pipe operator -----
+        // ----- limit pipe operator -----
+        // ----- aggregate pipe operator -----
         Box::new(SuccessTestCase::new(
             "\
-FROM t |> EXTEND 1 AS one, 2 AS two,;
+FROM t |> AGGREGATE COUNT(*) AS cnt DESC NULLS LAST
 ",
             "\
 self: |> (PipeStatement)
@@ -181,24 +233,68 @@ left:
   expr:
     self: t (Identifier)
 right:
-  self: EXTEND (BasePipeOperator)
+  self: AGGREGATE (AggregatePipeOperator)
   exprs:
-  - self: 1 (NumericLiteral)
+  - self: ( (CallingFunction)
     alias:
-      self: one (Identifier)
+      self: cnt (Identifier)
+    args:
+    - self: * (Asterisk)
     as:
       self: AS (Keyword)
-    comma:
-      self: , (Symbol)
-  - self: 2 (NumericLiteral)
-    alias:
-      self: two (Identifier)
-    as:
-      self: AS (Keyword)
-    comma:
-      self: , (Symbol)
-semicolon:
-  self: ; (Symbol)
+    func:
+      self: COUNT (Identifier)
+    null_order:
+    - self: NULLS (Keyword)
+    - self: LAST (Keyword)
+    order:
+      self: DESC (Keyword)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t
+|>
+  AGGREGATE COUNT(*)
+  GROUP BY col1 AS col_a DESC NULLS LAST, col2
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: AGGREGATE (AggregatePipeOperator)
+  exprs:
+  - self: ( (CallingFunction)
+    args:
+    - self: * (Asterisk)
+    func:
+      self: COUNT (Identifier)
+    rparen:
+      self: ) (Symbol)
+  groupby:
+    self: GROUP (GroupByExprs)
+    by:
+      self: BY (Keyword)
+    exprs:
+    - self: col1 (Identifier)
+      alias:
+        self: col_a (Identifier)
+      as:
+        self: AS (Keyword)
+      comma:
+        self: , (Symbol)
+      null_order:
+      - self: NULLS (Keyword)
+      - self: LAST (Keyword)
+      order:
+        self: DESC (Keyword)
+    - self: col2 (Identifier)
 ",
             0,
         )),

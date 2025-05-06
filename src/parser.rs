@@ -1636,6 +1636,26 @@ impl Parser {
         xxxby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
         Ok(xxxby)
     }
+    fn parse_groupby_exprs(&mut self, alias: bool) -> BQ2CSTResult<Node> {
+        let mut groupby = self.construct_node(NodeType::GroupByExprs)?;
+        self.next_token()?; // GROUP -> BY
+        groupby.push_node("by", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> ROLLUP | CUBE | GROUPING | ALL | exprs
+        if self.get_token(0)?.in_(&vec!["ROLLUP", "CUBE"]) {
+            groupby.push_node_vec("how", self.parse_n_keywords(1)?);
+            self.next_token()?; // BY -> expr
+            groupby.push_node_vec("exprs", self.parse_exprs(&vec![], alias)?);
+        } else if self.get_token(0)?.in_(&vec!["GROUPING"]) {
+            groupby.push_node_vec("how", self.parse_n_keywords(2)?);
+            self.next_token()?; // BY -> expr
+            groupby.push_node_vec("exprs", self.parse_exprs(&vec![], alias)?);
+        } else if self.get_token(0)?.in_(&vec!["ALL"]) {
+            groupby.push_node_vec("how", self.parse_n_keywords(1)?);
+        } else {
+            groupby.push_node_vec("exprs", self.parse_exprs(&vec![], alias)?);
+        }
+        Ok(groupby)
+    }
     fn push_trailing_alias(&mut self, mut node: Node) -> BQ2CSTResult<Node> {
         if self.get_token(1)?.is("AS") {
             self.next_token()?; // -> AS
@@ -1804,24 +1824,7 @@ impl Parser {
         // GROUP BY
         if self.get_token(1)?.is("GROUP") {
             self.next_token()?; // expr -> GROUP
-            let mut groupby = self.construct_node(NodeType::GroupByExprs)?;
-            self.next_token()?; // GROUP -> BY
-            groupby.push_node("by", self.construct_node(NodeType::Keyword)?);
-            self.next_token()?; // -> ROLLUP | CUBE | GROUPING | ALL | exprs
-            if self.get_token(0)?.in_(&vec!["ROLLUP", "CUBE"]) {
-                groupby.push_node_vec("how", self.parse_n_keywords(1)?);
-                self.next_token()?; // BY -> expr
-                groupby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-            } else if self.get_token(0)?.in_(&vec!["GROUPING"]) {
-                groupby.push_node_vec("how", self.parse_n_keywords(2)?);
-                self.next_token()?; // BY -> expr
-                groupby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-            } else if self.get_token(0)?.in_(&vec!["ALL"]) {
-                groupby.push_node_vec("how", self.parse_n_keywords(1)?);
-            } else {
-                groupby.push_node_vec("exprs", self.parse_exprs(&vec![], false)?);
-            }
-            node.push_node("groupby", groupby);
+            node.push_node("groupby", self.parse_groupby_exprs(false)?);
         }
         // HAVING
         if self.get_token(1)?.is("HAVING") {
@@ -1926,9 +1929,14 @@ impl Parser {
         let mut pipe = self.construct_node(NodeType::PipeStatement)?;
         pipe.push_node("left", left);
         self.next_token()?; // -> SELECT | LIMIT | ...
+
+        // TODO: LIMIT
         let operator = match self.get_token(0)?.literal.to_uppercase().as_str() {
             "SELECT" => self.parse_select_pipe_operator()?,
-            "EXTEND" => self.parse_extend_pipe_operator()?,
+            "EXTEND" | "SET" | "DROP" | "RENAME" | "AS" | "WHERE" => {
+                self.parse_base_pipe_operator()?
+            }
+            "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -1979,7 +1987,18 @@ impl Parser {
 
         Ok(operator)
     }
-    fn parse_extend_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+    fn parse_aggregate_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::AggregatePipeOperator)?;
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";", "GROUP"], true)?;
+        operator.push_node_vec("exprs", exprs);
+        if self.get_token(1)?.is("GROUP") {
+            self.next_token()?; // expr -> GROUP
+            operator.push_node("groupby", self.parse_groupby_exprs(true)?);
+        }
+        Ok(operator)
+    }
+    fn parse_base_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
         let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![";"], true)?;
