@@ -949,6 +949,81 @@ impl Parser {
         }
         Ok(nodes)
     }
+    fn parse_set_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
+        let mut operator: Node;
+        if self
+            .get_token(1)?
+            .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
+        {
+            self.next_token()?; // -> INNER | FULL | LEFT | OUTER
+            let mut method;
+            if self.get_token(0)?.in_(&vec!["INNER", "OUTER"]) {
+                method = self.construct_node(NodeType::Keyword)?;
+            } else {
+                method = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> OUTER
+                let outer = self.construct_node(NodeType::Keyword)?;
+                method.push_node("next_keyword", outer);
+            }
+
+            self.next_token()?; // -> UNION
+            operator = self.construct_node(NodeType::SetOperator)?;
+            operator.push_node("method", method);
+        } else {
+            self.next_token()?; // stmt -> UNION
+            operator = self.construct_node(NodeType::SetOperator)?;
+        }
+        self.next_token()?; // ALL | DISTINCT
+        operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
+
+        if self.get_token(1)?.is("BY") {
+            self.next_token()?; // -> BY
+            let mut by = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> NAME
+            let mut name: Node;
+            if self.get_token(1)?.is("ON") {
+                name = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> ON
+                let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // -> (
+                let columns = self.parse_grouped_exprs(false)?;
+
+                on.push_node("expr", columns);
+                name.push_node("next_keyword", on);
+            } else {
+                name = self.construct_node(NodeType::Keyword)?;
+            }
+            by.push_node("next_keyword", name);
+            operator.push_node("by", by);
+        } else if self.get_token(1)?.in_(&vec!["STRICT", "CORRESPONDING"]) {
+            self.next_token()?; // -> STRICT | CORRESPONDING
+            let mut strict_exists = false;
+            let mut strict = Node::empty(NodeType::Unknown);
+            if self.get_token(0)?.is("STRICT") {
+                strict_exists = true;
+                strict = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // ->  CORRESPONDING
+            }
+            let mut corresponding = self.construct_node(NodeType::Keyword)?;
+            if self.get_token(1)?.is("BY") {
+                corresponding.node_type = NodeType::KeywordSequence;
+                self.next_token()?; // ->  BY
+                let mut by = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // ->  (
+                by.push_node("expr", self.parse_grouped_exprs(false)?);
+                corresponding.push_node("next_keyword", by);
+            }
+            if strict_exists {
+                strict.push_node("next_keyword", corresponding);
+                corresponding = strict;
+            }
+            operator.push_node("corresponding", corresponding);
+        }
+        operator.push_node("left", left);
+        self.next_token()?; // DISTINCT -> stmt
+        operator.push_node("right", self.parse_select_statement(false, false)?);
+        Ok(operator)
+    }
     fn parse_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let node = match self.get_token(0)?.literal.to_uppercase().as_str() {
             // SELECT
@@ -1598,31 +1673,7 @@ impl Parser {
                 "OUTER",
             ]) && root
             {
-                let mut operator;
-                if self
-                    .get_token(1)?
-                    .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
-                {
-                    self.next_token()?; // INNER, FULL, LEFT, OUTER
-
-                    // TODO
-                    operator = self.construct_node(NodeType::Keyword)?;
-                } else {
-                    self.next_token()?; // stmt -> UNION
-                    operator = self.construct_node(NodeType::SetOperator)?;
-                }
-                self.next_token()?; // UNION -> DISTINCT
-                operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
-                if self
-                    .get_token(1)?
-                    .in_(&vec!["BY", "STRICT", "CORRESPONDING"])
-                {
-                    // TODO
-                }
-                operator.push_node("left", node);
-                self.next_token()?; // DISTINCT -> stmt
-                operator.push_node("right", self.parse_select_statement(false, false)?);
-                node = operator;
+                node = self.parse_set_operator(node)?;
             }
             // ORDER BY
             if self.get_token(1)?.is("ORDER") && root {
@@ -1833,19 +1884,17 @@ impl Parser {
             node.push_node("limit", limit);
         }
         // UNION
-        while self
-            .get_token(1)?
-            .in_(&vec!["UNION", "INTERSECT", "EXCEPT"])
-            && root
+        while self.get_token(1)?.in_(&vec![
+            "UNION",
+            "INTERSECT",
+            "EXCEPT",
+            "INNER",
+            "FULL",
+            "LEFT",
+            "OUTER",
+        ]) && root
         {
-            self.next_token()?; // stmt -> UNION
-            let mut operator = self.construct_node(NodeType::SetOperator)?;
-            self.next_token()?; // UNION -> DISTINCT
-            operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
-            operator.push_node("left", node);
-            self.next_token()?; // DISTINCT -> stmt
-            operator.push_node("right", self.parse_select_statement(false, false)?);
-            node = operator;
+            node = self.parse_set_operator(node)?;
         }
         // ;
         if self.get_token(1)?.is(";") && semicolon {

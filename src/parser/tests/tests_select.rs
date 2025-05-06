@@ -369,6 +369,173 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 INNER UNION ALL BY NAME SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+by:
+  self: BY (KeywordSequence)
+  next_keyword:
+    self: NAME (Keyword)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+method:
+  self: INNER (Keyword)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 FULL OUTER UNION ALL BY NAME ON (foo) SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+by:
+  self: BY (KeywordSequence)
+  next_keyword:
+    self: NAME (KeywordSequence)
+    next_keyword:
+      self: ON (KeywordWithExpr)
+      expr:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: foo (Identifier)
+        rparen:
+          self: ) (Symbol)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+method:
+  self: FULL (KeywordSequence)
+  next_keyword:
+    self: OUTER (Keyword)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 UNION ALL CORRESPONDING SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+corresponding:
+  self: CORRESPONDING (Keyword)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 UNION ALL STRICT CORRESPONDING SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+corresponding:
+  self: STRICT (KeywordSequence)
+  next_keyword:
+    self: CORRESPONDING (Keyword)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 UNION ALL STRICT CORRESPONDING BY (foo, bar) SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+corresponding:
+  self: STRICT (KeywordSequence)
+  next_keyword:
+    self: CORRESPONDING (KeywordSequence)
+    next_keyword:
+      self: BY (KeywordWithExpr)
+      expr:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: foo (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: bar (Identifier)
+        rparen:
+          self: ) (Symbol)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 UNION ALL CORRESPONDING BY (foo) SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+corresponding:
+  self: CORRESPONDING (KeywordSequence)
+  next_keyword:
+    self: BY (KeywordWithExpr)
+    expr:
+      self: ( (GroupedExprs)
+      exprs:
+      - self: foo (Identifier)
+      rparen:
+        self: ) (Symbol)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
         // ----- WITH clause -----
         Box::new(SuccessTestCase::new(
             "\
