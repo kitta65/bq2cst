@@ -77,6 +77,15 @@ SELECT 1
 |> SELECT *
 ",
             "\
+self: |> (PipeStatement)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: * (Asterisk)
 ",
             0,
         )),
@@ -86,6 +95,19 @@ SELECT 1
 |> SELECT *
 ",
             "\
+self: |> (PipeStatement)
+left:
+  self: ( (GroupedStatement)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: * (Asterisk)
 ",
             0,
         )),
@@ -96,6 +118,23 @@ SELECT 2
 |> SELECT *
 ",
             "\
+self: |> (PipeStatement)
+left:
+  self: UNION (SetOperator)
+  distinct_or_all:
+    self: ALL (Keyword)
+  left:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+  right:
+    self: SELECT (SelectStatement)
+    exprs:
+    - self: 2 (NumericLiteral)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: * (Asterisk)
 ",
             0,
         )),
@@ -105,6 +144,29 @@ SELECT 2
 |> SELECT *
 ",
             "\
+self: |> (PipeStatement)
+left:
+  self: ( (GroupedStatement)
+  limit:
+    self: limit (LimitClause)
+    expr:
+      self: 1 (NumericLiteral)
+  orderby:
+    self: order (XXXByExprs)
+    by:
+      self: by (Keyword)
+    exprs:
+    - self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: select (SelectStatement)
+    exprs:
+    - self: 1 (NumericLiteral)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: * (Asterisk)
 ",
             0,
         )),
@@ -146,6 +208,13 @@ expr:
 (FROM table)
 ",
             "\
+self: ( (GroupedStatement)
+rparen:
+  self: ) (Symbol)
+stmt:
+  self: FROM (FromStatement)
+  expr:
+    self: table (Identifier)
 ",
             0,
         )),
@@ -153,8 +222,35 @@ expr:
             "\
 (FROM table AS t) ORDER BY 1 LIMIT 1
 |> SELECT *
-",
+         ",
             "\
+self: |> (PipeStatement)
+left:
+  self: ( (GroupedStatement)
+  limit:
+    self: LIMIT (LimitClause)
+    expr:
+      self: 1 (NumericLiteral)
+  orderby:
+    self: ORDER (XXXByExprs)
+    by:
+      self: BY (Keyword)
+    exprs:
+    - self: 1 (NumericLiteral)
+  rparen:
+    self: ) (Symbol)
+  stmt:
+    self: FROM (FromStatement)
+    expr:
+      self: table (Identifier)
+      alias:
+        self: t (Identifier)
+      as:
+        self: AS (Keyword)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: * (Asterisk)
 ",
             0,
         )),

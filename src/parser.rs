@@ -1025,7 +1025,10 @@ impl Parser {
     fn parse_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
         let node = match self.get_token(0)?.literal.to_uppercase().as_str() {
             // SELECT
-            "WITH" | "SELECT" | "(" => self.parse_select_statement(semicolon, true)?,
+            "WITH" | "SELECT" | "(" => {
+                // actually, it may be pipe syntax
+                self.parse_select_statement(semicolon, true)?
+            }
             "FROM" => self.parse_from_statement()?, // pipe syntax
             // DML
             "INSERT" => self.parse_insert_statement(semicolon)?,
@@ -1673,7 +1676,11 @@ impl Parser {
         if self.get_token(0)?.literal.to_uppercase() == "(" {
             let mut node = self.construct_node(NodeType::GroupedStatement)?;
             self.next_token()?; // ( -> SELECT
-            node.push_node("stmt", self.parse_select_statement(false, true)?);
+            if self.get_token(0)?.is("FROM") {
+                node.push_node("stmt", self.parse_from_statement()?);
+            } else {
+                node.push_node("stmt", self.parse_select_statement(false, true)?);
+            }
             self.next_token()?; // stmt -> )
             if !self.get_token(0)?.is(")") {
                 return Err(BQ2CSTError::from_token(
@@ -1723,6 +1730,9 @@ impl Parser {
             if self.get_token(1)?.is(";") && semicolon && root {
                 self.next_token()?; // expr -> ;
                 node.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
+            } else if self.get_token(1)?.is("|>") {
+                self.next_token()?; // -> |>
+                return self.parse_pipe_statement(node);
             }
             return Ok(node);
         }
@@ -1906,6 +1916,9 @@ impl Parser {
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // expr -> ;
             node.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
+        } else if self.get_token(1)?.is("|>") && root {
+            self.next_token()?; // -> |>
+            return self.parse_pipe_statement(node);
         }
         Ok(node)
     }
