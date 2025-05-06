@@ -2460,7 +2460,7 @@ impl Parser {
                 node.push_node("as", as_);
             }
         } else {
-            // javascript function definition
+            // javascript | python function definition
             if self.get_token(1)?.in_(&vec!["DETERMINISTIC", "NOT"]) {
                 self.next_token()?; // -> DETERMINISTIC | NOT
                 if self.get_token(0)?.is("NOT") {
@@ -2471,7 +2471,7 @@ impl Parser {
             }
             self.next_token()?; // -> LANGUAGE
             let mut language = self.construct_node(NodeType::KeywordWithExpr)?;
-            self.next_token()?; // -> js
+            self.next_token()?; // -> js | python
             language.push_node("expr", self.construct_node(NodeType::Identifier)?);
             node.push_node("language", language);
             if self.get_token(1)?.is("OPTIONS") {
