@@ -169,6 +169,39 @@ right:
 ",
             0,
         )),
+        // ----- extend pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> EXTEND 1 AS one, 2 AS two,;
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: EXTEND (BasePipeOperator)
+  exprs:
+  - self: 1 (NumericLiteral)
+    alias:
+      self: one (Identifier)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+  - self: 2 (NumericLiteral)
+    alias:
+      self: two (Identifier)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

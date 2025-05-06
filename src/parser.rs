@@ -1926,15 +1926,17 @@ impl Parser {
         let mut pipe = self.construct_node(NodeType::PipeStatement)?;
         pipe.push_node("left", left);
         self.next_token()?; // -> SELECT | LIMIT | ...
-        match self.get_token(0)?.literal.to_uppercase().as_str() {
-            "SELECT" => pipe.push_node("right", self.parse_select_pipe_operator()?),
+        let operator = match self.get_token(0)?.literal.to_uppercase().as_str() {
+            "SELECT" => self.parse_select_pipe_operator()?,
+            "EXTEND" => self.parse_extend_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
                     format!("Expected pipe operator but got: {:?}", self.get_token(0)?),
                 ))
             }
-        }
+        };
+        pipe.push_node("right", operator);
 
         if self.get_token(1)?.is("|>") {
             self.next_token()?; // -> |>
@@ -1972,9 +1974,16 @@ impl Parser {
             operator.push_node("keywords", temp)
         }
         self.next_token()?; // -> expr
-        let exprs = self.parse_exprs(&vec![], true)?;
+        let exprs = self.parse_exprs(&vec![";"], true)?;
         operator.push_node_vec("exprs", exprs);
 
+        Ok(operator)
+    }
+    fn parse_extend_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";"], true)?;
+        operator.push_node_vec("exprs", exprs);
         Ok(operator)
     }
     // ----- DML -----
