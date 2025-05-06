@@ -130,6 +130,10 @@ impl Lexer {
                     self.next_char()?;
                     self.next_char()?;
                     self.construct_token(line, column, "||".to_string())
+                } else if self.get_char(1) == Some('>') {
+                    self.next_char()?;
+                    self.next_char()?;
+                    self.construct_token(line, column, "|>".to_string())
                 } else {
                     self.next_char()?;
                     self.construct_token(line, column, ch.to_string())
