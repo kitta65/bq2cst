@@ -9,6 +9,7 @@ mod tests_debug;
 mod tests_dml;
 mod tests_ml;
 mod tests_other;
+mod tests_pipe;
 mod tests_script;
 mod tests_select;
 

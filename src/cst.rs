@@ -30,7 +30,8 @@ pub enum NodeType {
     ArrayLiteral, // [1, 2]
     AssertStatement,
     Asterisk,
-    BinaryOperator, // + | - | = | ...
+    BasePipeOperator, // SELECT a, b | LIMIT 10
+    BinaryOperator,   // + | - | = | ...
     BeginStatement,
     BetweenOperator,
     BooleanLiteral, // TRUE | FALSE
@@ -70,6 +71,7 @@ pub enum NodeType {
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
+    FromStatement, // FROM table_name;
     GrantStatement,
     GroupByExprs,
     GroupedIdentWithOptions,             // (col OPTIONS())
@@ -104,6 +106,7 @@ pub enum NodeType {
     OverClause,                // OVER (PARTITON BY x, y)
     OverwritePartitionsClause, // OVERWRITE PARTITIONS (_PARTITIONTIME = ts)
     Parameter,                 // ? | @param
+    PipeStatement,             // |>
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     RaiseStatement,

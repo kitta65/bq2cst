@@ -1026,6 +1026,7 @@ impl Parser {
         let node = match self.get_token(0)?.literal.to_uppercase().as_str() {
             // SELECT
             "WITH" | "SELECT" | "(" => self.parse_select_statement(semicolon, true)?,
+            "FROM" => self.parse_from_statement()?, // pipe syntax
             // DML
             "INSERT" => self.parse_insert_statement(semicolon)?,
             "DELETE" => self.parse_delete_statement(semicolon)?,
@@ -1902,6 +1903,55 @@ impl Parser {
             node.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
         }
         Ok(node)
+    }
+    fn parse_from_statement(&mut self) -> BQ2CSTResult<Node> {
+        let mut from = self.construct_node(NodeType::FromStatement)?;
+        self.next_token()?; // -> ident
+        from.push_node("expr", self.parse_table(true)?);
+
+        if self.get_token(1)?.is("|>") {
+            self.next_token()?; // -> |>
+            return self.parse_pipe_statement(from);
+        }
+
+        if self.get_token(1)?.is(";") {
+            self.next_token()?; // -> ;
+            from.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
+        };
+        Ok(from)
+    }
+    fn parse_pipe_statement(&mut self, left: Node) -> BQ2CSTResult<Node> {
+        let mut pipe = self.construct_node(NodeType::PipeStatement)?;
+        pipe.push_node("left", left);
+        self.next_token()?; // -> SELECT | LIMIT | ...
+        match self.get_token(0)?.literal.to_uppercase().as_str() {
+            "SELECT" => pipe.push_node("right", self.parse_select_pipe_operator()?),
+            _ => {
+                return Err(BQ2CSTError::from_token(
+                    self.get_token(0)?,
+                    format!("Expected pipe operator but got: {:?}", self.get_token(0)?),
+                ))
+            }
+        }
+
+        if self.get_token(1)?.is("|>") {
+            self.next_token()?; // -> |>
+            return self.parse_pipe_statement(pipe);
+        }
+
+        if self.get_token(1)?.is(";") {
+            self.next_token()?; // -> ;
+            pipe.push_node("semicolon", self.construct_node(NodeType::Symbol)?)
+        };
+        Ok(pipe)
+    }
+    fn parse_select_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![], true)?;
+        operator.push_node_vec("exprs", exprs);
+
+        Ok(operator)
     }
     // ----- DML -----
     fn parse_insert_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
