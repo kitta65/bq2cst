@@ -1450,10 +1450,10 @@ what:
 ",
             0,
         )),
-        // javascript function definition
+        // javascript | python function definition
         Box::new(SuccessTestCase::new(
             "\
-CREATE FUNCTION abc() RETURNS INT64 LAGUAGE js
+CREATE FUNCTION abc() RETURNS INT64 LAGUAGE python
 OPTIONS()
 AS '''return 1''';
 ",
@@ -1472,7 +1472,7 @@ ident:
 language:
   self: LAGUAGE (KeywordWithExpr)
   expr:
-    self: js (Identifier)
+    self: python (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedXXX)
   group:
