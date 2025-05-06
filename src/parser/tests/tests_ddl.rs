@@ -2159,6 +2159,48 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER SCHEMA dataset_name ADD REPLICA replica_name;
+",
+            "\
+self: ALTER (AlterSchemaStatement)
+add:
+  self: ADD (KeywordSequence)
+  next_keyword:
+    self: REPLICA (KeywordWithExpr)
+    expr:
+      self: replica_name (Identifier)
+ident:
+  self: dataset_name (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+ALTER SCHEMA dataset_name DROP REPLICA replica_name;
+",
+            "\
+self: ALTER (AlterSchemaStatement)
+drop:
+  self: DROP (KeywordSequence)
+  next_keyword:
+    self: REPLICA (KeywordWithExpr)
+    expr:
+      self: replica_name (Identifier)
+ident:
+  self: dataset_name (Identifier)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: SCHEMA (Keyword)
+",
+            0,
+        )),
         // ----- ALTER TABLE statement -----
         // SET
         Box::new(SuccessTestCase::new(

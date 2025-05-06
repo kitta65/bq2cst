@@ -2634,10 +2634,26 @@ impl Parser {
                 }
             }
             "ADD" => {
-                // TODO
+                let mut add = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> REPLICA
+                let mut replica = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // -> ident
+                let ident = self.parse_identifier()?;
+
+                replica.push_node("expr", ident);
+                add.push_node("next_keyword", replica);
+                alter.push_node("add", add);
             }
             "DROP" => {
-                // TODO
+                let mut drop = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> REPLICA
+                let mut replica = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // -> ident
+                let ident = self.parse_identifier()?;
+
+                replica.push_node("expr", ident);
+                drop.push_node("next_keyword", replica);
+                alter.push_node("drop", drop);
             }
             _ => {
                 return Err(BQ2CSTError::from_token(
