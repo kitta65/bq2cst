@@ -315,7 +315,9 @@ export type AlterSchemaStatement = XXXStatement & {
     what: NodeChild;
     if_exists?: NodeVecChild;
     ident: NodeChild;
-    set: NodeChild;
+    set?: NodeChild;
+    add?: NodeChild;
+    drop?: NodeChild;
     default_collate?: NodeChild;
     options?: NodeChild;
   };
