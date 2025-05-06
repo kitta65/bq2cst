@@ -2614,21 +2614,40 @@ impl Parser {
         }
         self.next_token()?; // -> ident
         alter.push_node("ident", self.parse_identifier()?);
-        self.next_token()?; // -> SET
-        alter.push_node("set", self.construct_node(NodeType::Keyword)?);
-        if self.get_token(1)?.is("DEFAULT") {
-            self.next_token()?; // DEFAULT
-            let mut default = self.construct_node(NodeType::KeywordSequence)?;
-            self.next_token()?; // COLLATE
-            let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
-            self.next_token()?; // collate_specification
-            collate.push_node(
-                "expr",
-                // parse_expr is not needed here, construct_node is enough
-                self.construct_node(NodeType::StringLiteral)?,
-            );
-            default.push_node("next_keyword", collate);
-            alter.push_node("default_collate", default);
+        self.next_token()?; // -> SET | ADD
+        match self.get_token(0)?.literal.to_uppercase().as_str() {
+            "SET" => {
+                alter.push_node("set", self.construct_node(NodeType::Keyword)?);
+                if self.get_token(1)?.is("DEFAULT") {
+                    self.next_token()?; // DEFAULT
+                    let mut default = self.construct_node(NodeType::KeywordSequence)?;
+                    self.next_token()?; // COLLATE
+                    let mut collate = self.construct_node(NodeType::KeywordWithExpr)?;
+                    self.next_token()?; // collate_specification
+                    collate.push_node(
+                        "expr",
+                        // parse_expr is not needed here, construct_node is enough
+                        self.construct_node(NodeType::StringLiteral)?,
+                    );
+                    default.push_node("next_keyword", collate);
+                    alter.push_node("default_collate", default);
+                }
+            }
+            "ADD" => {
+                // TODO
+            }
+            "DROP" => {
+                // TODO
+            }
+            _ => {
+                return Err(BQ2CSTError::from_token(
+                    self.get_token(0)?,
+                    format!(
+                        "Expected `SET`, `ADD` or `DROP` but got: {:?}",
+                        self.get_token(0)?
+                    ),
+                ))
+            }
         }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // -> OPTIONS
