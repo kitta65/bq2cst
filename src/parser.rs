@@ -1588,15 +1588,37 @@ impl Parser {
                 ));
             }
             node.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            while self
-                .get_token(1)?
-                .in_(&vec!["UNION", "INTERSECT", "EXCEPT"])
-                && root
+            while self.get_token(1)?.in_(&vec![
+                "UNION",
+                "INTERSECT",
+                "EXCEPT",
+                "INNER",
+                "FULL",
+                "LEFT",
+                "OUTER",
+            ]) && root
             {
-                self.next_token()?; // stmt -> UNION
-                let mut operator = self.construct_node(NodeType::SetOperator)?;
+                let mut operator;
+                if self
+                    .get_token(1)?
+                    .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
+                {
+                    self.next_token()?; // INNER, FULL, LEFT, OUTER
+
+                    // TODO
+                    operator = self.construct_node(NodeType::Keyword)?;
+                } else {
+                    self.next_token()?; // stmt -> UNION
+                    operator = self.construct_node(NodeType::SetOperator)?;
+                }
                 self.next_token()?; // UNION -> DISTINCT
                 operator.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
+                if self
+                    .get_token(1)?
+                    .in_(&vec!["BY", "STRICT", "CORRESPONDING"])
+                {
+                    // TODO
+                }
                 operator.push_node("left", node);
                 self.next_token()?; // DISTINCT -> stmt
                 operator.push_node("right", self.parse_select_statement(false, false)?);
