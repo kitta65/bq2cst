@@ -221,6 +221,46 @@ right:
             0,
         )),
         // ----- limit pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> LIMIT 1
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: LIMIT (LimitPipeOperator)
+  exprs:
+  - self: 1 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> LIMIT 1 OFFSET 2;
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: LIMIT (LimitPipeOperator)
+  exprs:
+  - self: 1 (NumericLiteral)
+  offset:
+    self: OFFSET (KeywordWithExpr)
+    expr:
+      self: 2 (NumericLiteral)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
         // ----- aggregate pipe operator -----
         Box::new(SuccessTestCase::new(
             "\

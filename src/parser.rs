@@ -1930,13 +1930,13 @@ impl Parser {
         pipe.push_node("left", left);
         self.next_token()?; // -> SELECT | LIMIT | ...
 
-        // TODO: LIMIT
         let operator = match self.get_token(0)?.literal.to_uppercase().as_str() {
-            "SELECT" => self.parse_select_pipe_operator()?,
             "EXTEND" | "SET" | "DROP" | "RENAME" | "AS" | "WHERE" => {
                 self.parse_base_pipe_operator()?
             }
+            "SELECT" => self.parse_select_pipe_operator()?,
             "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
+            "LIMIT" => self.parse_limit_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -1995,6 +1995,20 @@ impl Parser {
         if self.get_token(1)?.is("GROUP") {
             self.next_token()?; // expr -> GROUP
             operator.push_node("groupby", self.parse_groupby_exprs(true)?);
+        }
+        Ok(operator)
+    }
+    fn parse_limit_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::LimitPipeOperator)?;
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";", "OFFSET"], false)?; // if alias is true, offset is handled as alias
+        operator.push_node_vec("exprs", exprs);
+        if self.get_token(1)?.is("OFFSET") {
+            self.next_token()?; // -> OFFSET
+            let mut offset = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> expr
+            offset.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
+            operator.push_node("offset", offset)
         }
         Ok(operator)
     }

@@ -98,6 +98,7 @@ pub enum NodeType {
     IsDistinctFromOperator,
     JoinOperator, // JOIN | ,
     LimitClause,
+    LimitPipeOperator,
     LoadStatement,
     LoopStatement,
     MergeStatement,
