@@ -952,10 +952,9 @@ impl Parser {
     fn parse_set_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
         let mut operator: Node;
         if self
-            .get_token(1)?
+            .get_token(0)?
             .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
         {
-            self.next_token()?; // -> INNER | FULL | LEFT | OUTER
             let mut method;
             if self.get_token(0)?.in_(&vec!["INNER", "OUTER"]) {
                 method = self.construct_node(NodeType::Keyword)?;
@@ -970,7 +969,6 @@ impl Parser {
             operator = self.construct_node(NodeType::SetOperator)?;
             operator.push_node("method", method);
         } else {
-            self.next_token()?; // stmt -> UNION
             operator = self.construct_node(NodeType::SetOperator)?;
         }
         self.next_token()?; // ALL | DISTINCT
@@ -1673,6 +1671,7 @@ impl Parser {
                 "OUTER",
             ]) && root
             {
+                self.next_token()?;
                 node = self.parse_set_operator(node)?;
             }
             // ORDER BY
@@ -1894,6 +1893,7 @@ impl Parser {
             "OUTER",
         ]) && root
         {
+            self.next_token()?;
             node = self.parse_set_operator(node)?;
         }
         // ;

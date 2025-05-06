@@ -1239,6 +1239,8 @@ export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
   children: {
     with?: { Node: WithClause };
+    by?: NodeChild;
+    corresponding?: NodeChild;
     distinct_or_all: NodeChild;
     left: { Node: SetOperator | SelectStatement | GroupedStatement };
     right: { Node: SetOperator | SelectStatement | GroupedStatement };
