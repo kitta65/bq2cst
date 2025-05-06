@@ -103,6 +103,49 @@ expr:
 ",
             0,
         )),
+        // ----- select pipe operator -----
+        Box::new(SuccessTestCase::new(
+            // trailing comma is allowed
+            "\
+FROM t |> SELECT col1, col2,
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: col1 (Identifier)
+    comma:
+      self: , (Symbol)
+  - self: col2 (Identifier)
+    comma:
+      self: , (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> SELECT DISTINCT col
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: col (Identifier)
+  keywords:
+    self: DISTINCT (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

@@ -1743,6 +1743,13 @@ impl Parser {
             };
             node.push_node("differential_privacy", with);
         }
+
+        // DISTINCT
+        if self.get_token(1)?.in_(&vec!["ALL", "DISTINCT"]) {
+            self.next_token()?; // select -> all, distinct
+            node.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
+        }
+
         // AS STRUCT, VALUE
         if self.get_token(1)?.literal.to_uppercase() == "AS" {
             self.next_token()?; // SELECT -> AS
@@ -1754,11 +1761,6 @@ impl Parser {
             );
         }
 
-        // DISTINCT
-        if self.get_token(1)?.in_(&vec!["ALL", "DISTINCT"]) {
-            self.next_token()?; // select -> all, distinct
-            node.push_node("distinct_or_all", self.construct_node(NodeType::Keyword)?);
-        }
         self.next_token()?; // -> expr
 
         // exprs
@@ -1947,6 +1949,26 @@ impl Parser {
     }
     fn parse_select_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
         let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+
+        // WITH DIFFERENTIAL_PRIVACY seems not supported
+        let mut keywords: Vec<Node> = vec![];
+        if self.get_token(1)?.in_(&vec!["ALL", "DISTINCT"]) {
+            self.next_token()?; // -> ALL | DISTINCT
+            keywords.push(self.construct_node(NodeType::Keyword)?);
+        }
+        if self.get_token(1)?.is("AS") {
+            self.next_token()?; // -> AS
+            keywords.push(self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // -> STRUCT | VALUE
+            keywords.push(self.construct_node(NodeType::Keyword)?);
+        }
+        let len = keywords.len();
+        if 1 == len {
+            operator.push_node("keywords", keywords.pop().unwrap());
+        } else if 2 <= len {
+            // TODO
+        }
+
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![], true)?;
         operator.push_node_vec("exprs", exprs);
