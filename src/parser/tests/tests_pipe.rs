@@ -70,6 +70,44 @@ semicolon:
 ",
             0,
         )),
+        // ----- select statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1
+|> SELECT *
+",
+            "\
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(SELECT 1)
+|> SELECT *
+",
+            "\
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT 1 UNION ALL
+SELECT 2
+|> SELECT *
+",
+            "\
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(select 1) order by 1 limit 1
+|> SELECT *
+",
+            "\
+",
+            0,
+        )),
         // ----- from statement -----
         Box::new(SuccessTestCase::new(
             "\
@@ -100,6 +138,23 @@ expr:
       self: USING (Identifier)
     rparen:
       self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(FROM table)
+",
+            "\
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+(FROM table AS t) ORDER BY 1 LIMIT 1
+|> SELECT *
+",
+            "\
 ",
             0,
         )),
