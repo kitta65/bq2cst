@@ -146,6 +146,29 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> SELECT ALL AS STRUCT col
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: SELECT (BasePipeOperator)
+  exprs:
+  - self: col (Identifier)
+  keywords:
+    self: ALL (KeywordSequence)
+    next_keyword:
+      self: AS (KeywordSequence)
+      next_keyword:
+        self: STRUCT (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

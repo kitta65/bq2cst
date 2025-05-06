@@ -1962,13 +1962,15 @@ impl Parser {
             self.next_token()?; // -> STRUCT | VALUE
             keywords.push(self.construct_node(NodeType::Keyword)?);
         }
-        let len = keywords.len();
-        if 1 == len {
-            operator.push_node("keywords", keywords.pop().unwrap());
-        } else if 2 <= len {
-            // TODO
+        if 0 < keywords.len() {
+            let mut temp = keywords.pop().unwrap();
+            while let Some(mut kw) = keywords.pop() {
+                kw.node_type = NodeType::KeywordSequence;
+                kw.push_node("next_keyword", temp);
+                temp = kw
+            }
+            operator.push_node("keywords", temp)
         }
-
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![], true)?;
         operator.push_node_vec("exprs", exprs);
