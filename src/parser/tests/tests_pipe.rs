@@ -826,6 +826,139 @@ right:
 ",
             0,
         )),
+        // ----- pivot pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> PIVOT (SUM(sales) FOR quarter IN ('Q1', 'Q2')) AS q
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: PIVOT (PivotPipeOperator)
+  alias:
+    self: q (Identifier)
+  as:
+    self: AS (Keyword)
+  config:
+    self: ( (PivotConfig)
+    exprs:
+    - self: ( (CallingFunction)
+      args:
+      - self: sales (Identifier)
+      func:
+        self: SUM (Identifier)
+      rparen:
+        self: ) (Symbol)
+    for:
+      self: FOR (KeywordWithExpr)
+      expr:
+        self: quarter (Identifier)
+    in:
+      self: IN (KeywordWithGroupedXXX)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: 'Q1' (StringLiteral)
+          comma:
+            self: , (Symbol)
+        - self: 'Q2' (StringLiteral)
+        rparen:
+          self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        // ----- unpivot pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> UNPIVOT (sales FOR quarter IN ('Q1', 'Q2')) AS q
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: UNPIVOT (UnpivotPipeOperator)
+  alias:
+    self: q (Identifier)
+  as:
+    self: AS (Keyword)
+  config:
+    self: ( (UnpivotConfig)
+    expr:
+      self: sales (Identifier)
+    for:
+      self: FOR (KeywordWithExpr)
+      expr:
+        self: quarter (Identifier)
+    in:
+      self: IN (KeywordWithGroupedXXX)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: 'Q1' (StringLiteral)
+          comma:
+            self: , (Symbol)
+        - self: 'Q2' (StringLiteral)
+        rparen:
+          self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> UNPIVOT include NULLS (sales FOR quarter IN (Q1, Q2)) AS q
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: UNPIVOT (UnpivotPipeOperator)
+  alias:
+    self: q (Identifier)
+  as:
+    self: AS (Keyword)
+  config:
+    self: ( (UnpivotConfig)
+    expr:
+      self: sales (Identifier)
+    for:
+      self: FOR (KeywordWithExpr)
+      expr:
+        self: quarter (Identifier)
+    in:
+      self: IN (KeywordWithGroupedXXX)
+      group:
+        self: ( (GroupedExprs)
+        exprs:
+        - self: Q1 (Identifier)
+          comma:
+            self: , (Symbol)
+        - self: Q2 (Identifier)
+        rparen:
+          self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+  keywords:
+    self: include (KeywordSequence)
+    next_keyword:
+      self: NULLS (Keyword)
+",
+            0,
+        )),
+
     ];
     for t in test_cases {
         t.test();

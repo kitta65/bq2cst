@@ -1228,19 +1228,7 @@ impl Parser {
             self.next_token()?; // -> PIVOT
             let mut pivot = self.construct_node(NodeType::PivotOperator)?;
             self.next_token()?; // -> (
-            let mut config = self.construct_node(NodeType::PivotConfig)?;
-            self.next_token()?; // -> expr
-            config.push_node_vec("exprs", self.parse_exprs(&vec![], true)?);
-            self.next_token()?; // -> FOR
-            let mut for_ = self.construct_node(NodeType::KeywordWithExpr)?;
-            self.next_token()?; // -> expr
-            for_.push_node("expr", self.construct_node(NodeType::Identifier)?);
-            config.push_node("for", for_);
-            self.next_token()?; // -> IN
-            config.push_node("in", self.parse_keyword_with_grouped_exprs(true)?);
-            self.next_token()?; // -> )
-            config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            pivot.push_node("config", config);
+            pivot.push_node("config", self.parse_pivot_config_clause()?);
             pivot = self.push_trailing_alias(pivot)?;
             left.push_node("pivot", pivot);
         } else if self.get_token(1)?.is("UNPIVOT") {
@@ -1251,61 +1239,7 @@ impl Parser {
                 unpivot.push_node_vec("include_or_exclude_nulls", self.parse_n_keywords(2)?);
             }
             self.next_token()?; // -> (
-            let mut config = self.construct_node(NodeType::UnpivotConfig)?;
-            self.next_token()?; // -> expr
-            if self.get_token(0)?.is("(") {
-                // in the case of multi column unpivot
-                config.push_node("expr", self.parse_grouped_exprs(false)?);
-            } else {
-                config.push_node("expr", self.parse_expr(usize::MAX, true, false, false)?);
-            }
-            self.next_token()?; // -> FOR
-            let mut for_ = self.construct_node(NodeType::KeywordWithExpr)?;
-            self.next_token()?; // -> expr
-            for_.push_node("expr", self.construct_node(NodeType::Identifier)?);
-            config.push_node("for", for_);
-            self.next_token()?; // -> IN
-            let mut in_ = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
-            self.next_token()?; // -> (
-            let mut group = self.construct_node(NodeType::GroupedExprs)?;
-            let mut exprs = Vec::new();
-            while !self.get_token(1)?.is(")") {
-                self.next_token()?; // -> expr
-                let mut expr;
-                if self.get_token(0)?.is("(") {
-                    // in the case of multi column unpivot
-                    expr = self.parse_grouped_exprs(false)?;
-                } else {
-                    expr = self.parse_expr(usize::MAX, false, false, false)?;
-                }
-                if self.get_token(1)?.is("AS") {
-                    self.next_token()?; // -> AS
-                    expr.push_node("as", self.construct_node(NodeType::Keyword)?);
-                }
-                if self.get_token(1)?.is_string() || self.get_token(1)?.is_numeric() {
-                    self.next_token()?; // -> row_value_alias
-                    expr.push_node(
-                        "row_value_alias",
-                        self.parse_expr(usize::MAX, false, false, false)?,
-                    );
-                }
-                if self.get_token(1)?.is(",") {
-                    self.next_token()?; // -> ,
-                    expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
-                } else {
-                    exprs.push(expr);
-                    break;
-                }
-                exprs.push(expr);
-            }
-            self.next_token()?; // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            group.push_node_vec("exprs", exprs);
-            in_.push_node("group", group);
-            config.push_node("in", in_);
-            self.next_token()?; // -> )
-            config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            unpivot.push_node("config", config);
+            unpivot.push_node("config", self.parse_unpivot_config_clause()?);
             unpivot = self.push_trailing_alias(unpivot)?;
             left.push_node("unpivot", unpivot);
         }
@@ -1628,6 +1562,78 @@ impl Parser {
         self.next_token()?; // -> )
         group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(group)
+    }
+    fn parse_pivot_config_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut config = self.construct_node(NodeType::PivotConfig)?;
+        self.next_token()?; // -> expr
+        config.push_node_vec("exprs", self.parse_exprs(&vec![], true)?);
+        self.next_token()?; // -> FOR
+        let mut for_ = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> expr
+        for_.push_node("expr", self.construct_node(NodeType::Identifier)?);
+        config.push_node("for", for_);
+        self.next_token()?; // -> IN
+        config.push_node("in", self.parse_keyword_with_grouped_exprs(true)?);
+        self.next_token()?; // -> )
+        config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(config)
+    }
+    fn parse_unpivot_config_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut config = self.construct_node(NodeType::UnpivotConfig)?;
+        self.next_token()?; // -> expr
+        if self.get_token(0)?.is("(") {
+            // in the case of multi column unpivot
+            config.push_node("expr", self.parse_grouped_exprs(false)?);
+        } else {
+            config.push_node("expr", self.parse_expr(usize::MAX, true, false, false)?);
+        }
+        self.next_token()?; // -> FOR
+        let mut for_ = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> expr
+        for_.push_node("expr", self.construct_node(NodeType::Identifier)?);
+        config.push_node("for", for_);
+        self.next_token()?; // -> IN
+        let mut in_ = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
+        self.next_token()?; // -> (
+        let mut group = self.construct_node(NodeType::GroupedExprs)?;
+        let mut exprs = Vec::new();
+        while !self.get_token(1)?.is(")") {
+            self.next_token()?; // -> expr
+            let mut expr;
+            if self.get_token(0)?.is("(") {
+                // in the case of multi column unpivot
+                expr = self.parse_grouped_exprs(false)?;
+            } else {
+                expr = self.parse_expr(usize::MAX, false, false, false)?;
+            }
+            if self.get_token(1)?.is("AS") {
+                self.next_token()?; // -> AS
+                expr.push_node("as", self.construct_node(NodeType::Keyword)?);
+            }
+            if self.get_token(1)?.is_string() || self.get_token(1)?.is_numeric() {
+                self.next_token()?; // -> row_value_alias
+                expr.push_node(
+                    "row_value_alias",
+                    self.parse_expr(usize::MAX, false, false, false)?,
+                );
+            }
+            if self.get_token(1)?.is(",") {
+                self.next_token()?; // -> ,
+                expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
+            } else {
+                exprs.push(expr);
+                break;
+            }
+            exprs.push(expr);
+        }
+        self.next_token()?; // -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        group.push_node_vec("exprs", exprs);
+        in_.push_node("group", group);
+        config.push_node("in", in_);
+        self.next_token()?; // -> )
+        config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(config)
     }
     fn parse_by_name_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut by = self.construct_node(NodeType::KeywordSequence)?;
@@ -1974,6 +1980,8 @@ impl Parser {
                 }
             }
             "TABLESAMPLE" => self.parse_tablesample_pipe_operator()?,
+            "PIVOT" => self.parse_pivot_pipe_operator()?,
+            "UNPIVOT" => self.parse_unpivot_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2135,6 +2143,27 @@ impl Parser {
 
         self.next_token()?; // -> (
         operator.push_node("group", self.parse_table_sample_ratio()?);
+        Ok(operator)
+    }
+    fn parse_pivot_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::PivotPipeOperator)?;
+        self.next_token()?; // -> (
+        operator.push_node("config", self.parse_pivot_config_clause()?);
+        operator = self.push_trailing_alias(operator)?;
+        Ok(operator)
+    }
+    fn parse_unpivot_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::UnpivotPipeOperator)?;
+        if self.get_token(1)?.in_(&vec!["INCLUDE", "EXCLUDE"]) {
+            self.next_token()?; // -> INCLUDE | EXCLUDE
+            let mut include_or_exclude = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> NULLS
+            include_or_exclude.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+            operator.push_node("keywords", include_or_exclude);
+        }
+        self.next_token()?; // -> (
+        operator.push_node("config", self.parse_unpivot_config_clause()?);
+        operator = self.push_trailing_alias(operator)?;
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {

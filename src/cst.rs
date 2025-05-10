@@ -112,6 +112,7 @@ pub enum NodeType {
     PipeStatement,             // |>
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
+    PivotPipeOperator,
     RaiseStatement,
     RangeLiteral, // RANGE<DATE> '[2023-01-01, 2024-01-01)'
     RenameColumnClause,
@@ -138,6 +139,7 @@ pub enum NodeType {
     UndropStatement,
     UnionPipeOperator, // UNION ALL (SELECT 1) | INTERSECT DISTINCT (SELECT 1)
     UnpivotOperator,
+    UnpivotPipeOperator,
     UnpivotConfig, // ((c1, c2) FOR v IN ((v1, v2) 1, (v3, v4) 3))
     UpdateStatement,
     WhenClause, // WHEN MATCHED THEN DELETE
