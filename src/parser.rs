@@ -1951,6 +1951,7 @@ impl Parser {
             "SELECT" => self.parse_select_pipe_operator()?,
             "LIMIT" => self.parse_limit_pipe_operator()?,
             "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
+            "UNION" | "INTERSECT" | "EXCEPT" => self.parse_union_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2026,11 +2027,22 @@ impl Parser {
         }
         Ok(operator)
     }
+    // INTERSECT and EXCEPT are also supported
+    fn parse_union_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        self.next_token()?; // -> ALL | DISTINCT
+        operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
+        // TODO
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";"], true)?;
+        operator.push_node_vec("exprs", exprs);
+        Ok(operator)
+    }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {
         let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
         // NOTE: for now, single keyword is only allowed
         if keywords {
-            self.next_token()?; // keyword
+            self.next_token()?; // -> keyword
             operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
         }
         self.next_token()?; // -> expr
