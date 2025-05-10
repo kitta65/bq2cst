@@ -1948,8 +1948,9 @@ impl Parser {
                 self.parse_base_pipe_operator()?
             }
             "SELECT" => self.parse_select_pipe_operator()?,
-            "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
             "LIMIT" => self.parse_limit_pipe_operator()?,
+            "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
+            "ORDER" => self.parse_orderby_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2000,17 +2001,6 @@ impl Parser {
 
         Ok(operator)
     }
-    fn parse_aggregate_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
-        let mut operator = self.construct_node(NodeType::AggregatePipeOperator)?;
-        self.next_token()?; // -> expr
-        let exprs = self.parse_exprs(&vec![";", "GROUP"], true)?;
-        operator.push_node_vec("exprs", exprs);
-        if self.get_token(1)?.is("GROUP") {
-            self.next_token()?; // expr -> GROUP
-            operator.push_node("groupby", self.parse_groupby_exprs(true)?);
-        }
-        Ok(operator)
-    }
     fn parse_limit_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
         let mut operator = self.construct_node(NodeType::LimitPipeOperator)?;
         self.next_token()?; // -> expr
@@ -2023,6 +2013,27 @@ impl Parser {
             offset.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
             operator.push_node("offset", offset)
         }
+        Ok(operator)
+    }
+    fn parse_aggregate_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::AggregatePipeOperator)?;
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";", "GROUP"], true)?;
+        operator.push_node_vec("exprs", exprs);
+        if self.get_token(1)?.is("GROUP") {
+            self.next_token()?; // expr -> GROUP
+            operator.push_node("groupby", self.parse_groupby_exprs(true)?);
+        }
+        Ok(operator)
+    }
+    fn parse_orderby_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        self.next_token()?; // ORDER -> BY
+        operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> expr
+        let exprs = self.parse_exprs(&vec![";"], true)?;
+        operator.push_node_vec("exprs", exprs);
+
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
