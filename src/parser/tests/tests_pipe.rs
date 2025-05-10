@@ -958,7 +958,6 @@ right:
 ",
             0,
         )),
-
     ];
     for t in test_cases {
         t.test();
