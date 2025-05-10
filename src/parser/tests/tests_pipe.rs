@@ -305,6 +305,31 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> CALL tvf() AS u
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: CALL (BasePipeOperator)
+  exprs:
+  - self: ( (CallingFunction)
+    alias:
+      self: u (Identifier)
+    as:
+      self: AS (Keyword)
+    func:
+      self: tvf (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // single keyword
         Box::new(SuccessTestCase::new(
             "\

@@ -1953,7 +1953,7 @@ impl Parser {
         self.next_token()?; // -> SELECT | LIMIT | ...
 
         let operator = match self.get_token(0)?.literal.to_uppercase().as_str() {
-            "EXTEND" | "SET" | "DROP" | "RENAME" | "AS" | "WHERE" => {
+            "EXTEND" | "SET" | "DROP" | "RENAME" | "AS" | "WHERE" | "CALL" => {
                 self.parse_base_pipe_operator(false)?
             }
             "ORDER" => self.parse_base_pipe_operator(true)?,
