@@ -876,7 +876,7 @@ export type ForSystemTimeAsOfClause = BaseNode & {
 };
 
 export type FromStatement = XXXStatement & {
-  token: Token;
+  node_type: "FromStatement";
   children: {
     expr: NodeChild;
   };
