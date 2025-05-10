@@ -583,6 +583,47 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> LEFT OUTER INTERSECT DISTINCT BY NAME ON (col) (SELECT 1)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: INTERSECT (UnionPipeOperator)
+  by:
+    self: BY (KeywordSequence)
+    next_keyword:
+      self: NAME (KeywordSequence)
+      next_keyword:
+        self: ON (KeywordWithExpr)
+        expr:
+          self: ( (GroupedExprs)
+          exprs:
+          - self: col (Identifier)
+          rparen:
+            self: ) (Symbol)
+  exprs:
+  - self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  keywords:
+    self: DISTINCT (Keyword)
+  method:
+    self: LEFT (KeywordSequence)
+    next_keyword:
+      self: OUTER (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

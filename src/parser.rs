@@ -951,6 +951,9 @@ impl Parser {
     }
     fn parse_set_operator(&mut self, left: Node) -> BQ2CSTResult<Node> {
         let mut operator: Node;
+
+        // NOTE:
+        // when you modify here, also modify parse_union_pipe_operator()
         if self
             .get_token(0)?
             .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
@@ -1957,7 +1960,9 @@ impl Parser {
             "SELECT" => self.parse_select_pipe_operator()?,
             "LIMIT" => self.parse_limit_pipe_operator()?,
             "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
-            "UNION" | "INTERSECT" | "EXCEPT" => self.parse_union_pipe_operator()?,
+            "INNER" | "FULL" | "LEFT" | "OUTER" | "UNION" | "INTERSECT" | "EXCEPT" => {
+                self.parse_union_pipe_operator()?
+            }
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2035,7 +2040,31 @@ impl Parser {
     }
     // INTERSECT and EXCEPT are also supported
     fn parse_union_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
-        let mut operator = self.construct_node(NodeType::UnionPipeOperator)?;
+        let mut operator: Node;
+
+        // NOTE:
+        // when you modify here, also modify parse_set_operator()
+        if self
+            .get_token(0)?
+            .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
+        {
+            let mut method;
+            if self.get_token(0)?.in_(&vec!["INNER", "OUTER"]) {
+                method = self.construct_node(NodeType::Keyword)?;
+            } else {
+                method = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> OUTER
+                let outer = self.construct_node(NodeType::Keyword)?;
+                method.push_node("next_keyword", outer);
+            }
+
+            self.next_token()?; // -> UNION
+            operator = self.construct_node(NodeType::UnionPipeOperator)?;
+            operator.push_node("method", method);
+        } else {
+            operator = self.construct_node(NodeType::UnionPipeOperator)?;
+        }
+
         self.next_token()?; // -> ALL | DISTINCT
         operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
         if self.get_token(1)?.is("BY") {
