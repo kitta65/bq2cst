@@ -731,6 +731,50 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> CROSS JOIN u
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: JOIN (JoinPipeOperator)
+  exprs:
+  - self: u (Identifier)
+  method:
+    self: CROSS (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> LEFT OUTER JOIN u as u2
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: JOIN (JoinPipeOperator)
+  exprs:
+  - self: u (Identifier)
+    alias:
+      self: u2 (Identifier)
+    as:
+      self: as (Keyword)
+  method:
+    self: LEFT (KeywordSequence)
+    next_keyword:
+      self: OUTER (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

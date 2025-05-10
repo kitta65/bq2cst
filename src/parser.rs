@@ -1964,8 +1964,11 @@ impl Parser {
             // "," is not abalable for cross join
             "JOIN" => self.parse_join_pipe_operator()?,
             "INNER" | "FULL" | "LEFT" | "RIGHT" | "CROSS" | "OUTER" => {
-                // TODO: this may be join
-                self.parse_union_pipe_operator()?
+                if self.get_token(1)?.is("JOIN") || self.get_token(2)?.is("JOIN") {
+                    self.parse_join_pipe_operator()?
+                } else {
+                    self.parse_union_pipe_operator()?
+                }
             }
             _ => {
                 return Err(BQ2CSTError::from_token(
