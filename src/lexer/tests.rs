@@ -389,6 +389,19 @@ SELECT f(a1, a2)",
                 Token::from_str(1, 16, ")"),
             ],
         )),
+        // pipe
+        Box::new(SuccessTestCase::new(
+            "\
+FROM table
+|> SELECT column1",
+            vec![
+                Token::from_str(1, 1, "FROM"),
+                Token::from_str(1, 6, "table"),
+                Token::from_str(2, 1, "|>"),
+                Token::from_str(2, 4, "SELECT"),
+                Token::from_str(2, 11, "column1"),
+            ],
+        )),
         // empty
         Box::new(SuccessTestCase::new("", vec![])),
     ];

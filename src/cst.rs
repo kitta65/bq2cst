@@ -14,9 +14,10 @@ pub enum ContentType {
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub enum NodeType {
-    AccessOperator,      // arr[OFFSET(1)] | json['path']
-    AddColumnClause,     // ADD COLUMN x INT64 OPTIONS()
-    AddConstraintClause, // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
+    AccessOperator,        // arr[OFFSET(1)] | json['path']
+    AddColumnClause,       // ADD COLUMN x INT64 OPTIONS()
+    AddConstraintClause,   // ADD PRIMARY KEY (a) | ADD REFERENCES `table`(col) NOT ENFORCED
+    AggregatePipeOperator, // AGGREGATE COUNT(*) GROUP BY col
     AlterColumnStatement,
     AlterBICapacityStatement,
     AlterModelStatement,
@@ -30,7 +31,8 @@ pub enum NodeType {
     ArrayLiteral, // [1, 2]
     AssertStatement,
     Asterisk,
-    BinaryOperator, // + | - | = | ...
+    BasePipeOperator, // SELECT a, b | LIMIT 10
+    BinaryOperator,   // + | - | = | ...
     BeginStatement,
     BetweenOperator,
     BooleanLiteral, // TRUE | FALSE
@@ -70,6 +72,7 @@ pub enum NodeType {
     ExtractArgument,         // DAY FROM expr
     ForSystemTimeAsOfClause, // FOR SYSTEM_TIME AS OF ts
     ForStatement,
+    FromStatement, // FROM table_name;
     GrantStatement,
     GroupByExprs,
     GroupedIdentWithOptions,             // (col OPTIONS())
@@ -93,8 +96,10 @@ pub enum NodeType {
     IntervalLiteral,
     InOperator,
     IsDistinctFromOperator,
-    JoinOperator, // JOIN | ,
+    JoinOperator,     // JOIN | ,
+    JoinPipeOperator, // JOIN | INNER JOIN
     LimitClause,
+    LimitPipeOperator,
     LoadStatement,
     LoopStatement,
     MergeStatement,
@@ -104,8 +109,10 @@ pub enum NodeType {
     OverClause,                // OVER (PARTITON BY x, y)
     OverwritePartitionsClause, // OVERWRITE PARTITIONS (_PARTITIONTIME = ts)
     Parameter,                 // ? | @param
+    PipeStatement,             // |>
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
+    PivotPipeOperator,
     RaiseStatement,
     RangeLiteral, // RANGE<DATE> '[2023-01-01, 2024-01-01)'
     RenameColumnClause,
@@ -117,8 +124,9 @@ pub enum NodeType {
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
-    Symbol,                          // ) | ] | * | ...
-    TableSampleClause,               // TABLESAMPLE SYSTEM (10 PERCENT)
+    Symbol,            // ) | ] | * | ...
+    TableSampleClause, // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSamplePipeOperator,
     TableSampleRatio,                // (10 PERCENT)
     Template,                        // {{variable}}
     TrainingDataCustomHolidayClause, // (training_data AS (SELECT ...), custom_holiday AS (SELECT ...))
@@ -129,7 +137,9 @@ pub enum NodeType {
     UnaryOperator,   // - | + | TIMESTAMP | ...
     Unknown,
     UndropStatement,
+    UnionPipeOperator, // UNION ALL (SELECT 1) | INTERSECT DISTINCT (SELECT 1)
     UnpivotOperator,
+    UnpivotPipeOperator,
     UnpivotConfig, // ((c1, c2) FOR v IN ((v1, v2) 1, (v3, v4) 3))
     UpdateStatement,
     WhenClause, // WHEN MATCHED THEN DELETE

@@ -9,6 +9,7 @@ export type UnknownNode =
   | AccessOperator
   | AddColumnClause
   | AddConstraintClause
+  | AggregatePipeOperator
   | AlterBICapacityStatement
   | AlterColumnStatement
   | AlterModelStatement
@@ -22,6 +23,7 @@ export type UnknownNode =
   | ArrayLiteral
   | AssertStatement
   | Asterisk
+  | BasePipeOperator
   | BinaryOperator
   | BeginStatement
   | BetweenOperator
@@ -62,6 +64,7 @@ export type UnknownNode =
   | ExtractArgument
   | ForStatement
   | ForSystemTimeAsOfClause
+  | FromStatement
   | GrantStatement
   | GroupByExprs
   | GroupedExpr
@@ -78,6 +81,7 @@ export type UnknownNode =
   | IntervalLiteral
   | IsDistinctFromOperator
   | JoinOperator
+  | JoinPipeOperator
   | Keyword
   | KeywordSequence
   | KeywordWithExpr
@@ -87,6 +91,7 @@ export type UnknownNode =
   | KeywordWithStatements
   | KeywordWithType
   | LimitClause
+  | LimitPipeOperator
   | LoadStatement
   | LoopStatement
   | MergeStatement
@@ -96,7 +101,9 @@ export type UnknownNode =
   | OverClause
   | OverwritePartitionsClause
   | Parameter
+  | PipeStatement
   | PivotOperator
+  | PivotPipeOperator
   | PivotConfig
   | RaiseStatement
   | RangeLiteral
@@ -111,6 +118,7 @@ export type UnknownNode =
   | StructLiteral
   | Symbol_
   | TableSampleClause
+  | TableSamplePipeOperator
   | TableSampleRatio
   | Template
   | TransactionStatement
@@ -120,7 +128,9 @@ export type UnknownNode =
   | TypeDeclaration
   | UnaryOperator
   | UndropStatement
+  | UnionPipeOperator
   | UnpivotConfig
+  | UnpivotPipeOperator
   | UnpivotOperator
   | UpdateStatement
   | WhenClause
@@ -203,17 +213,6 @@ export type IdentifierGeneral = FromItemExpr & {
   };
 };
 
-export type IdentWithOptions = Expr & {
-  node_type: "IdentWithOptions";
-  children: {
-    as: undefined;
-    alias: undefined;
-    order: undefined;
-    null_order: undefined;
-    options?: NodeChild;
-  };
-};
-
 export type XXXStatement = BaseNode & {
   token: Token;
   children: {
@@ -221,6 +220,14 @@ export type XXXStatement = BaseNode & {
   };
 };
 
+export type PipeOperator = BaseNode & {
+  children: {
+    keywords?: NodeChild;
+    exprs?: NodeVecChild;
+  };
+}
+
+// ----- sub types of BaseNode (concrete) -----
 export type AddColumnClause = BaseNode & {
   node_type: "AddColumnClause";
   children: {
@@ -239,7 +246,13 @@ export type AddConstraintClause = BaseNode & {
   };
 };
 
-// ----- sub types of BaseNode (concrete) -----
+export type AggregatePipeOperator = PipeOperator & {
+  node_type: "AggregatePipeOperator";
+  children: {
+    groupby?: NodeChild;
+  }
+}
+
 export type AlterBICapacityStatement = XXXStatement & {
   node_type: "AlterBICapacityStatement";
   children: {
@@ -411,6 +424,10 @@ export type Asterisk = Expr & {
     null_order: undefined;
   };
 };
+
+export type BasePipeOperator = PipeOperator & {
+  node_type: "BasePipeOperator";
+}
 
 export type BinaryOperator = Expr & {
   node_type: "BinaryOperator";
@@ -858,6 +875,13 @@ export type ForSystemTimeAsOfClause = BaseNode & {
   };
 };
 
+export type FromStatement = XXXStatement & {
+  token: Token;
+  children: {
+    expr: NodeChild;
+  };
+}
+
 export type GrantStatement = XXXStatement & {
   node_type: "GrantStatement";
   children: {
@@ -942,6 +966,17 @@ export type Identifier = IdentifierGeneral & {
   node_type: "Identifier";
 };
 
+export type IdentWithOptions = Expr & {
+  node_type: "IdentWithOptions";
+  children: {
+    as: undefined;
+    alias: undefined;
+    order: undefined;
+    null_order: undefined;
+    options?: NodeChild;
+  };
+};
+
 export type IfStatement = XXXStatement & {
   node_type: "IfStatement";
   children: {
@@ -1010,6 +1045,15 @@ export type JoinOperator = FromItemExpr & {
   };
 };
 
+export type JoinPipeOperator = PipeOperator & {
+  node_type: "JoinPipeOperator";
+  children: {
+    method?: NodeChild;
+    on?: NodeChild;
+    using?: NodeChild;
+  }
+}
+
 export type Keyword = BaseNode & {
   token: Token;
   node_type: "Keyword";
@@ -1071,6 +1115,13 @@ export type LimitClause = BaseNode & {
     offset?: NodeChild;
   };
 };
+
+export type LimitPipeOperator = PipeOperator & {
+  node_type: "LimitPipeOperator";
+  children: {
+    offset?: NodeChild;
+  }
+}
 
 export type LoopStatement = LabelableStatement & {
   node_type: "LoopStatement";
@@ -1147,6 +1198,24 @@ export type OverwritePartitionsClause = BaseNode & {
 export type Parameter = IdentifierGeneral & {
   node_type: "Parameter";
 };
+
+export type PipeStatement = XXXStatement & {
+  node_type: "PipeStatement";
+  children: {
+    left: NodeChild;
+    right: NodeChild;
+  };
+}
+
+export type PivotPipeOperator = PipeOperator & {
+  node_type: "PivotPipeOperator";
+  children: {
+    exprs: undefined;
+    config: NodeChild;
+    as?: NodeChild;
+    alias?: NodeChild;
+  }
+}
 
 export type PivotOperator = BaseNode & {
   token: Token;
@@ -1285,6 +1354,14 @@ export type TableSampleClause = BaseNode & {
   };
 };
 
+export type TableSamplePipeOperator = PipeOperator & {
+  node_type: "TableSamplePipeOperator";
+  children: {
+    exprs: undefined;
+    group?: NodeChild;
+  }
+}
+
 export type TableSampleRatio = BaseNode & {
   token: Token;
   node_type: "TableSampleRatio";
@@ -1369,6 +1446,15 @@ export type UndropStatement = XXXStatement & {
   };
 };
 
+export type UnionPipeOperator = PipeOperator & {
+  node_type: "UnionPipeOperator";
+  children: {
+    method?: NodeChild;
+    by?: NodeChild;
+    corresponding?: NodeChild;
+  }
+}
+
 export type UnpivotConfig = BaseNode & {
   token: Token;
   node_type: "UnpivotConfig";
@@ -1379,6 +1465,16 @@ export type UnpivotConfig = BaseNode & {
     rparen: NodeChild;
   };
 };
+
+export type UnpivotPipeOperator = PipeOperator & {
+  node_type: "UnpivotPipeOperator";
+  children: {
+    exprs: undefined;
+    config: NodeChild;
+    as?: NodeChild;
+    alias?: NodeChild;
+  }
+}
 
 export type UnpivotOperator = BaseNode & {
   token: Token;

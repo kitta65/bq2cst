@@ -396,6 +396,31 @@ right:
         )),
         Box::new(SuccessTestCase::new(
             "\
+SELECT 1 LEFT UNION ALL BY NAME SELECT 2
+",
+            "\
+self: UNION (SetOperator)
+by:
+  self: BY (KeywordSequence)
+  next_keyword:
+    self: NAME (Keyword)
+distinct_or_all:
+  self: ALL (Keyword)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 1 (NumericLiteral)
+method:
+  self: LEFT (Keyword)
+right:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: 2 (NumericLiteral)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
 SELECT 1 FULL OUTER UNION ALL BY NAME ON (foo) SELECT 2
 ",
             "\
