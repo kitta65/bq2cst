@@ -624,6 +624,52 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+|> EXCEPT DISTINCT
+(
+  SELECT 1
+  |> EXCEPT DISTINCT (SELECT 2)
+);
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: SELECT (SelectStatement)
+  exprs:
+  - self: * (Asterisk)
+right:
+  self: EXCEPT (UnionPipeOperator)
+  exprs:
+  - self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: |> (PipeStatement)
+      left:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+      right:
+        self: EXCEPT (UnionPipeOperator)
+        exprs:
+        - self: ( (GroupedStatement)
+          rparen:
+            self: ) (Symbol)
+          stmt:
+            self: SELECT (SelectStatement)
+            exprs:
+            - self: 2 (NumericLiteral)
+        keywords:
+          self: DISTINCT (Keyword)
+  keywords:
+    self: DISTINCT (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();
