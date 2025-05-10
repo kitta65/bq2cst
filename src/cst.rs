@@ -123,8 +123,9 @@ pub enum NodeType {
     SingleTokenStatement, // BREAK; | LEAVE; | ...
     StringLiteral,
     StructLiteral,
-    Symbol,                          // ) | ] | * | ...
-    TableSampleClause,               // TABLESAMPLE SYSTEM (10 PERCENT)
+    Symbol,            // ) | ] | * | ...
+    TableSampleClause, // TABLESAMPLE SYSTEM (10 PERCENT)
+    TableSamplePipeOperator,
     TableSampleRatio,                // (10 PERCENT)
     Template,                        // {{variable}}
     TrainingDataCustomHolidayClause, // (training_data AS (SELECT ...), custom_holiday AS (SELECT ...))

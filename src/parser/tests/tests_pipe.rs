@@ -800,6 +800,32 @@ right:
 ",
             0,
         )),
+        // ----- tablesample pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> TABLESAMPLE SYSTEM (1 PERCENT)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: TABLESAMPLE (TableSamplePipeOperator)
+  group:
+    self: ( (TableSampleRatio)
+    expr:
+      self: 1 (NumericLiteral)
+    percent:
+      self: PERCENT (Keyword)
+    rparen:
+      self: ) (Symbol)
+  keywords:
+    self: SYSTEM (Keyword)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

@@ -1317,14 +1317,7 @@ impl Parser {
             self.next_token()?; // -> SYSTEM
             tablesample.push_node("system", self.construct_node(NodeType::Keyword)?);
             self.next_token()?; // -> (
-            let mut group = self.construct_node(NodeType::TableSampleRatio)?;
-            self.next_token()?; // -> expr
-            group.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
-            self.next_token()?; // -> PERCENT
-            group.push_node("percent", self.construct_node(NodeType::Keyword)?);
-            self.next_token()?; // -> )
-            group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
-            tablesample.push_node("group", group);
+            tablesample.push_node("group", self.parse_table_sample_ratio()?);
             left.push_node("tablesample", tablesample);
         }
         // JOIN
@@ -1625,6 +1618,16 @@ impl Parser {
             groupby.push_node_vec("exprs", self.parse_exprs(&vec![], alias)?);
         }
         Ok(groupby)
+    }
+    fn parse_table_sample_ratio(&mut self) -> BQ2CSTResult<Node> {
+        let mut group = self.construct_node(NodeType::TableSampleRatio)?;
+        self.next_token()?; // -> expr
+        group.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
+        self.next_token()?; // -> PERCENT
+        group.push_node("percent", self.construct_node(NodeType::Keyword)?);
+        self.next_token()?; // -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(group)
     }
     fn parse_by_name_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut by = self.construct_node(NodeType::KeywordSequence)?;
@@ -1970,6 +1973,7 @@ impl Parser {
                     self.parse_union_pipe_operator()?
                 }
             }
+            "TABLESAMPLE" => self.parse_tablesample_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2122,6 +2126,15 @@ impl Parser {
             self.next_token()?; // -> USING
             operator.push_node("using", self.parse_expr(usize::MAX, false, false, false)?)
         }
+        Ok(operator)
+    }
+    fn parse_tablesample_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.construct_node(NodeType::TableSamplePipeOperator)?;
+        self.next_token()?; // -> SYSTEM
+        operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
+
+        self.next_token()?; // -> (
+        operator.push_node("group", self.parse_table_sample_ratio()?);
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {
