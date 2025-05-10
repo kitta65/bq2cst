@@ -1308,6 +1308,7 @@ export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
   children: {
     with?: { Node: WithClause };
+    method?: NodeChild;
     by?: NodeChild;
     corresponding?: NodeChild;
     distinct_or_all: NodeChild;
