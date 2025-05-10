@@ -959,13 +959,13 @@ impl Parser {
             .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
         {
             let mut method;
-            if self.get_token(0)?.in_(&vec!["INNER", "OUTER"]) {
-                method = self.construct_node(NodeType::Keyword)?;
-            } else {
+            if self.get_token(1)?.is("OUTER") {
                 method = self.construct_node(NodeType::KeywordSequence)?;
                 self.next_token()?; // -> OUTER
                 let outer = self.construct_node(NodeType::Keyword)?;
                 method.push_node("next_keyword", outer);
+            } else {
+                method = self.construct_node(NodeType::Keyword)?;
             }
 
             self.next_token()?; // -> UNION
@@ -2049,13 +2049,13 @@ impl Parser {
             .in_(&vec!["INNER", "FULL", "LEFT", "OUTER"])
         {
             let mut method;
-            if self.get_token(0)?.in_(&vec!["INNER", "OUTER"]) {
-                method = self.construct_node(NodeType::Keyword)?;
-            } else {
+            if self.get_token(1)?.is("OUTER") {
                 method = self.construct_node(NodeType::KeywordSequence)?;
                 self.next_token()?; // -> OUTER
                 let outer = self.construct_node(NodeType::Keyword)?;
                 method.push_node("next_keyword", outer);
+            } else {
+                method = self.construct_node(NodeType::Keyword)?;
             }
 
             self.next_token()?; // -> UNION
