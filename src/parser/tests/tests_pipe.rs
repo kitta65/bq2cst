@@ -670,6 +670,67 @@ semicolon:
 ",
             0,
         )),
+        // ----- join pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> JOIN t USING(col)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: JOIN (JoinPipeOperator)
+  exprs:
+  - self: t (Identifier)
+  using:
+    self: ( (CallingFunction)
+    args:
+    - self: col (Identifier)
+    func:
+      self: USING (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> JOIN (SELECT 1) AS u ON foo = bar
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: JOIN (JoinPipeOperator)
+  exprs:
+  - self: ( (GroupedStatement)
+    alias:
+      self: u (Identifier)
+    as:
+      self: AS (Keyword)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  on:
+    self: ON (KeywordWithExpr)
+    expr:
+      self: = (BinaryOperator)
+      left:
+        self: foo (Identifier)
+      right:
+        self: bar (Identifier)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();

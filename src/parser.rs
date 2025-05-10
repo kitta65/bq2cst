@@ -1960,7 +1960,11 @@ impl Parser {
             "SELECT" => self.parse_select_pipe_operator()?,
             "LIMIT" => self.parse_limit_pipe_operator()?,
             "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
-            "INNER" | "FULL" | "LEFT" | "OUTER" | "UNION" | "INTERSECT" | "EXCEPT" => {
+            "UNION" | "INTERSECT" | "EXCEPT" => self.parse_union_pipe_operator()?,
+            // "," is not abalable for cross join
+            "JOIN" => self.parse_join_pipe_operator()?,
+            "INNER" | "FULL" | "LEFT" | "RIGHT" | "CROSS" | "OUTER" => {
+                // TODO: this may be join
                 self.parse_union_pipe_operator()?
             }
             _ => {
@@ -2077,6 +2081,44 @@ impl Parser {
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![";"], true)?;
         operator.push_node_vec("exprs", exprs);
+        Ok(operator)
+    }
+    fn parse_join_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator: Node;
+
+        if self
+            .get_token(0)?
+            .in_(&vec!["INNER", "FULL", "LEFT", "RIGHT", "CROSS", "OUTER"])
+        {
+            let mut method;
+            if self.get_token(1)?.is("OUTER") {
+                method = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> OUTER
+                let outer = self.construct_node(NodeType::Keyword)?;
+                method.push_node("next_keyword", outer);
+            } else {
+                method = self.construct_node(NodeType::Keyword)?;
+            }
+
+            self.next_token()?; // -> JOIN
+            operator = self.construct_node(NodeType::JoinPipeOperator)?;
+            operator.push_node("method", method);
+        } else {
+            operator = self.construct_node(NodeType::JoinPipeOperator)?;
+        }
+
+        self.next_token()?; // -> table
+        operator.push_node_vec("exprs", vec![self.parse_table(false)?]);
+        if self.get_token(1)?.is("on") {
+            self.next_token()?; // `table` -> ON
+            let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // ON -> expr
+            on.push_node("expr", self.parse_expr(usize::MAX, false, false, false)?);
+            operator.push_node("on", on);
+        } else if self.get_token(1)?.is("using") {
+            self.next_token()?; // -> USING
+            operator.push_node("using", self.parse_expr(usize::MAX, false, false, false)?)
+        }
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {
