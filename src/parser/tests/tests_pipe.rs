@@ -305,6 +305,34 @@ right:
 ",
             0,
         )),
+        // single keyword
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> ORDER BY col1 DESC NULLS LAST, col2
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: ORDER (BasePipeOperator)
+  exprs:
+  - self: col1 (Identifier)
+    comma:
+      self: , (Symbol)
+    null_order:
+    - self: NULLS (Keyword)
+    - self: LAST (Keyword)
+    order:
+      self: DESC (Keyword)
+  - self: col2 (Identifier)
+  keywords:
+    self: BY (Keyword)
+",
+            0,
+        )),
         // ----- select pipe operator -----
         Box::new(SuccessTestCase::new(
             // trailing comma is allowed
@@ -486,34 +514,6 @@ right:
       order:
         self: DESC (Keyword)
     - self: col2 (Identifier)
-",
-            0,
-        )),
-        // ----- order by pipe operator -----
-        Box::new(SuccessTestCase::new(
-            "\
-FROM t |> ORDER BY col1 DESC NULLS LAST, col2
-",
-            "\
-self: |> (PipeStatement)
-left:
-  self: FROM (FromStatement)
-  expr:
-    self: t (Identifier)
-right:
-  self: ORDER (BasePipeOperator)
-  exprs:
-  - self: col1 (Identifier)
-    comma:
-      self: , (Symbol)
-    null_order:
-    - self: NULLS (Keyword)
-    - self: LAST (Keyword)
-    order:
-      self: DESC (Keyword)
-  - self: col2 (Identifier)
-  keywords:
-    self: BY (Keyword)
 ",
             0,
         )),

@@ -1945,12 +1945,12 @@ impl Parser {
 
         let operator = match self.get_token(0)?.literal.to_uppercase().as_str() {
             "EXTEND" | "SET" | "DROP" | "RENAME" | "AS" | "WHERE" => {
-                self.parse_base_pipe_operator()?
+                self.parse_base_pipe_operator(false)?
             }
+            "ORDER" => self.parse_base_pipe_operator(true)?,
             "SELECT" => self.parse_select_pipe_operator()?,
             "LIMIT" => self.parse_limit_pipe_operator()?,
             "AGGREGATE" => self.parse_aggregate_pipe_operator()?,
-            "ORDER" => self.parse_orderby_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2026,18 +2026,13 @@ impl Parser {
         }
         Ok(operator)
     }
-    fn parse_orderby_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+    fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {
         let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
-        self.next_token()?; // ORDER -> BY
-        operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
-        self.next_token()?; // -> expr
-        let exprs = self.parse_exprs(&vec![";"], true)?;
-        operator.push_node_vec("exprs", exprs);
-
-        Ok(operator)
-    }
-    fn parse_base_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
-        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        // NOTE: for now, single keyword is only allowed
+        if keywords {
+            self.next_token()?; // keyword
+            operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
+        }
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![";"], true)?;
         operator.push_node_vec("exprs", exprs);
