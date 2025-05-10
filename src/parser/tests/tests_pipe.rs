@@ -333,42 +333,6 @@ right:
 ",
             0,
         )),
-        Box::new(SuccessTestCase::new(
-            "\
-FROM t |> UNION ALL (SELECT 1), (SELECT 2);
-",
-            "\
-self: |> (PipeStatement)
-left:
-  self: FROM (FromStatement)
-  expr:
-    self: t (Identifier)
-right:
-  self: UNION (BasePipeOperator)
-  exprs:
-  - self: ( (GroupedStatement)
-    comma:
-      self: , (Symbol)
-    rparen:
-      self: ) (Symbol)
-    stmt:
-      self: SELECT (SelectStatement)
-      exprs:
-      - self: 1 (NumericLiteral)
-  - self: ( (GroupedStatement)
-    rparen:
-      self: ) (Symbol)
-    stmt:
-      self: SELECT (SelectStatement)
-      exprs:
-      - self: 2 (NumericLiteral)
-  keywords:
-    self: ALL (Keyword)
-semicolon:
-  self: ; (Symbol)
-",
-            0,
-        )),
         // ----- select pipe operator -----
         Box::new(SuccessTestCase::new(
             // trailing comma is allowed
@@ -550,6 +514,72 @@ right:
       order:
         self: DESC (Keyword)
     - self: col2 (Identifier)
+",
+            0,
+        )),
+        // ----- union pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> UNION ALL (SELECT 1), (SELECT 2);
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: UNION (UnionPipeOperator)
+  exprs:
+  - self: ( (GroupedStatement)
+    comma:
+      self: , (Symbol)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  - self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 2 (NumericLiteral)
+  keywords:
+    self: ALL (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> UNION ALL BY NAME (SELECT 1)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: UNION (UnionPipeOperator)
+  by:
+    self: BY (KeywordSequence)
+    next_keyword:
+      self: NAME (Keyword)
+  exprs:
+  - self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+  keywords:
+    self: ALL (Keyword)
 ",
             0,
         )),

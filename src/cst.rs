@@ -134,6 +134,7 @@ pub enum NodeType {
     UnaryOperator,   // - | + | TIMESTAMP | ...
     Unknown,
     UndropStatement,
+    UnionPipeOperator, // UNION ALL (SELECT 1) | INTERSECT DISTINCT (SELECT 1)
     UnpivotOperator,
     UnpivotConfig, // ((c1, c2) FOR v IN ((v1, v2) 1, (v3, v4) 3))
     UpdateStatement,

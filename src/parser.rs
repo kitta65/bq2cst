@@ -976,46 +976,10 @@ impl Parser {
 
         if self.get_token(1)?.is("BY") {
             self.next_token()?; // -> BY
-            let mut by = self.construct_node(NodeType::KeywordSequence)?;
-            self.next_token()?; // -> NAME
-            let mut name: Node;
-            if self.get_token(1)?.is("ON") {
-                name = self.construct_node(NodeType::KeywordSequence)?;
-                self.next_token()?; // -> ON
-                let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
-                self.next_token()?; // -> (
-                let columns = self.parse_grouped_exprs(false)?;
-
-                on.push_node("expr", columns);
-                name.push_node("next_keyword", on);
-            } else {
-                name = self.construct_node(NodeType::Keyword)?;
-            }
-            by.push_node("next_keyword", name);
-            operator.push_node("by", by);
+            operator.push_node("by", self.parse_by_name_clause()?);
         } else if self.get_token(1)?.in_(&vec!["STRICT", "CORRESPONDING"]) {
             self.next_token()?; // -> STRICT | CORRESPONDING
-            let mut strict_exists = false;
-            let mut strict = Node::empty(NodeType::Unknown);
-            if self.get_token(0)?.is("STRICT") {
-                strict_exists = true;
-                strict = self.construct_node(NodeType::KeywordSequence)?;
-                self.next_token()?; // ->  CORRESPONDING
-            }
-            let mut corresponding = self.construct_node(NodeType::Keyword)?;
-            if self.get_token(1)?.is("BY") {
-                corresponding.node_type = NodeType::KeywordSequence;
-                self.next_token()?; // ->  BY
-                let mut by = self.construct_node(NodeType::KeywordWithExpr)?;
-                self.next_token()?; // ->  (
-                by.push_node("expr", self.parse_grouped_exprs(false)?);
-                corresponding.push_node("next_keyword", by);
-            }
-            if strict_exists {
-                strict.push_node("next_keyword", corresponding);
-                corresponding = strict;
-            }
-            operator.push_node("corresponding", corresponding);
+            operator.push_node("corresponding", self.parse_corresponding_clause()?);
         }
         operator.push_node("left", left);
         self.next_token()?; // DISTINCT -> stmt
@@ -1659,6 +1623,48 @@ impl Parser {
         }
         Ok(groupby)
     }
+    fn parse_by_name_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut by = self.construct_node(NodeType::KeywordSequence)?;
+        self.next_token()?; // -> NAME
+        let mut name: Node;
+        if self.get_token(1)?.is("ON") {
+            name = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> ON
+            let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // -> (
+            let columns = self.parse_grouped_exprs(false)?;
+
+            on.push_node("expr", columns);
+            name.push_node("next_keyword", on);
+        } else {
+            name = self.construct_node(NodeType::Keyword)?;
+        }
+        by.push_node("next_keyword", name);
+        Ok(by)
+    }
+    fn parse_corresponding_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut strict_exists = false;
+        let mut strict = Node::empty(NodeType::Unknown);
+        if self.get_token(0)?.is("STRICT") {
+            strict_exists = true;
+            strict = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // ->  CORRESPONDING
+        }
+        let mut corresponding = self.construct_node(NodeType::Keyword)?;
+        if self.get_token(1)?.is("BY") {
+            corresponding.node_type = NodeType::KeywordSequence;
+            self.next_token()?; // ->  BY
+            let mut by = self.construct_node(NodeType::KeywordWithExpr)?;
+            self.next_token()?; // ->  (
+            by.push_node("expr", self.parse_grouped_exprs(false)?);
+            corresponding.push_node("next_keyword", by);
+        }
+        if strict_exists {
+            strict.push_node("next_keyword", corresponding);
+            corresponding = strict;
+        }
+        Ok(corresponding)
+    }
     fn push_trailing_alias(&mut self, mut node: Node) -> BQ2CSTResult<Node> {
         if self.get_token(1)?.is("AS") {
             self.next_token()?; // -> AS
@@ -2029,10 +2035,16 @@ impl Parser {
     }
     // INTERSECT and EXCEPT are also supported
     fn parse_union_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
-        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        let mut operator = self.construct_node(NodeType::UnionPipeOperator)?;
         self.next_token()?; // -> ALL | DISTINCT
         operator.push_node("keywords", self.construct_node(NodeType::Keyword)?);
-        // TODO
+        if self.get_token(1)?.is("BY") {
+            self.next_token()?; // -> BY
+            operator.push_node("by", self.parse_by_name_clause()?);
+        } else if self.get_token(1)?.in_(&vec!["STRICT", "CORRESPONDING"]) {
+            self.next_token()?; // -> STRICT | CORRESPONDING
+            operator.push_node("corresponding", self.parse_corresponding_clause()?);
+        }
         self.next_token()?; // -> expr
         let exprs = self.parse_exprs(&vec![";"], true)?;
         operator.push_node_vec("exprs", exprs);
