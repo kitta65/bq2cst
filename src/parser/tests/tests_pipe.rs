@@ -876,7 +876,7 @@ right:
         // ----- unpivot pipe operator -----
         Box::new(SuccessTestCase::new(
             "\
-FROM t |> UNPIVOT (sales FOR quarter IN ('Q1', 'Q2')) AS q
+FROM t |> UNPIVOT (sales FOR quarter IN (q1, q2)) AS q
 ",
             "\
 self: |> (PipeStatement)
@@ -903,10 +903,10 @@ right:
       group:
         self: ( (GroupedExprs)
         exprs:
-        - self: 'Q1' (StringLiteral)
+        - self: q1 (Identifier)
           comma:
             self: , (Symbol)
-        - self: 'Q2' (StringLiteral)
+        - self: q2 (Identifier)
         rparen:
           self: ) (Symbol)
     rparen:
@@ -916,7 +916,7 @@ right:
         )),
         Box::new(SuccessTestCase::new(
             "\
-FROM t |> UNPIVOT include NULLS (sales FOR quarter IN (Q1, Q2)) AS q
+FROM t |> UNPIVOT include NULLS (sales FOR quarter IN (q1, q2)) AS q
 ",
             "\
 self: |> (PipeStatement)
@@ -943,10 +943,10 @@ right:
       group:
         self: ( (GroupedExprs)
         exprs:
-        - self: Q1 (Identifier)
+        - self: q1 (Identifier)
           comma:
             self: , (Symbol)
-        - self: Q2 (Identifier)
+        - self: q2 (Identifier)
         rparen:
           self: ) (Symbol)
     rparen:
