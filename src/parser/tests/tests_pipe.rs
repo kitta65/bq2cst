@@ -626,7 +626,7 @@ right:
       self: NAME (KeywordSequence)
       next_keyword:
         self: ON (KeywordWithGroupedXXX)
-        expr:
+        group:
           self: ( (GroupedExprs)
           exprs:
           - self: col (Identifier)

@@ -1646,7 +1646,7 @@ impl Parser {
             self.next_token()?; // -> (
             let columns = self.parse_grouped_exprs(false)?;
 
-            on.push_node("expr", columns);
+            on.push_node("group", columns);
             name.push_node("next_keyword", on);
         } else {
             name = self.construct_node(NodeType::Keyword)?;
@@ -1668,7 +1668,7 @@ impl Parser {
             self.next_token()?; // ->  BY
             let mut by = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
             self.next_token()?; // ->  (
-            by.push_node("expr", self.parse_grouped_exprs(false)?);
+            by.push_node("group", self.parse_grouped_exprs(false)?);
             corresponding.push_node("next_keyword", by);
         }
         if strict_exists {
