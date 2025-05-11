@@ -625,7 +625,7 @@ right:
     next_keyword:
       self: NAME (KeywordSequence)
       next_keyword:
-        self: ON (KeywordWithExpr)
+        self: ON (KeywordWithGroupedXXX)
         expr:
           self: ( (GroupedExprs)
           exprs:

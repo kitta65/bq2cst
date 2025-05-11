@@ -1642,7 +1642,7 @@ impl Parser {
         if self.get_token(1)?.is("ON") {
             name = self.construct_node(NodeType::KeywordSequence)?;
             self.next_token()?; // -> ON
-            let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+            let mut on = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
             self.next_token()?; // -> (
             let columns = self.parse_grouped_exprs(false)?;
 
@@ -1666,7 +1666,7 @@ impl Parser {
         if self.get_token(1)?.is("BY") {
             corresponding.node_type = NodeType::KeywordSequence;
             self.next_token()?; // ->  BY
-            let mut by = self.construct_node(NodeType::KeywordWithExpr)?;
+            let mut by = self.construct_node(NodeType::KeywordWithGroupedXXX)?;
             self.next_token()?; // ->  (
             by.push_node("expr", self.parse_grouped_exprs(false)?);
             corresponding.push_node("next_keyword", by);

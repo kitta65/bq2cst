@@ -430,7 +430,7 @@ by:
   next_keyword:
     self: NAME (KeywordSequence)
     next_keyword:
-      self: ON (KeywordWithExpr)
+      self: ON (KeywordWithGroupedXXX)
       expr:
         self: ( (GroupedExprs)
         exprs:
@@ -509,7 +509,7 @@ corresponding:
   next_keyword:
     self: CORRESPONDING (KeywordSequence)
     next_keyword:
-      self: BY (KeywordWithExpr)
+      self: BY (KeywordWithGroupedXXX)
       expr:
         self: ( (GroupedExprs)
         exprs:
@@ -541,7 +541,7 @@ self: UNION (SetOperator)
 corresponding:
   self: CORRESPONDING (KeywordSequence)
   next_keyword:
-    self: BY (KeywordWithExpr)
+    self: BY (KeywordWithGroupedXXX)
     expr:
       self: ( (GroupedExprs)
       exprs:
