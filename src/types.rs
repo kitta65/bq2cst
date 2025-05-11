@@ -597,6 +597,7 @@ export type CreateFunctionStatement = XXXStatement & {
     group: NodeChild;
     returns?: NodeChild;
     remote?: NodeChild;
+    connection?: NodeChild;
     determinism?: NodeVecChild;
     language?: NodeChild;
     options?: NodeChild;
