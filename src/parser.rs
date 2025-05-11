@@ -2701,7 +2701,8 @@ impl Parser {
         }
         if self.get_token(1)?.is("REMOTE") {
             self.next_token()?; // -> REMOTE
-            let mut remote = self.construct_node(NodeType::KeywordSequence)?;
+            node.push_node("remote", self.construct_node(NodeType::Keyword)?);
+
             self.next_token()?; // -> WITH
             let mut with = self.construct_node(NodeType::KeywordSequence)?;
             self.next_token()?; // -> CONNECTION
@@ -2709,8 +2710,8 @@ impl Parser {
             self.next_token()?; // -> ident
             connection.push_node("expr", self.parse_identifier()?);
             with.push_node("next_keyword", connection);
-            remote.push_node("next_keyword", with);
-            node.push_node("remote", remote);
+            node.push_node("connection", with);
+
             if self.get_token(1)?.is("OPTIONS") {
                 self.next_token()?; // -> OPTIONS
                 node.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
@@ -2749,6 +2750,16 @@ impl Parser {
             self.next_token()?; // -> js | python
             language.push_node("expr", self.construct_node(NodeType::Identifier)?);
             node.push_node("language", language);
+            if self.get_token(1)?.is("WITH") {
+                self.next_token()?; // -> WITH
+                let mut with = self.construct_node(NodeType::KeywordSequence)?;
+                self.next_token()?; // -> CONNECTION
+                let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
+                self.next_token()?; // -> ident
+                connection.push_node("expr", self.parse_identifier()?);
+                with.push_node("next_keyword", connection);
+                node.push_node("connection", with);
+            }
             if self.get_token(1)?.is("OPTIONS") {
                 self.next_token()?; // -> OPTIONS
                 node.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);

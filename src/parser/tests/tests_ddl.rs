@@ -1450,10 +1450,10 @@ what:
 ",
             0,
         )),
-        // javascript | python function definition
+        // javascript function definition
         Box::new(SuccessTestCase::new(
             "\
-CREATE FUNCTION abc() RETURNS INT64 LAGUAGE python
+CREATE FUNCTION abc() RETURNS INT64 LAGUAGE js
 OPTIONS()
 AS '''return 1''';
 ",
@@ -1472,7 +1472,7 @@ ident:
 language:
   self: LAGUAGE (KeywordWithExpr)
   expr:
-    self: python (Identifier)
+    self: js (Identifier)
 options:
   self: OPTIONS (KeywordWithGroupedXXX)
   group:
@@ -1576,6 +1576,53 @@ what:
 ",
             0,
         )),
+        // python function
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE FUNCTION abc() RETURNS INT64 LAGUAGE python
+WITH CONNECTION `project.us.connection`
+OPTIONS()
+AS '''return 1''';
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithExpr)
+  expr:
+    self: '''return 1''' (StringLiteral)
+connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: `project.us.connection` (Identifier)
+group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: abc (Identifier)
+language:
+  self: LAGUAGE (KeywordWithExpr)
+  expr:
+    self: python (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    rparen:
+      self: ) (Symbol)
+returns:
+  self: RETURNS (KeywordWithType)
+  type:
+    self: INT64 (Type)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: FUNCTION (Keyword)
+",
+            0,
+        )),
         // remote function
         Box::new(SuccessTestCase::new(
             "\
@@ -1586,6 +1633,12 @@ OPTIONS (endpoint = 'https://region-project.cloudfunctions.net/function')
 ",
             "\
 self: CREATE (CreateFunctionStatement)
+connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: `project.us.connection` (Identifier)
 group:
   self: ( (GroupedTypeDeclarationOrConstraints)
   rparen:
@@ -1609,13 +1662,7 @@ options:
     rparen:
       self: ) (Symbol)
 remote:
-  self: REMOTE (KeywordSequence)
-  next_keyword:
-    self: WITH (KeywordSequence)
-    next_keyword:
-      self: CONNECTION (KeywordWithExpr)
-      expr:
-        self: `project.us.connection` (Identifier)
+  self: REMOTE (Keyword)
 returns:
   self: RETURNS (KeywordWithType)
   type:
