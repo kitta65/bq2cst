@@ -70,6 +70,31 @@ semicolon:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+WITH t AS (SELECT 1) FROM t
+",
+            "\
+self: FROM (FromStatement)
+expr:
+  self: t (Identifier)
+with:
+  self: WITH (WithClause)
+  queries:
+  - self: t (WithQuery)
+    as:
+      self: AS (Keyword)
+    stmt:
+      self: ( (GroupedStatement)
+      rparen:
+        self: ) (Symbol)
+      stmt:
+        self: SELECT (SelectStatement)
+        exprs:
+        - self: 1 (NumericLiteral)
+",
+            0,
+        )),
         // ----- select statement -----
         Box::new(SuccessTestCase::new(
             "\

@@ -1553,6 +1553,7 @@ impl Parser {
         while self.get_token(1)?.literal.to_uppercase() != "SELECT"
             && self.get_token(1)?.literal != "("
             && self.get_token(1)?.literal != "|>"
+            && self.get_token(1)?.literal != "FROM"
         {
             self.next_token()?; // WITH -> ident, ) -> ident
             queries.push(self.parse_cte()?);
@@ -1810,8 +1811,12 @@ impl Parser {
         }
         if self.get_token(0)?.literal.to_uppercase() == "WITH" {
             let with = self.parse_with_clause()?;
-            self.next_token()?; // -> SELECT | '('
-            let mut node = self.parse_select_statement(semicolon, true)?;
+            self.next_token()?; // -> SELECT | '(' | FROM
+            let mut node = if self.get_token(0)?.is("FROM") {
+                self.parse_from_statement()?
+            } else {
+                self.parse_select_statement(semicolon, true)?
+            };
             node.push_node("with", with);
             return Ok(node);
         }
