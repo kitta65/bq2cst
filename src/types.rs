@@ -1580,6 +1580,12 @@ export type WithOffsetClause = BaseNode & {
   };
 };
 
+export type WithPipeOperator = BaseNode & {
+  token: Token;
+  node_type: "WithPipeOperator";
+  children: WithClause["children"];
+};
+
 export type WithPartitionColumnsClause = BaseNode & {
   token: Token;
   node_type: "WithPartitionColumnsClause";

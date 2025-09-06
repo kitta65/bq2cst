@@ -150,6 +150,7 @@ pub enum NodeType {
     WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
     WithClause,          // WITH x AS (SELECT 1)
     WithOffsetClause,
+    WithPipeOperator,
     WithPartitionColumnsClause, // WITH PARTITION COLUMNS (c1 INT64, c2 FLOAT64)
     WithQuery,                  // x AS (SELECT 1)
     XXXByExprs,                 // ORDER BY expr

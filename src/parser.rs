@@ -291,7 +291,24 @@ impl Parser {
         self.next_token()?; // ident -> AS
         query.push_node("as", self.construct_node(NodeType::Keyword)?);
         self.next_token()?; // AS -> (
-        query.push_node("stmt", self.parse_select_statement(false, true)?);
+
+        let mut grouped = self.construct_node(NodeType::GroupedStatement)?;
+        self.next_token()?; // ( -> SELECT | FROM
+        if self.get_token(0)?.is("FROM") {
+            grouped.push_node("stmt", self.parse_from_statement()?);
+        } else {
+            grouped.push_node("stmt", self.parse_select_statement(false, true)?);
+        }
+        self.next_token()?; // stmt -> )
+        if !self.get_token(0)?.is(")") {
+            return Err(BQ2CSTError::from_token(
+                self.get_token(0)?,
+                "expected )".to_string(),
+            ));
+        }
+        grouped.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+
+        query.push_node("stmt", grouped);
         if self.get_token(1)?.literal.as_str() == "," {
             self.next_token()?; // ) -> ,
             query.push_node("comma", self.construct_node(NodeType::Symbol)?);
@@ -1526,6 +1543,23 @@ impl Parser {
         with.push_node("next_keyword", connection);
         Ok(with)
     }
+    fn parse_with_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut with = self.construct_node(NodeType::WithClause)?;
+        if self.get_token(1)?.is("RECURSIVE") {
+            self.next_token()?; // -> RECURSIVE
+            with.push_node("recursive", self.construct_node(NodeType::Keyword)?);
+        }
+        let mut queries = Vec::new();
+        while self.get_token(1)?.literal.to_uppercase() != "SELECT"
+            && self.get_token(1)?.literal != "("
+            && self.get_token(1)?.literal != "|>"
+        {
+            self.next_token()?; // WITH -> ident, ) -> ident
+            queries.push(self.parse_cte()?);
+        }
+        with.push_node_vec("queries", queries);
+        return Ok(with);
+    }
     fn parse_xxxby_exprs(&mut self) -> BQ2CSTResult<Node> {
         let mut xxxby = self.construct_node(NodeType::XXXByExprs)?;
         self.next_token()?; // xxx -> BY
@@ -1756,19 +1790,7 @@ impl Parser {
             return Ok(node);
         }
         if self.get_token(0)?.literal.to_uppercase() == "WITH" {
-            let mut with = self.construct_node(NodeType::WithClause)?;
-            if self.get_token(1)?.is("RECURSIVE") {
-                self.next_token()?; // -> RECURSIVE
-                with.push_node("recursive", self.construct_node(NodeType::Keyword)?);
-            }
-            let mut queries = Vec::new();
-            while self.get_token(1)?.literal.to_uppercase() != "SELECT"
-                && self.get_token(1)?.literal != "("
-            {
-                self.next_token()?; // WITH -> ident, ) -> ident
-                queries.push(self.parse_cte()?);
-            }
-            with.push_node_vec("queries", queries);
+            let with = self.parse_with_clause()?;
             self.next_token()?; // -> SELECT | '('
             let mut node = self.parse_select_statement(semicolon, true)?;
             node.push_node("with", with);
@@ -1983,6 +2005,7 @@ impl Parser {
             "TABLESAMPLE" => self.parse_tablesample_pipe_operator()?,
             "PIVOT" => self.parse_pivot_pipe_operator()?,
             "UNPIVOT" => self.parse_unpivot_pipe_operator()?,
+            "WITH" => self.parse_with_pipe_operator()?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
@@ -2165,6 +2188,11 @@ impl Parser {
         self.next_token()?; // -> (
         operator.push_node("config", self.parse_unpivot_config_clause()?);
         operator = self.push_trailing_alias(operator)?;
+        Ok(operator)
+    }
+    fn parse_with_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.parse_with_clause()?;
+        operator.node_type = NodeType::WithPipeOperator;
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {
