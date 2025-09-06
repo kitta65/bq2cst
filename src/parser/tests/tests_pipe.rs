@@ -575,6 +575,24 @@ right:
 ",
             0,
         )),
+        // ----- distinct pipe operator -----
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> DISTINCT;
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: DISTINCT (Keyword)
+semicolon:
+  self: ; (Symbol)
+",
+            0,
+        )),
         // ----- union pipe operator -----
         Box::new(SuccessTestCase::new(
             "\
