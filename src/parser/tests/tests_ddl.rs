@@ -215,6 +215,52 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE VECTOR INDEX new_index
+ON tablename(col)
+PARTITION BY foo
+OPTIONS(dummy='dummy')
+",
+            "\
+self: CREATE (CreateIndexStatement)
+column_group:
+  self: ( (GroupedExprs)
+  exprs:
+  - self: col (Identifier)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: new_index (Identifier)
+on:
+  self: ON (Keyword)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+partitionby:
+  self: PARTITION (XXXByExprs)
+  by:
+    self: BY (Keyword)
+  exprs:
+  - self: foo (Identifier)
+tablename:
+  self: tablename (Identifier)
+what:
+  self: VECTOR (KeywordSequence)
+  next_keyword:
+    self: INDEX (Keyword)
+",
+            0,
+        )),
         // ----- CREATE TABLE statement -----
         Box::new(SuccessTestCase::new(
             "\

@@ -690,6 +690,7 @@ export type CreateIndexStatement = XXXStatement & {
     tablename: NodeChild;
     column_group: NodeChild;
     storing?: NodeChild;
+    partitionby?: NodeChild;
     options?: NodeChild;
   };
 };

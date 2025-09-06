@@ -1046,6 +1046,7 @@ impl Parser {
                 let mut offset = 1;
                 loop {
                     match self.get_token(offset)?.literal.to_uppercase().as_str() {
+                        // TODO: support alter vector index rebuild
                         "SCHEMA" => return self.parse_alter_schema_statement(semicolon),
                         "TABLE" => return self.parse_alter_table_statement(semicolon),
                         "COLUMN" => return self.parse_alter_column_statement(semicolon),
@@ -2450,6 +2451,10 @@ impl Parser {
         if self.get_token(1)?.is("STORING") {
             self.next_token()?; // -> STORING
             create.push_node("storing", self.parse_keyword_with_grouped_exprs(false)?);
+        }
+        if self.get_token(1)?.is("PARTITION") {
+            self.next_token()?; // -> PARTITION
+            create.push_node("partitionby", self.parse_xxxby_exprs()?);
         }
         if self.get_token(1)?.is("OPTIONS") {
             self.next_token()?; // -> OPTIONS
