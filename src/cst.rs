@@ -118,6 +118,7 @@ pub enum NodeType {
     RenameColumnClause,
     RepeatStatement,
     RevokeStatement,
+    SelectPipeOperator,
     SelectStatement,      // SELECT 1;
     SetOperator,          // UNION | INTERSECT | EXCEPT
     SetStatement,         // SET x = 5
@@ -150,6 +151,7 @@ pub enum NodeType {
     WindowSpecification, // PARTITION BY c1 ORDER BY c2 ROWS UNBOUNDED PRECEDING
     WithClause,          // WITH x AS (SELECT 1)
     WithOffsetClause,
+    WithPipeOperator,
     WithPartitionColumnsClause, // WITH PARTITION COLUMNS (c1 INT64, c2 FLOAT64)
     WithQuery,                  // x AS (SELECT 1)
     XXXByExprs,                 // ORDER BY expr
