@@ -2014,6 +2014,7 @@ impl Parser {
             "PIVOT" => self.parse_pivot_pipe_operator()?,
             "UNPIVOT" => self.parse_unpivot_pipe_operator()?,
             "WITH" => self.parse_with_pipe_operator()?,
+            "DISTINCT" => self.construct_node(NodeType::Keyword)?,
             _ => {
                 return Err(BQ2CSTError::from_token(
                     self.get_token(0)?,
