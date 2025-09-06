@@ -1010,6 +1010,81 @@ right:
 ",
             0,
         )),
+        // allow trailing comma
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t
+|> WITH
+  u AS (
+    SELECT 1 AS key
+  ),
+  v AS (
+    SELECT 2 AS key
+  ),
+|> INNER JOIN u USING (key)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: |> (PipeStatement)
+  left:
+    self: FROM (FromStatement)
+    expr:
+      self: t (Identifier)
+  right:
+    self: WITH (WithPipeOperator)
+    queries:
+    - self: u (WithQuery)
+      as:
+        self: AS (Keyword)
+      comma:
+        self: , (Symbol)
+      stmt:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 1 (NumericLiteral)
+            alias:
+              self: key (Identifier)
+            as:
+              self: AS (Keyword)
+    - self: v (WithQuery)
+      as:
+        self: AS (Keyword)
+      comma:
+        self: , (Symbol)
+      stmt:
+        self: ( (GroupedStatement)
+        rparen:
+          self: ) (Symbol)
+        stmt:
+          self: SELECT (SelectStatement)
+          exprs:
+          - self: 2 (NumericLiteral)
+            alias:
+              self: key (Identifier)
+            as:
+              self: AS (Keyword)
+right:
+  self: JOIN (JoinPipeOperator)
+  exprs:
+  - self: u (Identifier)
+  method:
+    self: INNER (Keyword)
+  using:
+    self: ( (CallingFunction)
+    args:
+    - self: key (Identifier)
+    func:
+      self: USING (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
     ];
     for t in test_cases {
         t.test();
