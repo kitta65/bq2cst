@@ -118,6 +118,7 @@ pub enum NodeType {
     RenameColumnClause,
     RepeatStatement,
     RevokeStatement,
+    SelectPipeOperator,
     SelectStatement,      // SELECT 1;
     SetOperator,          // UNION | INTERSECT | EXCEPT
     SetStatement,         // SET x = 5

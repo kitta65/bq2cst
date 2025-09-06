@@ -39,7 +39,7 @@ left:
   expr:
     self: table (Identifier)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: col (Identifier)
 ",
@@ -58,11 +58,11 @@ left:
     expr:
       self: table (Identifier)
   right:
-    self: SELECT (BasePipeOperator)
+    self: SELECT (SelectPipeOperator)
     exprs:
     - self: col (Identifier)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: col (Identifier)
 semicolon:
@@ -83,7 +83,7 @@ left:
   exprs:
   - self: 1 (NumericLiteral)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: * (Asterisk)
 ",
@@ -105,7 +105,7 @@ left:
     exprs:
     - self: 1 (NumericLiteral)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: * (Asterisk)
 ",
@@ -132,7 +132,7 @@ left:
     exprs:
     - self: 2 (NumericLiteral)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: * (Asterisk)
 ",
@@ -164,7 +164,7 @@ left:
     exprs:
     - self: 1 (NumericLiteral)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: * (Asterisk)
 ",
@@ -248,7 +248,7 @@ left:
       as:
         self: AS (Keyword)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: * (Asterisk)
 ",
@@ -371,7 +371,7 @@ left:
   expr:
     self: t (Identifier)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: col1 (Identifier)
     comma:
@@ -393,7 +393,7 @@ left:
   expr:
     self: t (Identifier)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: col (Identifier)
   keywords:
@@ -412,7 +412,7 @@ left:
   expr:
     self: t (Identifier)
 right:
-  self: SELECT (BasePipeOperator)
+  self: SELECT (SelectPipeOperator)
   exprs:
   - self: col (Identifier)
   keywords:
@@ -421,6 +421,39 @@ right:
       self: AS (KeywordSequence)
       next_keyword:
         self: STRUCT (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> SELECT col WINDOW a AS (PARTITION BY b)
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: SELECT (SelectPipeOperator)
+  exprs:
+  - self: col (Identifier)
+  window:
+    self: WINDOW (WindowClause)
+    window_exprs:
+    - self: a (WindowExpr)
+      as:
+        self: AS (Keyword)
+      window:
+        self: ( (WindowSpecification)
+        partitionby:
+          self: PARTITION (XXXByExprs)
+          by:
+            self: BY (Keyword)
+          exprs:
+          - self: b (Identifier)
+        rparen:
+          self: ) (Symbol)
 ",
             0,
         )),

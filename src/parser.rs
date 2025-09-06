@@ -1560,6 +1560,25 @@ impl Parser {
         with.push_node_vec("queries", queries);
         return Ok(with);
     }
+    fn parse_window_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut window = self.construct_node(NodeType::WindowClause)?;
+        let mut window_exprs = Vec::new();
+        while self.get_token(1)?.is_identifier() {
+            self.next_token()?; // -> ident
+            let mut window_expr = self.construct_node(NodeType::WindowExpr)?;
+            self.next_token()?; // ident -> AS
+            window_expr.push_node("as", self.construct_node(NodeType::Keyword)?);
+            self.next_token()?; // AS -> (, AS -> named_window
+            window_expr.push_node("window", self.parse_window_expr()?);
+            if self.get_token(1)?.is(",") {
+                self.next_token()?; // -> ,
+                window_expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
+            }
+            window_exprs.push(window_expr);
+        }
+        window.push_node_vec("window_exprs", window_exprs);
+        return Ok(window);
+    }
     fn parse_xxxby_exprs(&mut self) -> BQ2CSTResult<Node> {
         let mut xxxby = self.construct_node(NodeType::XXXByExprs)?;
         self.next_token()?; // xxx -> BY
@@ -1896,23 +1915,7 @@ impl Parser {
         // WINDOW
         if self.get_token(1)?.is("WINDOW") {
             self.next_token()?; // -> WINDOW
-            let mut window = self.construct_node(NodeType::WindowClause)?;
-            let mut window_exprs = Vec::new();
-            while self.get_token(1)?.is_identifier() {
-                self.next_token()?; // -> ident
-                let mut window_expr = self.construct_node(NodeType::WindowExpr)?;
-                self.next_token()?; // ident -> AS
-                window_expr.push_node("as", self.construct_node(NodeType::Keyword)?);
-                self.next_token()?; // AS -> (, AS -> named_window
-                window_expr.push_node("window", self.parse_window_expr()?);
-                if self.get_token(1)?.is(",") {
-                    self.next_token()?; // -> ,
-                    window_expr.push_node("comma", self.construct_node(NodeType::Symbol)?);
-                }
-                window_exprs.push(window_expr);
-            }
-            window.push_node_vec("window_exprs", window_exprs);
-            node.push_node("window", window);
+            node.push_node("window", self.parse_window_clause()?);
         }
         // ORDER BY
         if self.get_token(1)?.is("ORDER") {
@@ -2027,7 +2030,7 @@ impl Parser {
         Ok(pipe)
     }
     fn parse_select_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
-        let mut operator = self.construct_node(NodeType::BasePipeOperator)?;
+        let mut operator = self.construct_node(NodeType::SelectPipeOperator)?;
 
         // WITH DIFFERENTIAL_PRIVACY seems not supported
         let mut keywords: Vec<Node> = vec![];
@@ -2051,8 +2054,13 @@ impl Parser {
             operator.push_node("keywords", temp)
         }
         self.next_token()?; // -> expr
-        let exprs = self.parse_exprs(&vec![";"], true)?;
+        let exprs = self.parse_exprs(&vec![";", "WINDOW"], true)?;
         operator.push_node_vec("exprs", exprs);
+        if self.get_token(1)?.is("WINDOW") {
+            self.next_token()?; // -> WINDOW
+            let window = self.parse_window_clause()?;
+            operator.push_node("window", window);
+        }
 
         Ok(operator)
     }

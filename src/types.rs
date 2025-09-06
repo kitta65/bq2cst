@@ -111,6 +111,7 @@ export type UnknownNode =
   | RepeatStatement
   | RevokeStatement
   | SelectStatement
+  | SelectPipeOperator
   | SetOperator
   | SetStatement
   | SingleTokenStatement
@@ -141,6 +142,7 @@ export type UnknownNode =
   | WindowSpecification
   | WithClause
   | WithOffsetClause
+  | WithPipeOperator
   | WithPartitionColumnsClause
   | WithQuery
   | XXXByExprs;
@@ -1305,6 +1307,14 @@ export type SelectStatement = XXXStatement & {
     limit?: NodeChild;
   };
 };
+
+export type SelectPipeOperator = PipeOperator & {
+  node_type: "SelectPipeOperator";
+  children: {
+    window?: NodeChild;
+  };
+}
+
 
 export type SetOperator = XXXStatement & {
   node_type: "SetOperator";
