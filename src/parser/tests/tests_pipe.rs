@@ -95,6 +95,33 @@ with:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM (FROM t |> SELECT *)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: |> (PipeStatement)
+      left:
+        self: FROM (FromStatement)
+        expr:
+          self: t (Identifier)
+      right:
+        self: SELECT (SelectPipeOperator)
+        exprs:
+        - self: * (Asterisk)
+",
+            0,
+        )),
         // ----- select statement -----
         Box::new(SuccessTestCase::new(
             "\

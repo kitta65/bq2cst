@@ -1234,7 +1234,7 @@ impl Parser {
                 let mut offset = 0;
                 loop {
                     offset += 1;
-                    if self.get_token(offset)?.in_(&vec!["WITH", "SELECT"]) {
+                    if self.get_token(offset)?.in_(&vec!["WITH", "SELECT", "FROM"]) {
                         statement_flg = true;
                         break;
                     } else if !self.get_token(offset)?.is("(") {
