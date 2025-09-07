@@ -19,6 +19,7 @@ export type UnknownNode =
   | AlterSchemaStatement
   | AlterTableDropClause
   | AlterTableStatement
+  | AlterVectorIndexStatement
   | AlterViewStatement
   | ArrayLiteral
   | AssertStatement
@@ -371,6 +372,17 @@ export type AlterTableStatement = XXXStatement & {
     drop_columns?: NodeVecChild;
     // ALTER COLUMN statement
     alter_column_stmt?: NodeChild;
+  };
+};
+
+export type AlterVectorIndexStatement = XXXStatement & {
+  node_type: "AlterVectorIndexStatement";
+  children: {
+    what: NodeChild;
+    if_exists?: NodeVecChild;
+    ident: NodeChild;
+    on: NodeChild;
+    operation: NodeChild;
   };
 };
 
