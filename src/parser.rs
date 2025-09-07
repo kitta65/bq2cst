@@ -673,8 +673,33 @@ impl Parser {
                     let precedence = self.get_precedence(0)?;
                     let mut dot = self.construct_node(NodeType::DotOperator)?;
                     self.next_token()?; // -> identifier
+                    let mut is_chained_function = false;
+                    if let Some(token) = &left.token {
+                        // literal | callingFunction || groupedExpr
+                        is_chained_function = token.in_(&vec![
+                            "(",
+                            "[",
+                            "RANGE",
+                            "ARRAY",
+                            "DATE",
+                            "TIME",
+                            "DATETIME",
+                            "TIMESTAMP",
+                            "NUMERIC",
+                            "BIGNUMERIC",
+                            "DECIMAL",
+                            "BIGDECIMAL",
+                            "JSON",
+                            "INTERVAL",
+                            "CASE",
+                        ]) || token.is_boolean()
+                            || token.is_numeric()
+                            || token.is_string()
+                    };
                     dot.push_node("left", left);
                     if self.get_token(0)?.literal.as_str() == "*" {
+                        dot.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
+                    } else if is_chained_function {
                         dot.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
                     } else {
                         dot.push_node("right", self.parse_expr(precedence, false, as_table, true)?);

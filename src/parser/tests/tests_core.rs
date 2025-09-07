@@ -1752,6 +1752,91 @@ exprs:
 ",
             0,
         )),
+        // chained function call
+        // NOTE: they are not correct tree, but enough for formatter
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT (col).UPPER().LOWER()
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (DotOperator)
+  left:
+    self: ( (GroupedExpr)
+    expr:
+      self: col (Identifier)
+    rparen:
+      self: ) (Symbol)
+  right:
+    self: . (DotOperator)
+    left:
+      self: ( (CallingFunction)
+      func:
+        self: UPPER (Identifier)
+      rparen:
+        self: ) (Symbol)
+    right:
+      self: ( (CallingFunction)
+      func:
+        self: LOWER (Identifier)
+      rparen:
+        self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT
+  TIMESTAMP '2024-01-01'.TIMESTAMP_TRUNC(MONTH),
+  CASE WHEN TRUE THEN TIMESTAMP '2024-01-01' END.TIMESTAMP_TRUNC(MONTH),
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (DotOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: TIMESTAMP (UnaryOperator)
+    right:
+      self: '2024-01-01' (StringLiteral)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: MONTH (Identifier)
+    func:
+      self: TIMESTAMP_TRUNC (Identifier)
+    rparen:
+      self: ) (Symbol)
+- self: . (DotOperator)
+  comma:
+    self: , (Symbol)
+  left:
+    self: CASE (CaseExpr)
+    arms:
+    - self: WHEN (CaseExprArm)
+      expr:
+        self: TRUE (BooleanLiteral)
+      result:
+        self: TIMESTAMP (UnaryOperator)
+        right:
+          self: '2024-01-01' (StringLiteral)
+      then:
+        self: THEN (Keyword)
+    end:
+      self: END (Keyword)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: MONTH (Identifier)
+    func:
+      self: TIMESTAMP_TRUNC (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- template -----
         Box::new(SuccessTestCase::new(
             "\
