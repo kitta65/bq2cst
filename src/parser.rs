@@ -493,7 +493,14 @@ impl Parser {
                         left.node_type = NodeType::UnaryOperator;
                     }
                 }
-                "WITH" | "SELECT" => {
+                "WITH" => {
+                    if self.get_token(1)?.is("(") {
+                        // TODO
+                    } else {
+                        left = self.parse_select_statement(false, true)?;
+                    }
+                }
+                "SELECT" => {
                     // in the case of `ARRAY(SELECT 1)`
                     left = self.parse_select_statement(false, true)?;
                 }
@@ -599,7 +606,10 @@ impl Parser {
                                 node.push_node_vec("args", vec![from]);
                             }
                             _ => {
-                                node.push_node_vec("args", self.parse_exprs(&vec![], false)?);
+                                node.push_node_vec(
+                                    "args",
+                                    self.parse_exprs(&vec![], func == "WITH")?,
+                                );
                             }
                         }
                         if self.get_token(1)?.in_(&vec!["RESPECT", "IGNORE"]) {
@@ -702,6 +712,7 @@ impl Parser {
                     } else if is_chained_function {
                         dot.push_node("right", self.parse_expr(usize::MAX, false, false, false)?);
                     } else {
+                        // after dot true means parse as identifier
                         dot.push_node("right", self.parse_expr(precedence, false, as_table, true)?);
                     }
                     left = dot;
@@ -766,7 +777,9 @@ impl Parser {
                 self.next_token()?; // expr -> AS
                 left.push_node("as", self.construct_node(NodeType::Keyword)?);
                 self.next_token()?; // AS -> alias
-                left.push_node("alias", self.construct_node(NodeType::Identifier)?);
+
+                // NOTE: use parse_expr instead of parse_identifier in the case of WITH(a AS 'a')
+                left.push_node("alias", self.parse_expr(usize::MAX, false, false, false)?);
             } else if self.get_token(1)?.is_identifier() {
                 self.next_token()?; // expr -> alias
                 left.push_node("alias", self.construct_node(NodeType::Identifier)?);
@@ -1849,7 +1862,7 @@ impl Parser {
         let mut node = self.construct_node(NodeType::SelectStatement)?;
 
         // WITH DIFFERENTIAL_PRIVACY
-        if self.get_token(1)?.is("WITH") {
+        if self.get_token(1)?.is("WITH") && !self.get_token(2)?.is("(") {
             self.next_token()?; // -> WITH
             let mut with = self.construct_node(NodeType::DifferentialPrivacyClause)?;
             self.next_token()?; // -> differential_privacy

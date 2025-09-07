@@ -1837,6 +1837,37 @@ exprs:
 ",
             0,
         )),
+        // ----- WITH expression -----
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT WITH(a AS 'a', UPPER(a))
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: a (Identifier)
+    alias:
+      self: 'a' (StringLiteral)
+    as:
+      self: AS (Keyword)
+    comma:
+      self: , (Symbol)
+  - self: ( (CallingFunction)
+    args:
+    - self: a (Identifier)
+    func:
+      self: UPPER (Identifier)
+    rparen:
+      self: ) (Symbol)
+  func:
+    self: WITH (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+            0,
+        )),
         // ----- template -----
         Box::new(SuccessTestCase::new(
             "\
