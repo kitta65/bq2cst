@@ -1150,6 +1150,7 @@ impl Parser {
                         "TABLE" => return self.parse_alter_table_statement(semicolon),
                         "COLUMN" => return self.parse_alter_column_statement(semicolon),
                         "VIEW" => return self.parse_alter_view_statement(semicolon),
+                        "VECTOR" => return self.parse_alter_vector_index_statement(semicolon),
                         "ORGANIZATION" => {
                             return self.parse_alter_organization_statement(semicolon)
                         }
@@ -3460,6 +3461,36 @@ impl Parser {
                 ))
             }
         }
+        if self.get_token(1)?.is(";") && semicolon {
+            self.next_token()?; // -> ;
+            alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);
+        }
+        Ok(alter)
+    }
+    fn parse_alter_vector_index_statement(&mut self, semicolon: bool) -> BQ2CSTResult<Node> {
+        let mut alter = self.construct_node(NodeType::AlterVectorIndexStatement)?;
+        self.next_token()?; // -> VECTOR
+        let mut vector = self.construct_node(NodeType::KeywordSequence)?;
+        self.next_token()?; // -> INDEX
+        vector.push_node("next_keyword", self.construct_node(NodeType::Keyword)?);
+        alter.push_node("what", vector);
+        if self.get_token(1)?.is("IF") {
+            self.next_token()?; // -> IF
+            alter.push_node_vec("if_exists", self.parse_n_keywords(2)?);
+        }
+        self.next_token()?; // -> ident
+        alter.push_node("ident", self.parse_identifier()?);
+
+        self.next_token()?; // -> ON
+        let mut on = self.construct_node(NodeType::KeywordWithExpr)?;
+        self.next_token()?; // -> tablename
+        on.push_node("expr", self.parse_identifier()?);
+        alter.push_node("on", on);
+
+        self.next_token()?; // -> REBUILD
+        let operation = self.construct_node(NodeType::Keyword)?;
+        alter.push_node("operation", operation);
+
         if self.get_token(1)?.is(";") && semicolon {
             self.next_token()?; // -> ;
             alter.push_node("semicolon", self.construct_node(NodeType::Symbol)?);

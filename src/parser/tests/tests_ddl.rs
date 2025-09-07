@@ -2984,6 +2984,30 @@ what:
 ",
             0,
         )),
+        // ----- ALTER VECTOR INDEX statement -----
+        Box::new(SuccessTestCase::new(
+            "\
+alter vector index index_name on table_name REBUILD;
+",
+            "\
+self: alter (AlterVectorIndexStatement)
+ident:
+  self: index_name (Identifier)
+on:
+  self: on (KeywordWithExpr)
+  expr:
+    self: table_name (Identifier)
+operation:
+  self: REBUILD (Keyword)
+semicolon:
+  self: ; (Symbol)
+what:
+  self: vector (KeywordSequence)
+  next_keyword:
+    self: index (Keyword)
+",
+            0,
+        )),
         // ----- ALTER VIEW statement -----
         Box::new(SuccessTestCase::new(
             "\

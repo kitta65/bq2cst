@@ -27,6 +27,7 @@ pub enum NodeType {
     AlterReservationStatement,
     AlterSchemaStatement,
     AlterTableStatement,
+    AlterVectorIndexStatement,
     AlterViewStatement,
     ArrayLiteral, // [1, 2]
     AssertStatement,
