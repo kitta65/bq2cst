@@ -116,7 +116,8 @@ impl Parser {
         // 200... => (ST_GEOGFROMGEOJSON)
         let precedence = match self.get_token(offset)?.literal.to_uppercase().as_str() {
             // return precedence of BINARY operator
-            "(" | "." | "[" => 101,
+            "(" | "[" => 101,
+            "." => 102, // when used with chained function call (otherwise 101)
             "*" | "/" | "||" => 103,
             "+" | "-" => 104,
             "<<" | ">>" => 105,
@@ -701,9 +702,11 @@ impl Parser {
                 }
                 "." => {
                     self.next_token()?; // -> .
-                    let precedence = self.get_precedence(0)?;
-                    let mut dot = self.construct_node(NodeType::DotOperator)?;
-                    self.next_token()?; // -> identifier
+                    let mut precedence = self.get_precedence(0)?;
+                    if left.node_type == NodeType::Identifier {
+                        precedence = 101;
+                    }
+
                     let mut is_chained_function = false;
                     if let Some(token) = &left.token {
                         // literal | callingFunction || groupedExpr
@@ -727,13 +730,11 @@ impl Parser {
                             || token.is_numeric()
                             || token.is_string()
                     };
+
+                    let mut dot = self.construct_node(NodeType::DotOperator)?;
+                    self.next_token()?; // -> identifier
                     dot.push_node("left", left);
                     if self.get_token(0)?.literal.as_str() == "*" {
-                        dot.push_node(
-                            "right",
-                            self.parse_expr(usize::MAX, false, false, false, true)?,
-                        );
-                    } else if is_chained_function {
                         dot.push_node(
                             "right",
                             self.parse_expr(usize::MAX, false, false, false, true)?,
@@ -742,7 +743,7 @@ impl Parser {
                         // after dot true means parse as identifier
                         dot.push_node(
                             "right",
-                            self.parse_expr(precedence, false, as_table, true, true)?,
+                            self.parse_expr(precedence, false, as_table, !is_chained_function, true)?,
                         );
                     }
                     left = dot;

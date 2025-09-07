@@ -1752,39 +1752,38 @@ exprs:
 ",
             0,
         )),
-        // chained function call
-        // NOTE: they are not correct tree, but enough for formatter
-        Box::new(SuccessTestCase::new(
-            "\
+         // chained function call
+         Box::new(SuccessTestCase::new(
+             "\
 SELECT (col).UPPER().LOWER()
-",
-            "\
+ ",
+             "\
 self: SELECT (SelectStatement)
 exprs:
 - self: . (DotOperator)
   left:
-    self: ( (GroupedExpr)
-    expr:
-      self: col (Identifier)
-    rparen:
-      self: ) (Symbol)
-  right:
     self: . (DotOperator)
     left:
-      self: ( (CallingFunction)
-      func:
-        self: UPPER (Identifier)
+      self: ( (GroupedExpr)
+      expr:
+        self: col (Identifier)
       rparen:
         self: ) (Symbol)
     right:
       self: ( (CallingFunction)
       func:
-        self: LOWER (Identifier)
+        self: UPPER (Identifier)
       rparen:
         self: ) (Symbol)
+  right:
+    self: ( (CallingFunction)
+    func:
+      self: LOWER (Identifier)
+    rparen:
+      self: ) (Symbol)
 ",
-            0,
-        )),
+             0,
+         )),
         Box::new(SuccessTestCase::new(
             "\
 SELECT
