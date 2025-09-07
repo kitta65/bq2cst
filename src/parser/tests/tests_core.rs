@@ -1868,6 +1868,39 @@ exprs:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT (col).(safe.left)(3)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (DotOperator)
+  left:
+    self: ( (GroupedExpr)
+    expr:
+      self: col (Identifier)
+    rparen:
+      self: ) (Symbol)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: 3 (NumericLiteral)
+    func:
+      self: ( (GroupedExpr)
+      expr:
+        self: . (DotOperator)
+        left:
+          self: safe (Identifier)
+        right:
+          self: left (Identifier)
+      rparen:
+        self: ) (Symbol)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- template -----
         Box::new(SuccessTestCase::new(
             "\
