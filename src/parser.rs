@@ -1152,7 +1152,6 @@ impl Parser {
                 let mut offset = 1;
                 loop {
                     match self.get_token(offset)?.literal.to_uppercase().as_str() {
-                        // TODO: support alter vector index rebuild
                         "SCHEMA" => return self.parse_alter_schema_statement(semicolon),
                         "TABLE" => return self.parse_alter_table_statement(semicolon),
                         "COLUMN" => return self.parse_alter_column_statement(semicolon),
@@ -1646,9 +1645,12 @@ impl Parser {
         let mut with = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> CONNECTION
         let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
-        // TODO: may be keyword `DEFAULT`
-        self.next_token()?; // -> ident
-        connection.push_node("expr", self.parse_identifier()?);
+        self.next_token()?; // -> ident | DEFAULT
+        if self.get_token(0)?.is("DEFAULT") {
+            connection.push_node("expr", self.construct_node(NodeType::Keyword)?);
+        } else {
+            connection.push_node("expr", self.parse_identifier()?);
+        }
         with.push_node("next_keyword", connection);
         Ok(with)
     }
@@ -3142,8 +3144,11 @@ impl Parser {
             self.next_token()?; // -> CONNECTION
             let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> ident
-                                // TODO: may be keyword `default`
-            connection.push_node("expr", self.parse_identifier()?);
+            if self.get_token(0)?.is("DEFAULT") {
+                connection.push_node("expr", self.construct_node(NodeType::Keyword)?);
+            } else {
+                connection.push_node("expr", self.parse_identifier()?);
+            }
             with.push_node("next_keyword", connection);
             remote.push_node("next_keyword", with);
             create.push_node("remote", remote);

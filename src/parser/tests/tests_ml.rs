@@ -152,6 +152,41 @@ what:
         Box::new(SuccessTestCase::new(
             "\
 CREATE MODEL ident
+REMOTE WITH CONNECTION DEFAULT
+OPTIONS (ENDPOINT = '')
+",
+            "\
+self: CREATE (CreateModelStatement)
+ident:
+  self: ident (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: ENDPOINT (Identifier)
+      right:
+        self: '' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+remote:
+  self: REMOTE (KeywordSequence)
+  next_keyword:
+    self: WITH (KeywordSequence)
+    next_keyword:
+      self: CONNECTION (KeywordWithExpr)
+      expr:
+        self: DEFAULT (Keyword)
+what:
+  self: MODEL (Keyword)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE MODEL ident
 AS (SELECT 1);
 ",
             "\
