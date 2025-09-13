@@ -1859,7 +1859,9 @@ impl Parser {
             config.push_node("skip_rule", after);
         }
         if self.get_token(1)?.is("PATTERN") {
-            // TODO
+            self.next_token()?; // -> PATTERN
+            let pattern = self.parse_pattern_clause()?;
+            config.push_node("pattern", pattern);
         }
         if self.get_token(1)?.is("DEFINE") {
             self.next_token()?; // -> DEFINE
@@ -1896,6 +1898,51 @@ impl Parser {
         }
         by.push_node("next_keyword", name);
         Ok(by)
+    }
+    fn parse_pattern_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut pattern = self.construct_node(NodeType::PatternClause)?;
+        self.next_token()?; // -> (
+        pattern.push_node("pattern", self.parse_pattern()?);
+        Ok(pattern)
+    }
+    fn parse_grouped_pattern(&mut self) -> BQ2CSTResult<Node> {
+        let mut group = self.construct_node(NodeType::GroupedPattern)?;
+        let mut patterns = Vec::new();
+        while !self.get_token(1)?.is(")") {
+            self.next_token()?; // -> pattern
+            patterns.push(self.parse_pattern()?);
+        }
+        group.push_node_vec("patterns", patterns);
+        self.next_token()?; // -> )
+        Ok(group)
+    }
+    fn parse_pattern(&mut self) -> BQ2CSTResult<Node> {
+        let mut pattern;
+        let curr_token = self.get_token(0)?;
+        if curr_token.is("(") {
+            pattern = self.parse_grouped_pattern()?;
+        } else if curr_token.is_identifier() {
+            pattern = self.construct_node(NodeType::Identifier)?;
+        } else {
+            pattern = self.construct_node(NodeType::Symbol)?; // ^ | $
+        }
+
+        let mut suffix_operators = Vec::new();
+        loop {
+            match self.get_token(1)?.literal.as_str() {
+                // TODO: {n,m} Quantifier
+                "?" | "+" | "*" => {
+                    self.next_token()?;
+                    suffix_operators.push(self.construct_node(NodeType::Symbol)?);
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        // TODO | OrPattern
+        pattern.push_node_vec("suffix_operators", suffix_operators);
+        Ok(pattern)
     }
     fn parse_corresponding_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut strict_exists = false;

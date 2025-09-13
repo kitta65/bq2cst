@@ -1883,6 +1883,36 @@ from:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN ()
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns: []
+            suffix_operators: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
         // TABLESAMPLE
         Box::new(SuccessTestCase::new(
             "\
