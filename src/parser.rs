@@ -1832,10 +1832,12 @@ impl Parser {
             self.next_token()?; // -> expr
 
             // NOTE: currently trailing "," is not allowed
-            // TODO: support after and pattern as identifier
             measures.push_node_vec("exprs", self.parse_exprs(&vec![], true, false)?);
             config.push_node("measures", measures);
         }
+        // NOTE: AFTER is not reserved keyword but it is not confusing. because ...
+        // * measures does not allow trailing comma (so after is not consumed as expr)
+        // * measures has alias (so after is not consumed as alias)
         if self.get_token(1)?.is("AFTER") {
             self.next_token()?; // -> AFTER
             let mut after = self.construct_node(NodeType::KeywordSequence)?;
@@ -1865,7 +1867,6 @@ impl Parser {
             self.next_token()?; // -> expr
 
             // NOTE: currently trailing "," is not allowed
-            // TODO: support option as identifier
             define.push_node_vec("exprs", self.parse_exprs(&vec![], true, false)?);
             config.push_node("define", define);
         };
