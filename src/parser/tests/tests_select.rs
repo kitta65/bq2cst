@@ -1768,6 +1768,29 @@ from:
 ",
             0,
         )),
+        // MATCH RECOGNIZE
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM t MATCH_RECOGNIZE (
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
         // TABLESAMPLE
         Box::new(SuccessTestCase::new(
             "\

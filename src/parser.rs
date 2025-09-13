@@ -1291,8 +1291,10 @@ impl Parser {
             left.node_type = NodeType::CallingTableFunction; // EXTERNAL_QUERY() is included
         }
         // alias
-        // NOTE PIVOT and UNPIVOT are not reserved keywords
-        if !(self.get_token(1)?.in_(&vec!["PIVOT", "UNPIVOT"])
+        // NOTE PIVOT, UNPIVOT and MATCH_RECOGNIZE are not reserved keywords
+        if !(self
+            .get_token(1)?
+            .in_(&vec!["PIVOT", "UNPIVOT", "MATCH_RECOGNIZE"])
             && self.get_token(2)?.in_(&vec!["(", "INCLUDE", "EXCLUDE"]))
         {
             left = self.push_trailing_alias(left)?;
@@ -1352,6 +1354,13 @@ impl Parser {
             unpivot.push_node("config", self.parse_unpivot_config_clause()?);
             unpivot = self.push_trailing_alias(unpivot)?;
             left.push_node("unpivot", unpivot);
+        } else if self.get_token(1)?.is("MATCH_RECOGNIZE") {
+            self.next_token()?; // -> MATCH_RECOGNIZE
+            let mut match_recognize = self.construct_node(NodeType::MatchRecognizeClause)?;
+            self.next_token()?; // -> (
+            match_recognize.push_node("config", self.parse_match_recognize_config()?);
+            match_recognize = self.push_trailing_alias(match_recognize)?;
+            left.push_node("match_recognize", match_recognize);
         }
         // TABLESAMPLE
         if self.get_token(1)?.is("tablesample") {
@@ -1803,6 +1812,12 @@ impl Parser {
         group.push_node_vec("exprs", exprs);
         in_.push_node("group", group);
         config.push_node("in", in_);
+        self.next_token()?; // -> )
+        config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(config)
+    }
+    fn parse_match_recognize_config(&mut self) -> BQ2CSTResult<Node> {
+        let mut config = self.construct_node(NodeType::MatchRecognizeConfig)?;
         self.next_token()?; // -> )
         config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(config)
