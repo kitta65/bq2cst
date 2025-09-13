@@ -79,6 +79,7 @@ pub enum NodeType {
     GroupedIdentWithOptions,             // (col OPTIONS())
     GroupedExpr,                         // (1)
     GroupedExprs,                        // (1, 2, 3)
+    GroupedPattern,                      // (symbol1 symbol2)
     GroupedStatement,                    // (SELECT 1)
     GroupedType,                         // <INT64>
     GroupedTypeDeclarationOrConstraints, // <x INT64, y FLOAT64> | (x INT64, y FLOAT64)
@@ -103,17 +104,23 @@ pub enum NodeType {
     LimitPipeOperator,
     LoadStatement,
     LoopStatement,
+    MatchRecognizeClause, // MATCH_RECOGNIZE ()
+    MatchRecognizeConfig, // (PARTITION BY x ORDER BY y MEASURES ...)
     MergeStatement,
     MultiTokenIdentifier,
     NumericLiteral, // 1 | 1.1 | .1E10
     NullLiteral,
+    OrPattern,                 // symbol1 | symbol2
     OverClause,                // OVER (PARTITON BY x, y)
     OverwritePartitionsClause, // OVERWRITE PARTITIONS (_PARTITIONTIME = ts)
     Parameter,                 // ? | @param
+    Pattern,                   // symbol*?
+    PatternClause,             // PATTERN (A B+ C)
     PipeStatement,             // |>
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     PivotPipeOperator,
+    Quantifier, // {m,n}
     RaiseStatement,
     RangeLiteral, // RANGE<DATE> '[2023-01-01, 2024-01-01)'
     RenameColumnClause,

@@ -197,6 +197,7 @@ export type FromItemExpr = Expr & {
     with_offset: NodeChild;
     pivot?: NodeChild;
     unpivot?: NodeChild;
+    match_recognize?: NodeChild;
   };
 };
 
