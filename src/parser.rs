@@ -743,7 +743,13 @@ impl Parser {
                         // after dot true means parse as identifier
                         dot.push_node(
                             "right",
-                            self.parse_expr(precedence, false, as_table, !is_chained_function, true)?,
+                            self.parse_expr(
+                                precedence,
+                                false,
+                                as_table,
+                                !is_chained_function,
+                                true,
+                            )?,
                         );
                     }
                     left = dot;
@@ -3136,7 +3142,7 @@ impl Parser {
             self.next_token()?; // -> CONNECTION
             let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> ident
-            // TODO: may be keyword `default`
+                                // TODO: may be keyword `default`
             connection.push_node("expr", self.parse_identifier()?);
             with.push_node("next_keyword", connection);
             remote.push_node("next_keyword", with);
