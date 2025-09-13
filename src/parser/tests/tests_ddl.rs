@@ -1140,7 +1140,6 @@ what:
             0,
         )),
         Box::new(SuccessTestCase::new(
-            // NOTE not well tested
             "\
 CREATE EXTERNAL TABLE tablename
 WITH CONNECTION ident
@@ -1172,6 +1171,41 @@ with_connection:
     self: CONNECTION (KeywordWithExpr)
     expr:
       self: ident (Identifier)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE EXTERNAL TABLE tablename
+WITH CONNECTION DEFAULT
+OPTIONS (dummy = 'dummy')
+",
+            "\
+self: CREATE (CreateTableStatement)
+external:
+  self: EXTERNAL (Keyword)
+ident:
+  self: tablename (Identifier)
+options:
+  self: OPTIONS (KeywordWithGroupedXXX)
+  group:
+    self: ( (GroupedExprs)
+    exprs:
+    - self: = (BinaryOperator)
+      left:
+        self: dummy (Identifier)
+      right:
+        self: 'dummy' (StringLiteral)
+    rparen:
+      self: ) (Symbol)
+what:
+  self: TABLE (Keyword)
+with_connection:
+  self: WITH (KeywordSequence)
+  next_keyword:
+    self: CONNECTION (KeywordWithExpr)
+    expr:
+      self: DEFAULT (Keyword)
 ",
             0,
         )),
