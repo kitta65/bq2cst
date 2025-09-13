@@ -1766,6 +1766,60 @@ what:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+CREATE TABLE FUNCTION foo.bar (
+  tablename TABLE<col1 INT64, col2 FLOAT64>
+) AS (
+  SELECT 1
+)
+",
+            "\
+self: CREATE (CreateFunctionStatement)
+as:
+  self: AS (KeywordWithStatement)
+  stmt:
+    self: ( (GroupedStatement)
+    rparen:
+      self: ) (Symbol)
+    stmt:
+      self: SELECT (SelectStatement)
+      exprs:
+      - self: 1 (NumericLiteral)
+group:
+  self: ( (GroupedTypeDeclarationOrConstraints)
+  declarations:
+  - self: tablename (TypeDeclaration)
+    type:
+      self: TABLE (Type)
+      type_declaration:
+        self: < (GroupedTypeDeclarationOrConstraints)
+        declarations:
+        - self: col1 (TypeDeclaration)
+          comma:
+            self: , (Symbol)
+          type:
+            self: INT64 (Type)
+        - self: col2 (TypeDeclaration)
+          type:
+            self: FLOAT64 (Type)
+        rparen:
+          self: > (Symbol)
+  rparen:
+    self: ) (Symbol)
+ident:
+  self: . (DotOperator)
+  left:
+    self: foo (Identifier)
+  right:
+    self: bar (Identifier)
+table:
+  self: TABLE (Keyword)
+what:
+  self: FUNCTION (Keyword)
+",
+            0,
+        )),
         // AGGREGATE function
         Box::new(SuccessTestCase::new(
             "\
