@@ -1640,6 +1640,7 @@ impl Parser {
         let mut with = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> CONNECTION
         let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
+        // TODO: may be keyword `DEFAULT`
         self.next_token()?; // -> ident
         connection.push_node("expr", self.parse_identifier()?);
         with.push_node("next_keyword", connection);
@@ -3135,6 +3136,7 @@ impl Parser {
             self.next_token()?; // -> CONNECTION
             let mut connection = self.construct_node(NodeType::KeywordWithExpr)?;
             self.next_token()?; // -> ident
+            // TODO: may be keyword `default`
             connection.push_node("expr", self.parse_identifier()?);
             with.push_node("next_keyword", connection);
             remote.push_node("next_keyword", with);
