@@ -1772,6 +1772,14 @@ from:
         Box::new(SuccessTestCase::new(
             "\
 SELECT * FROM t MATCH_RECOGNIZE (
+  PARTITION BY col1, col2
+  ORDER BY col3, col4 DESC NULLS FIRST
+  MEASURES ANY_VALUE(col4) AS col4
+  AFTER MATCH SKIP TO NEXT ROW
+  DEFINE
+    symbol1 AS col3 = 'foo',
+    symbol2 AS col4 = 'bar'
+  OPTIONS (use_longest_match = TRUE)
 )
 ",
             "\
@@ -1786,8 +1794,92 @@ from:
       self: MATCH_RECOGNIZE (MatchRecognizeClause)
       config:
         self: ( (MatchRecognizeConfig)
+        define:
+          self: DEFINE (KeywordWithExprs)
+          exprs:
+          - self: symbol1 (Identifier)
+            alias:
+              self: = (BinaryOperator)
+              left:
+                self: col3 (Identifier)
+              right:
+                self: 'foo' (StringLiteral)
+            as:
+              self: AS (Keyword)
+            comma:
+              self: , (Symbol)
+          - self: symbol2 (Identifier)
+            alias:
+              self: = (BinaryOperator)
+              left:
+                self: col4 (Identifier)
+              right:
+                self: 'bar' (StringLiteral)
+            as:
+              self: AS (Keyword)
+        measures:
+          self: MEASURES (KeywordWithExprs)
+          exprs:
+          - self: ( (CallingFunction)
+            alias:
+              self: col4 (Identifier)
+            args:
+            - self: col4 (Identifier)
+            as:
+              self: AS (Keyword)
+            func:
+              self: ANY_VALUE (Identifier)
+            rparen:
+              self: ) (Symbol)
+        options:
+          self: OPTIONS (KeywordWithGroupedXXX)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: = (BinaryOperator)
+              left:
+                self: use_longest_match (Identifier)
+              right:
+                self: TRUE (BooleanLiteral)
+            rparen:
+              self: ) (Symbol)
+        orderby:
+          self: ORDER (XXXByExprs)
+          by:
+            self: BY (Keyword)
+          exprs:
+          - self: col3 (Identifier)
+            comma:
+              self: , (Symbol)
+          - self: col4 (Identifier)
+            null_order:
+            - self: NULLS (Keyword)
+            - self: FIRST (Keyword)
+            order:
+              self: DESC (Keyword)
+        partitionby:
+          self: PARTITION (XXXByExprs)
+          by:
+            self: BY (Keyword)
+          exprs:
+          - self: col1 (Identifier)
+            comma:
+              self: , (Symbol)
+          - self: col2 (Identifier)
         rparen:
           self: ) (Symbol)
+        skip_rule:
+          self: AFTER (KeywordSequence)
+          next_keyword:
+            self: MATCH (KeywordSequence)
+            next_keyword:
+              self: SKIP (KeywordSequence)
+              next_keyword:
+                self: TO (KeywordSequence)
+                next_keyword:
+                  self: NEXT (KeywordSequence)
+                  next_keyword:
+                    self: ROW (KeywordSequence)
 ",
             0,
         )),
