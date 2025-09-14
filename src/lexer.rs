@@ -213,23 +213,33 @@ impl Lexer {
                     count += 1;
                     self.next_char()?; // { ->
                 }
-                let mut end = false;
-                'outer: while !end {
-                    self.next_char()?;
-                    for i in 0..count {
-                        if self.get_char(i) != Some('}') {
-                            continue 'outer;
-                        };
+                let after_brace = self.get_char(0);
+                if count == 1
+                    && (&after_brace == &Some('@')
+                        || is_digit(&after_brace)
+                        || after_brace == Some(','))
+                {
+                    // maybe it is pattern quantifier like {m,n}
+                    self.construct_token(line, column, ch.to_string())
+                } else {
+                    let mut end = false;
+                    'outer: while !end {
+                        self.next_char()?;
+                        for i in 0..count {
+                            if self.get_char(i) != Some('}') {
+                                continue 'outer;
+                            };
+                        }
+                        end = true
                     }
-                    end = true
+                    for _ in 0..count {
+                        self.next_char()?
+                    } // } ->
+                    let res = self.input[first_position..self.position]
+                        .into_iter()
+                        .collect();
+                    self.construct_token(line, column, res)
                 }
-                for _ in 0..count {
-                    self.next_char()?
-                } // } ->
-                let res = self.input[first_position..self.position]
-                    .into_iter()
-                    .collect();
-                self.construct_token(line, column, res)
             }
             // int64 or float64 literal
             '0'..='9' => {

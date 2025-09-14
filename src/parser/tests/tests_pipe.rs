@@ -1061,6 +1061,25 @@ right:
 ",
             0,
         )),
+        Box::new(SuccessTestCase::new(
+            "\
+FROM t |> MATCH_RECOGNIZE ()
+",
+            "\
+self: |> (PipeStatement)
+left:
+  self: FROM (FromStatement)
+  expr:
+    self: t (Identifier)
+right:
+  self: MATCH_RECOGNIZE (MatchRecognizePipeOperator)
+  config:
+    self: ( (MatchRecognizeConfig)
+    rparen:
+      self: ) (Symbol)
+",
+            0,
+        )),
         // ----- with pipe operator -----
         Box::new(SuccessTestCase::new(
             "\

@@ -1768,6 +1768,362 @@ from:
 ",
             0,
         )),
+        // MATCH RECOGNIZE
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT * FROM t MATCH_RECOGNIZE (
+  PARTITION BY col1, col2
+  ORDER BY col3, col4 DESC NULLS FIRST
+  MEASURES ANY_VALUE(col4) AS col4
+  AFTER MATCH SKIP TO NEXT ROW
+  DEFINE
+    symbol1 AS col3 = 'foo',
+    symbol2 AS col4 = 'bar'
+  OPTIONS (use_longest_match = TRUE)
+) as u
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      alias:
+        self: u (Identifier)
+      as:
+        self: as (Keyword)
+      config:
+        self: ( (MatchRecognizeConfig)
+        define:
+          self: DEFINE (KeywordWithExprs)
+          exprs:
+          - self: symbol1 (Identifier)
+            alias:
+              self: = (BinaryOperator)
+              left:
+                self: col3 (Identifier)
+              right:
+                self: 'foo' (StringLiteral)
+            as:
+              self: AS (Keyword)
+            comma:
+              self: , (Symbol)
+          - self: symbol2 (Identifier)
+            alias:
+              self: = (BinaryOperator)
+              left:
+                self: col4 (Identifier)
+              right:
+                self: 'bar' (StringLiteral)
+            as:
+              self: AS (Keyword)
+        measures:
+          self: MEASURES (KeywordWithExprs)
+          exprs:
+          - self: ( (CallingFunction)
+            alias:
+              self: col4 (Identifier)
+            args:
+            - self: col4 (Identifier)
+            as:
+              self: AS (Keyword)
+            func:
+              self: ANY_VALUE (Identifier)
+            rparen:
+              self: ) (Symbol)
+        options:
+          self: OPTIONS (KeywordWithGroupedXXX)
+          group:
+            self: ( (GroupedExprs)
+            exprs:
+            - self: = (BinaryOperator)
+              left:
+                self: use_longest_match (Identifier)
+              right:
+                self: TRUE (BooleanLiteral)
+            rparen:
+              self: ) (Symbol)
+        orderby:
+          self: ORDER (XXXByExprs)
+          by:
+            self: BY (Keyword)
+          exprs:
+          - self: col3 (Identifier)
+            comma:
+              self: , (Symbol)
+          - self: col4 (Identifier)
+            null_order:
+            - self: NULLS (Keyword)
+            - self: FIRST (Keyword)
+            order:
+              self: DESC (Keyword)
+        partitionby:
+          self: PARTITION (XXXByExprs)
+          by:
+            self: BY (Keyword)
+          exprs:
+          - self: col1 (Identifier)
+            comma:
+              self: , (Symbol)
+          - self: col2 (Identifier)
+        rparen:
+          self: ) (Symbol)
+        skip_rule:
+          self: AFTER (KeywordSequence)
+          next_keyword:
+            self: MATCH (KeywordSequence)
+            next_keyword:
+              self: SKIP (KeywordSequence)
+              next_keyword:
+                self: TO (KeywordSequence)
+                next_keyword:
+                  self: NEXT (KeywordSequence)
+                  next_keyword:
+                    self: ROW (KeywordSequence)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (symbol1)
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: symbol1 (Pattern)
+              suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (^ ()*? symbol1{0}{1,2}{,3} $)
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: ^ (Pattern)
+              suffixes: []
+            - self: ( (GroupedPattern)
+              patterns: []
+              rparen:
+                self: ) (Symbol)
+              suffixes:
+              - self: * (Symbol)
+              - self: ? (Symbol)
+            - self: symbol1 (Pattern)
+              suffixes:
+              - self: { (PatternQuantifier)
+                min:
+                  self: 0 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+              - self: { (PatternQuantifier)
+                comma:
+                  self: , (Symbol)
+                max:
+                  self: 2 (NumericLiteral)
+                min:
+                  self: 1 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+              - self: { (PatternQuantifier)
+                comma:
+                  self: , (Symbol)
+                max:
+                  self: 3 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+            - self: $ (Pattern)
+              suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (symbol1 | symbol2 symbol3)
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: | (OrPattern)
+              left:
+              - self: symbol1 (Pattern)
+                suffixes: []
+              right:
+              - self: symbol2 (Pattern)
+                suffixes: []
+              - self: symbol3 (Pattern)
+                suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (symbol1 | symbol2 | symbol3)
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: | (OrPattern)
+              left:
+              - self: | (OrPattern)
+                left:
+                - self: symbol1 (Pattern)
+                  suffixes: []
+                right:
+                - self: symbol2 (Pattern)
+                  suffixes: []
+              right:
+              - self: symbol3 (Pattern)
+                suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (( symbol1 | ) (| symbol2))
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: ( (GroupedPattern)
+              patterns:
+              - self: | (OrPattern)
+                left:
+                - self: symbol1 (Pattern)
+                  suffixes: []
+                right: []
+              rparen:
+                self: ) (Symbol)
+              suffixes: []
+            - self: ( (GroupedPattern)
+              patterns:
+              - self: | (OrPattern)
+                left: []
+                right:
+                - self: symbol2 (Pattern)
+                  suffixes: []
+              rparen:
+                self: ) (Symbol)
+              suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
         // TABLESAMPLE
         Box::new(SuccessTestCase::new(
             "\

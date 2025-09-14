@@ -402,6 +402,44 @@ FROM table
                 Token::from_str(2, 11, "column1"),
             ],
         )),
+        // MATCH_RECOGNIZE
+        Box::new(SuccessTestCase::new(
+            "\
+FROM table
+MATCH_RECOGNIZE (
+  PATTERN ($ a? b?? c*? d+? e{10,@f}^)
+)",
+            // since `?` may be used as a positional parameter, `??` is lexed as two `?`
+            vec![
+                Token::from_str(1, 1, "FROM"),
+                Token::from_str(1, 6, "table"),
+                Token::from_str(2, 1, "MATCH_RECOGNIZE"),
+                Token::from_str(2, 17, "("),
+                Token::from_str(3, 3, "PATTERN"),
+                Token::from_str(3, 11, "("),
+                Token::from_str(3, 12, "$"),
+                Token::from_str(3, 14, "a"),
+                Token::from_str(3, 15, "?"),
+                Token::from_str(3, 17, "b"),
+                Token::from_str(3, 18, "?"),
+                Token::from_str(3, 19, "?"),
+                Token::from_str(3, 21, "c"),
+                Token::from_str(3, 22, "*"),
+                Token::from_str(3, 23, "?"),
+                Token::from_str(3, 25, "d"),
+                Token::from_str(3, 26, "+"),
+                Token::from_str(3, 27, "?"),
+                Token::from_str(3, 29, "e"),
+                Token::from_str(3, 30, "{"),
+                Token::from_str(3, 31, "10"),
+                Token::from_str(3, 33, ","),
+                Token::from_str(3, 34, "@f"),
+                Token::from_str(3, 36, "}"),
+                Token::from_str(3, 37, "^"),
+                Token::from_str(3, 38, ")"),
+                Token::from_str(4, 1, ")"),
+            ],
+        )),
         // empty
         Box::new(SuccessTestCase::new("", vec![])),
     ];

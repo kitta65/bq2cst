@@ -1291,8 +1291,10 @@ impl Parser {
             left.node_type = NodeType::CallingTableFunction; // EXTERNAL_QUERY() is included
         }
         // alias
-        // NOTE PIVOT and UNPIVOT are not reserved keywords
-        if !(self.get_token(1)?.in_(&vec!["PIVOT", "UNPIVOT"])
+        // NOTE PIVOT, UNPIVOT and MATCH_RECOGNIZE are not reserved keywords
+        if !(self
+            .get_token(1)?
+            .in_(&vec!["PIVOT", "UNPIVOT", "MATCH_RECOGNIZE"])
             && self.get_token(2)?.in_(&vec!["(", "INCLUDE", "EXCLUDE"]))
         {
             left = self.push_trailing_alias(left)?;
@@ -1352,6 +1354,9 @@ impl Parser {
             unpivot.push_node("config", self.parse_unpivot_config_clause()?);
             unpivot = self.push_trailing_alias(unpivot)?;
             left.push_node("unpivot", unpivot);
+        } else if self.get_token(1)?.is("MATCH_RECOGNIZE") {
+            self.next_token()?; // -> MATCH_RECOGNIZE
+            left.push_node("match_recognize", self.parse_match_recognize_clause()?);
         }
         // TABLESAMPLE
         if self.get_token(1)?.is("tablesample") {
@@ -1807,6 +1812,77 @@ impl Parser {
         config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(config)
     }
+    fn parse_match_recognize_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut match_recognize = self.construct_node(NodeType::MatchRecognizeClause)?;
+        self.next_token()?; // -> (
+        match_recognize.push_node("config", self.parse_match_recognize_config()?);
+        match_recognize = self.push_trailing_alias(match_recognize)?;
+        Ok(match_recognize)
+    }
+    fn parse_match_recognize_config(&mut self) -> BQ2CSTResult<Node> {
+        let mut config = self.construct_node(NodeType::MatchRecognizeConfig)?;
+        if self.get_token(1)?.is("PARTITION") {
+            self.next_token()?; // -> PARTITION
+            config.push_node("partitionby", self.parse_xxxby_exprs()?);
+        }
+        if self.get_token(1)?.is("ORDER") {
+            self.next_token()?; // -> ORDER
+            config.push_node("orderby", self.parse_xxxby_exprs()?);
+        }
+        if self.get_token(1)?.is("MEASURES") {
+            self.next_token()?; // -> MEASURES
+            let mut measures = self.construct_node(NodeType::KeywordWithExprs)?;
+            self.next_token()?; // -> expr
+
+            // NOTE: currently trailing "," is not allowed
+            measures.push_node_vec("exprs", self.parse_exprs(&vec![], true, false)?);
+            config.push_node("measures", measures);
+        }
+        // NOTE: AFTER is not reserved keyword but it is not confusing. because ...
+        // * measures does not allow trailing comma (so after is not consumed as expr)
+        // * measures has alias (so after is not consumed as alias)
+        if self.get_token(1)?.is("AFTER") {
+            self.next_token()?; // -> AFTER
+            let mut after = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> MATCH
+            let mut match_ = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> SKIP
+            let mut skip = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> PAST | TO
+            let mut past_to = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> LAST | NEXT
+            let mut last_next = self.construct_node(NodeType::KeywordSequence)?;
+            self.next_token()?; // -> ROW
+            let row = self.construct_node(NodeType::KeywordSequence)?;
+            last_next.push_node("next_keyword", row);
+            past_to.push_node("next_keyword", last_next);
+            skip.push_node("next_keyword", past_to);
+            match_.push_node("next_keyword", skip);
+            after.push_node("next_keyword", match_);
+            config.push_node("skip_rule", after);
+        }
+        if self.get_token(1)?.is("PATTERN") {
+            self.next_token()?; // -> PATTERN
+            let pattern = self.parse_pattern_clause()?;
+            config.push_node("pattern", pattern);
+        }
+        if self.get_token(1)?.is("DEFINE") {
+            self.next_token()?; // -> DEFINE
+            let mut define = self.construct_node(NodeType::KeywordWithExprs)?;
+            self.next_token()?; // -> expr
+
+            // NOTE: currently trailing "," is not allowed
+            define.push_node_vec("exprs", self.parse_exprs(&vec![], true, false)?);
+            config.push_node("define", define);
+        };
+        if self.get_token(1)?.is("OPTIONS") {
+            self.next_token()?; // -> OPTIONS
+            config.push_node("options", self.parse_keyword_with_grouped_exprs(false)?);
+        };
+        self.next_token()?; // -> )
+        config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(config)
+    }
     fn parse_by_name_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut by = self.construct_node(NodeType::KeywordSequence)?;
         self.next_token()?; // -> NAME
@@ -1825,6 +1901,80 @@ impl Parser {
         }
         by.push_node("next_keyword", name);
         Ok(by)
+    }
+    fn parse_pattern_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut pattern = self.construct_node(NodeType::PatternClause)?;
+        self.next_token()?; // -> (
+        pattern.push_node("pattern", self.parse_pattern()?);
+        Ok(pattern)
+    }
+    fn parse_grouped_pattern(&mut self) -> BQ2CSTResult<Node> {
+        let mut group = self.construct_node(NodeType::GroupedPattern)?;
+        let mut patterns = Vec::new();
+        while !self.get_token(1)?.is(")") {
+            self.next_token()?; // -> symbol | `|` | (
+            if self.get_token(0)?.is("|") {
+                let mut or = self.construct_node(NodeType::OrPattern)?;
+                or.push_node_vec("left", patterns);
+                let mut right_patterns = Vec::new();
+                while !self.get_token(1)?.in_(&vec!["|", ")"]) {
+                    self.next_token()?; // -> right
+                    right_patterns.push(self.parse_pattern()?);
+                }
+                or.push_node_vec("right", right_patterns);
+                patterns = vec![or];
+            } else {
+                patterns.push(self.parse_pattern()?);
+            }
+        }
+        group.push_node_vec("patterns", patterns);
+        self.next_token()?; // -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
+        Ok(group)
+    }
+    fn parse_pattern(&mut self) -> BQ2CSTResult<Node> {
+        let mut pattern;
+        let curr_token = self.get_token(0)?;
+        if curr_token.is("(") {
+            pattern = self.parse_grouped_pattern()?;
+        } else {
+            pattern = self.construct_node(NodeType::Pattern)?; // ident | ^ | $
+        }
+
+        let mut suffixes = Vec::new();
+        loop {
+            match self.get_token(1)?.literal.as_str() {
+                "?" | "+" | "*" => {
+                    self.next_token()?;
+                    suffixes.push(self.construct_node(NodeType::Symbol)?);
+                }
+                "{" => {
+                    self.next_token()?; // -> {
+                    suffixes.push(self.parse_quantifier()?);
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        pattern.push_node_vec("suffixes", suffixes);
+        Ok(pattern)
+    }
+    fn parse_quantifier(&mut self) -> BQ2CSTResult<Node> {
+        let mut quantifier = self.construct_node(NodeType::PatternQuantifier)?;
+        if !self.get_token(1)?.is(",") {
+            self.next_token()?; // -> m
+            quantifier.push_node("min", self.construct_node(NodeType::NumericLiteral)?);
+        }
+        if self.get_token(1)?.is(",") {
+            self.next_token()?; // -> ,
+            quantifier.push_node("comma", self.construct_node(NodeType::Symbol)?);
+            self.next_token()?; // -> n
+            quantifier.push_node("max", self.construct_node(NodeType::NumericLiteral)?);
+        }
+        self.next_token()?; // -> }
+        quantifier.push_node("rbrace", self.construct_node(NodeType::Symbol)?);
+        Ok(quantifier)
     }
     fn parse_corresponding_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut strict_exists = false;
@@ -1895,12 +2045,7 @@ impl Parser {
             // ORDER BY
             if self.get_token(1)?.is("ORDER") && root {
                 self.next_token()?; // -> ORDER
-                let mut order = self.construct_node(NodeType::XXXByExprs)?;
-                self.next_token()?; // -> BY
-                order.push_node("by", self.construct_node(NodeType::Keyword)?);
-                self.next_token()?; // BY -> expr
-                order.push_node_vec("exprs", self.parse_exprs(&vec![], false, true)?);
-                node.push_node("orderby", order);
+                node.push_node("orderby", self.parse_xxxby_exprs()?);
             }
             // LIMIT
             if self.get_token(1)?.is("LIMIT") && root {
@@ -2058,12 +2203,7 @@ impl Parser {
         // ORDER BY
         if self.get_token(1)?.is("ORDER") {
             self.next_token()?; // expr -> ORDER
-            let mut order = self.construct_node(NodeType::XXXByExprs)?;
-            self.next_token()?; // ORDER -> BY
-            order.push_node("by", self.construct_node(NodeType::Keyword)?);
-            self.next_token()?; // BY -> expr
-            order.push_node_vec("exprs", self.parse_exprs(&vec![], false, true)?);
-            node.push_node("orderby", order);
+            node.push_node("orderby", self.parse_xxxby_exprs()?);
         }
         // LIMIT
         if self.get_token(1)?.is("LIMIT") {
@@ -2153,6 +2293,7 @@ impl Parser {
             "PIVOT" => self.parse_pivot_pipe_operator()?,
             "UNPIVOT" => self.parse_unpivot_pipe_operator()?,
             "WITH" => self.parse_with_pipe_operator()?,
+            "MATCH_RECOGNIZE" => self.parse_match_recognize_pipe_operator()?,
             "DISTINCT" => self.construct_node(NodeType::Keyword)?,
             _ => {
                 return Err(BQ2CSTError::from_token(
@@ -2355,6 +2496,11 @@ impl Parser {
     fn parse_with_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
         let mut operator = self.parse_with_clause()?;
         operator.node_type = NodeType::WithPipeOperator;
+        Ok(operator)
+    }
+    fn parse_match_recognize_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.parse_match_recognize_clause()?;
+        operator.node_type = NodeType::MatchRecognizePipeOperator;
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {

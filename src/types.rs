@@ -71,6 +71,7 @@ export type UnknownNode =
   | GroupedExpr
   | GroupedExprs
   | GroupedIdentWithOptions
+  | GroupedPattern
   | GroupedStatement
   | GroupedTypeDeclarationOrConstraints
   | GroupedType
@@ -95,13 +96,20 @@ export type UnknownNode =
   | LimitPipeOperator
   | LoadStatement
   | LoopStatement
+  | MatchRecognizeClause
+  | MatchRecognizeConfig
+  | MatchRecognizePipeOperator
   | MergeStatement
   | MultiTokenIdentifier
   | NullLiteral
   | NumericLiteral
+  | OrPattern
   | OverClause
   | OverwritePartitionsClause
   | Parameter
+  | Pattern
+  | PatternClause
+  | PatternQuantifier
   | PipeStatement
   | PivotOperator
   | PivotPipeOperator
@@ -197,6 +205,7 @@ export type FromItemExpr = Expr & {
     with_offset: NodeChild;
     pivot?: NodeChild;
     unpivot?: NodeChild;
+    match_recognize?: NodeChild;
   };
 };
 
@@ -950,6 +959,16 @@ export type GroupedIdentWithOptions = BaseNode & {
   };
 };
 
+export type GroupedPattern = BaseNode & {
+  token: Token;
+  node_type: "GroupedPattern";
+  children: {
+    patterns: NodeVecChild;
+    rparen: NodeChild;
+    suffixes: NodeVecChild;
+  };
+};
+
 export type GroupedStatement = FromItemExpr &
   XXXStatement & {
     node_type: "GroupedStatement";
@@ -1139,6 +1158,37 @@ export type LimitPipeOperator = PipeOperator & {
   }
 }
 
+export type MatchRecognizeClause = BaseNode & {
+  token: Token;
+  node_type: "MatchRecognizeClause";
+  children: {
+    as?: NodeChild;
+    alias?: NodeChild;
+    config: NodeChild;
+  };
+};
+
+export type MatchRecognizeConfig = BaseNode & {
+  token: Token;
+  node_type: "MatchRecognizeConfig";
+  children: {
+    partitionby?: NodeChild;
+    orderby?: NodeChild;
+    measures?: NodeChild;
+    skip_rule?: NodeChild;
+    pattern: NodeChild;
+    define?: NodeChild;
+    options?: NodeChild;
+    rparen: NodeChild;
+  };
+};
+
+export type MatchRecognizePipeOperator = BaseNode & {
+  token: Token;
+  node_type: "MatchRecognizePipeOperator";
+  children: MatchRecognizeClause["children"];
+};
+
 export type LoopStatement = LabelableStatement & {
   node_type: "LoopStatement";
   children: {
@@ -1194,6 +1244,16 @@ export type NumericLiteral = Expr & {
   node_type: "NumericLiteral";
 };
 
+export type OrPattern = BaseNode & {
+  token: Token;
+  node_type: "OrPattern";
+  children: {
+    left: NodeVecChild;
+    right: NodeVecChild;
+  };
+};
+
+
 export type OverClause = BaseNode & {
   token: Token;
   node_type: "OverClause";
@@ -1213,6 +1273,33 @@ export type OverwritePartitionsClause = BaseNode & {
 
 export type Parameter = IdentifierGeneral & {
   node_type: "Parameter";
+};
+
+export type Pattern = BaseNode & {
+  token: Token;
+  node_type: "Pattern";
+  children: {
+    suffixes: NodeVecChild;
+  }
+};
+
+export type PatternClause = BaseNode & {
+  token: Token;
+  node_type: "PatternClause";
+  children: {
+    pattern: NodeChild;
+  }
+};
+
+export type PatternQuantifier = BaseNode & {
+  token: Token;
+  node_type: "PatternQuantifier";
+  children: {
+    min?: NodeChild;
+    comma?: NodeChild;
+    max?: NodeChild;
+    rbrace: NodeChild;
+  }
 };
 
 export type PipeStatement = XXXStatement & {
