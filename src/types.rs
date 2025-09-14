@@ -66,6 +66,7 @@ export type UnknownNode =
   | ForStatement
   | ForSystemTimeAsOfClause
   | FromStatement
+  | FunctionChain
   | GrantStatement
   | GroupByExprs
   | GroupedExpr
@@ -904,6 +905,14 @@ export type FromStatement = XXXStatement & {
   node_type: "FromStatement";
   children: {
     expr: NodeChild;
+  };
+}
+
+export type FunctionChain = FromItemExpr & {
+  node_type: "FunctionChain";
+  children: {
+    left: NodeChild;
+    right: NodeChild;
   };
 }
 

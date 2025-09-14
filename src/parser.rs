@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+use crate::cst::ContentType;
 use crate::cst::Node;
 use crate::cst::NodeType;
 use crate::error::{BQ2CSTError, BQ2CSTResult};
@@ -702,36 +703,30 @@ impl Parser {
                 }
                 "." => {
                     self.next_token()?; // -> .
-                    let mut precedence = self.get_precedence(0)?;
-                    if left.node_type == NodeType::Identifier {
-                        precedence = 101;
+                    let mut first_node = &left;
+                    while first_node.node_type == NodeType::DotOperator {
+                        match first_node.children.get("left") {
+                            Some(ContentType::Node(n)) => first_node = n,
+                            _ => break,
+                        };
                     }
-
-                    let mut is_chained_function = false;
-                    if let Some(token) = &left.token {
-                        // literal | callingFunction || groupedExpr
-                        is_chained_function = token.in_(&vec![
-                            "(",
-                            "[",
-                            "RANGE",
-                            "ARRAY",
-                            "DATE",
-                            "TIME",
-                            "DATETIME",
-                            "TIMESTAMP",
-                            "NUMERIC",
-                            "BIGNUMERIC",
-                            "DECIMAL",
-                            "BIGDECIMAL",
-                            "JSON",
-                            "INTERVAL",
-                            "CASE",
-                        ]) || token.is_boolean()
-                            || token.is_numeric()
-                            || token.is_string()
+                    let is_chained_function = (
+                        // check left side of operator
+                        first_node.node_type != NodeType::Identifier
+                    ) && (
+                        // check right side of operator
+                        self.get_token(1)?.is("(") || self.get_token(2)?.is("(")
+                    );
+                    let precedence = if is_chained_function {
+                        self.get_precedence(0)?
+                    } else {
+                        101
                     };
-
-                    let mut dot = self.construct_node(NodeType::DotOperator)?;
+                    let mut dot = if is_chained_function {
+                        self.construct_node(NodeType::FunctionChain)?
+                    } else {
+                        self.construct_node(NodeType::DotOperator)?
+                    };
                     self.next_token()?; // -> identifier
                     dot.push_node("left", left);
                     if self.get_token(0)?.literal.as_str() == "*" {

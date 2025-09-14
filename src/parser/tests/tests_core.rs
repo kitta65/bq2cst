@@ -1183,6 +1183,32 @@ exprs:
 ",
             0,
         )),
+        // deep function
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT SAFE.KEYS.NEW_KEYSET('AEAD_AES_GCM_256')
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: ( (CallingFunction)
+  args:
+  - self: 'AEAD_AES_GCM_256' (StringLiteral)
+  func:
+    self: . (DotOperator)
+    left:
+      self: . (DotOperator)
+      left:
+        self: SAFE (Identifier)
+      right:
+        self: KEYS (Identifier)
+    right:
+      self: NEW_KEYSET (Identifier)
+  rparen:
+    self: ) (Symbol)
+",
+            0,
+        )),
         // CAST
         Box::new(SuccessTestCase::new(
             "\
@@ -1760,9 +1786,9 @@ SELECT (col).UPPER().LOWER()
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (DotOperator)
+- self: . (FunctionChain)
   left:
-    self: . (DotOperator)
+    self: . (FunctionChain)
     left:
       self: ( (GroupedExpr)
       expr:
@@ -1793,7 +1819,7 @@ SELECT
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (DotOperator)
+- self: . (FunctionChain)
   comma:
     self: , (Symbol)
   left:
@@ -1808,7 +1834,7 @@ exprs:
       self: TIMESTAMP_TRUNC (Identifier)
     rparen:
       self: ) (Symbol)
-- self: . (DotOperator)
+- self: . (FunctionChain)
   comma:
     self: , (Symbol)
   left:
@@ -1874,7 +1900,7 @@ SELECT (col).(safe.left)(3)
             "\
 self: SELECT (SelectStatement)
 exprs:
-- self: . (DotOperator)
+- self: . (FunctionChain)
   left:
     self: ( (GroupedExpr)
     expr:
@@ -1898,6 +1924,58 @@ exprs:
     rparen:
       self: ) (Symbol)
 ",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT STRUCT('a' AS b).TO_JSON().b.JSON_VALUE().CONCAT('c')
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: . (FunctionChain)
+  left:
+    self: . (FunctionChain)
+    left:
+      self: . (DotOperator)
+      left:
+        self: . (FunctionChain)
+        left:
+          self: ( (StructLiteral)
+          exprs:
+          - self: 'a' (StringLiteral)
+            alias:
+              self: b (Identifier)
+            as:
+              self: AS (Keyword)
+          rparen:
+            self: ) (Symbol)
+          type:
+            self: STRUCT (Type)
+        right:
+          self: ( (CallingFunction)
+          func:
+            self: TO_JSON (Identifier)
+          rparen:
+            self: ) (Symbol)
+      right:
+        self: b (Identifier)
+    right:
+      self: ( (CallingFunction)
+      func:
+        self: JSON_VALUE (Identifier)
+      rparen:
+        self: ) (Symbol)
+  right:
+    self: ( (CallingFunction)
+    args:
+    - self: 'c' (StringLiteral)
+    func:
+      self: CONCAT (Identifier)
+    rparen:
+      self: ) (Symbol)
+",
+
             0,
         )),
         // ----- template -----
