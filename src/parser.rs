@@ -1909,8 +1909,20 @@ impl Parser {
         let mut group = self.construct_node(NodeType::GroupedPattern)?;
         let mut patterns = Vec::new();
         while !self.get_token(1)?.is(")") {
-            self.next_token()?; // -> pattern
-            patterns.push(self.parse_pattern()?);
+            self.next_token()?; // -> symbol | `|` | (
+            if self.get_token(0)?.is("|") {
+                let mut or = self.construct_node(NodeType::OrPattern)?;
+                or.push_node_vec("left", patterns);
+                let mut right_patterns = Vec::new();
+                while !self.get_token(1)?.in_(&vec!["|", ")"]) {
+                    self.next_token()?; // -> right
+                    right_patterns.push(self.parse_pattern()?);
+                }
+                or.push_node_vec("right", right_patterns);
+                patterns = vec![or];
+            } else {
+                patterns.push(self.parse_pattern()?);
+            }
         }
         group.push_node_vec("patterns", patterns);
         self.next_token()?; // -> )
@@ -1942,7 +1954,6 @@ impl Parser {
                 }
             }
         }
-        // TODO | OrPattern
         pattern.push_node_vec("suffixes", suffixes);
         Ok(pattern)
     }
