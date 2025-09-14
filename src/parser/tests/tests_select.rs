@@ -1780,7 +1780,7 @@ SELECT * FROM t MATCH_RECOGNIZE (
     symbol1 AS col3 = 'foo',
     symbol2 AS col4 = 'bar'
   OPTIONS (use_longest_match = TRUE)
-)
+) as u
 ",
             "\
 self: SELECT (SelectStatement)
@@ -1792,6 +1792,10 @@ from:
     self: t (Identifier)
     match_recognize:
       self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      alias:
+        self: u (Identifier)
+      as:
+        self: as (Keyword)
       config:
         self: ( (MatchRecognizeConfig)
         define:
