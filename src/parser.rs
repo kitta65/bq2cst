@@ -1914,6 +1914,7 @@ impl Parser {
         }
         group.push_node_vec("patterns", patterns);
         self.next_token()?; // -> )
+        group.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(group)
     }
     fn parse_pattern(&mut self) -> BQ2CSTResult<Node> {
@@ -1921,19 +1922,20 @@ impl Parser {
         let curr_token = self.get_token(0)?;
         if curr_token.is("(") {
             pattern = self.parse_grouped_pattern()?;
-        } else if curr_token.is_identifier() {
-            pattern = self.construct_node(NodeType::Identifier)?;
         } else {
-            pattern = self.construct_node(NodeType::Symbol)?; // ^ | $
+            pattern = self.construct_node(NodeType::Pattern)?; // ident | ^ | $
         }
 
-        let mut suffix_operators = Vec::new();
+        let mut suffixes = Vec::new();
         loop {
             match self.get_token(1)?.literal.as_str() {
-                // TODO: {n,m} Quantifier
                 "?" | "+" | "*" => {
                     self.next_token()?;
-                    suffix_operators.push(self.construct_node(NodeType::Symbol)?);
+                    suffixes.push(self.construct_node(NodeType::Symbol)?);
+                }
+                "{" => {
+                    self.next_token()?; // -> {
+                    suffixes.push(self.parse_quantifier()?);
                 }
                 _ => {
                     break;
@@ -1941,8 +1943,24 @@ impl Parser {
             }
         }
         // TODO | OrPattern
-        pattern.push_node_vec("suffix_operators", suffix_operators);
+        pattern.push_node_vec("suffixes", suffixes);
         Ok(pattern)
+    }
+    fn parse_quantifier(&mut self) -> BQ2CSTResult<Node> {
+        let mut quantifier = self.construct_node(NodeType::PatternQuantifier)?;
+        if !self.get_token(1)?.is(",") {
+            self.next_token()?; // -> m
+            quantifier.push_node("min", self.construct_node(NodeType::NumericLiteral)?);
+        }
+        if self.get_token(1)?.is(",") {
+            self.next_token()?; // -> ,
+            quantifier.push_node("comma", self.construct_node(NodeType::Symbol)?);
+            self.next_token()?; // -> n
+            quantifier.push_node("max", self.construct_node(NodeType::NumericLiteral)?);
+        }
+        self.next_token()?; // -> }
+        quantifier.push_node("rbrace", self.construct_node(NodeType::Symbol)?);
+        Ok(quantifier)
     }
     fn parse_corresponding_clause(&mut self) -> BQ2CSTResult<Node> {
         let mut strict_exists = false;

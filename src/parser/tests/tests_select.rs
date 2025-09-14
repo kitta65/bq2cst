@@ -1887,7 +1887,7 @@ from:
             "\
 SELECT *
 FROM t MATCH_RECOGNIZE (
-  PATTERN ()
+  PATTERN (symbol1)
 )
 ",
             "\
@@ -1906,8 +1906,78 @@ from:
           self: PATTERN (PatternClause)
           pattern:
             self: ( (GroupedPattern)
-            patterns: []
-            suffix_operators: []
+            patterns:
+            - self: symbol1 (Pattern)
+              suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
+        rparen:
+          self: ) (Symbol)
+",
+            0,
+        )),
+        Box::new(SuccessTestCase::new(
+            "\
+SELECT *
+FROM t MATCH_RECOGNIZE (
+  PATTERN (^ ()*? symbol1{0}{1,2}{,3} $)
+)
+",
+            "\
+self: SELECT (SelectStatement)
+exprs:
+- self: * (Asterisk)
+from:
+  self: FROM (KeywordWithExpr)
+  expr:
+    self: t (Identifier)
+    match_recognize:
+      self: MATCH_RECOGNIZE (MatchRecognizeClause)
+      config:
+        self: ( (MatchRecognizeConfig)
+        pattern:
+          self: PATTERN (PatternClause)
+          pattern:
+            self: ( (GroupedPattern)
+            patterns:
+            - self: ^ (Pattern)
+              suffixes: []
+            - self: ( (GroupedPattern)
+              patterns: []
+              rparen:
+                self: ) (Symbol)
+              suffixes:
+              - self: * (Symbol)
+              - self: ? (Symbol)
+            - self: symbol1 (Pattern)
+              suffixes:
+              - self: { (PatternQuantifier)
+                min:
+                  self: 0 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+              - self: { (PatternQuantifier)
+                comma:
+                  self: , (Symbol)
+                max:
+                  self: 2 (NumericLiteral)
+                min:
+                  self: 1 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+              - self: { (PatternQuantifier)
+                comma:
+                  self: , (Symbol)
+                max:
+                  self: 3 (NumericLiteral)
+                rbrace:
+                  self: } (Symbol)
+            - self: $ (Pattern)
+              suffixes: []
+            rparen:
+              self: ) (Symbol)
+            suffixes: []
         rparen:
           self: ) (Symbol)
 ",

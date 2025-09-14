@@ -116,11 +116,11 @@ pub enum NodeType {
     Parameter,                 // ? | @param
     Pattern,                   // symbol*?
     PatternClause,             // PATTERN (A B+ C)
+    PatternQuantifier,         // {m,n}
     PipeStatement,             // |>
     PivotConfig,               // (SUM(c1) FOR c2 IN (v1, v2))
     PivotOperator,
     PivotPipeOperator,
-    Quantifier, // {m,n}
     RaiseStatement,
     RangeLiteral, // RANGE<DATE> '[2023-01-01, 2024-01-01)'
     RenameColumnClause,

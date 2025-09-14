@@ -215,13 +215,11 @@ impl Lexer {
                 }
                 let after_brace = self.get_char(0);
                 if count == 1
-                    && (
-                        // query parameter or digit
-                        // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#match_recognize_pattern
-                        &after_brace == &Some('@') || is_digit(&after_brace)
-                    )
+                    && (&after_brace == &Some('@')
+                        || is_digit(&after_brace)
+                        || after_brace == Some(','))
                 {
-                    // maybe it is not a template
+                    // maybe it is pattern quantifier like {m,n}
                     self.construct_token(line, column, ch.to_string())
                 } else {
                     let mut end = false;
