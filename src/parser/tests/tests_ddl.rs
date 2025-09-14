@@ -3075,14 +3075,14 @@ what:
         // ----- ALTER VECTOR INDEX statement -----
         Box::new(SuccessTestCase::new(
             "\
-alter vector index index_name on table_name REBUILD;
+ALTER VECTOR INDEX index_name ON table_name REBUILD;
 ",
             "\
-self: alter (AlterVectorIndexStatement)
+self: ALTER (AlterVectorIndexStatement)
 ident:
   self: index_name (Identifier)
 on:
-  self: on (KeywordWithExpr)
+  self: ON (KeywordWithExpr)
   expr:
     self: table_name (Identifier)
 operation:
@@ -3090,9 +3090,9 @@ operation:
 semicolon:
   self: ; (Symbol)
 what:
-  self: vector (KeywordSequence)
+  self: VECTOR (KeywordSequence)
   next_keyword:
-    self: index (Keyword)
+    self: INDEX (Keyword)
 ",
             0,
         )),
