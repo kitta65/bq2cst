@@ -1356,11 +1356,7 @@ impl Parser {
             left.push_node("unpivot", unpivot);
         } else if self.get_token(1)?.is("MATCH_RECOGNIZE") {
             self.next_token()?; // -> MATCH_RECOGNIZE
-            let mut match_recognize = self.construct_node(NodeType::MatchRecognizeClause)?;
-            self.next_token()?; // -> (
-            match_recognize.push_node("config", self.parse_match_recognize_config()?);
-            match_recognize = self.push_trailing_alias(match_recognize)?;
-            left.push_node("match_recognize", match_recognize);
+            left.push_node("match_recognize", self.parse_match_recognize_clause()?);
         }
         // TABLESAMPLE
         if self.get_token(1)?.is("tablesample") {
@@ -1815,6 +1811,13 @@ impl Parser {
         self.next_token()?; // -> )
         config.push_node("rparen", self.construct_node(NodeType::Symbol)?);
         Ok(config)
+    }
+    fn parse_match_recognize_clause(&mut self) -> BQ2CSTResult<Node> {
+        let mut match_recognize = self.construct_node(NodeType::MatchRecognizeClause)?;
+        self.next_token()?; // -> (
+        match_recognize.push_node("config", self.parse_match_recognize_config()?);
+        match_recognize = self.push_trailing_alias(match_recognize)?;
+        Ok(match_recognize)
     }
     fn parse_match_recognize_config(&mut self) -> BQ2CSTResult<Node> {
         let mut config = self.construct_node(NodeType::MatchRecognizeConfig)?;
@@ -2290,6 +2293,7 @@ impl Parser {
             "PIVOT" => self.parse_pivot_pipe_operator()?,
             "UNPIVOT" => self.parse_unpivot_pipe_operator()?,
             "WITH" => self.parse_with_pipe_operator()?,
+            "MATCH_RECOGNIZE" => self.parse_match_recognize_pipe_operator()?,
             "DISTINCT" => self.construct_node(NodeType::Keyword)?,
             _ => {
                 return Err(BQ2CSTError::from_token(
@@ -2492,6 +2496,11 @@ impl Parser {
     fn parse_with_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
         let mut operator = self.parse_with_clause()?;
         operator.node_type = NodeType::WithPipeOperator;
+        Ok(operator)
+    }
+    fn parse_match_recognize_pipe_operator(&mut self) -> BQ2CSTResult<Node> {
+        let mut operator = self.parse_match_recognize_clause()?;
+        operator.node_type = NodeType::MatchRecognizePipeOperator;
         Ok(operator)
     }
     fn parse_base_pipe_operator(&mut self, keywords: bool) -> BQ2CSTResult<Node> {

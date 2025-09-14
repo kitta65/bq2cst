@@ -106,6 +106,7 @@ pub enum NodeType {
     LoopStatement,
     MatchRecognizeClause, // MATCH_RECOGNIZE ()
     MatchRecognizeConfig, // (PARTITION BY x ORDER BY y MEASURES ...)
+    MatchRecognizePipeOperator,
     MergeStatement,
     MultiTokenIdentifier,
     NumericLiteral, // 1 | 1.1 | .1E10
