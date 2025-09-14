@@ -1664,7 +1664,7 @@ impl Parser {
         while self.get_token(1)?.literal.to_uppercase() != "SELECT"
             && self.get_token(1)?.literal != "("
             && self.get_token(1)?.literal != "|>"
-            && self.get_token(1)?.literal != "FROM"
+            && self.get_token(1)?.literal.to_uppercase() != "FROM"
         {
             self.next_token()?; // WITH -> ident, ) -> ident
             queries.push(self.parse_cte()?);
