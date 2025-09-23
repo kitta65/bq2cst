@@ -1,3 +1,6 @@
+> [!WARNING]
+> Moved to https://github.com/kitta65/prettier-plugin-bq/tree/main/bq2cst
+
 # bq2cst
 
 Parse GoogleSQL, which is a dialect of [BigQuery](https://cloud.google.com/bigquery), into a concrete syntax tree.
